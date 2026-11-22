@@ -7,11 +7,11 @@ function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*"
 addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
 if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
 try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
-var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on||window.__noGate)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
 try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
 try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
-var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
-document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&!window.__noGate&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on||window.__noGate)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
 })();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GST Return Studio · TaxSphere</title>
@@ -378,7 +378,7 @@ const TPL={
     sample:[["EXP/001","12-10-2026","WOPAY","INBOM1","1234567","14-10-2026","6204","Cotton kurta","PCS","500","400000","5","0"]]}
 };
 const csvCell=x=>/[",\n]/.test(String(x))?`"${String(x).replace(/"/g,'""')}"`:String(x);
-function downloadTpl(k,withSample){const t=TPL[k];save(t.name,"\ufeff"+[t.cols,...(withSample?t.sample:[])].map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv");}
+
 function parseTable(text){
   if(text.includes("\t")&&!/^[^\t\n]*,[^\t\n]*\n/.test(text.slice(0,200)))return text.split(/\r?\n/).map(l=>l.split("\t")).filter(r=>r.some(x=>x.trim()));
   const out=[];let row=[],cur="",q=false;
@@ -412,6 +412,158 @@ function importRows(kind,rows){
   }
   persist();return{n,lines};
 }
+
+/* ---- complete Excel template & workbook import */
+/* ---------------- XL: small Excel writer/reader (no internet, no library) ----------------
+   write: real .xlsx when the device can save binary files, Excel-XML .xls inside the Android app (text-only saving).
+   read:  .xlsx, Excel-XML .xls and .csv → [{name, rows}] */
+const XL=(()=>{
+  const xe=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
+  const colL=n=>{let s="";n++;while(n){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;};
+  const isNum=v=>typeof v==="number"&&isFinite(v);
+  // ---- CRC32 + stored zip
+  const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+  const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;};
+  function zip(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+    for(const [name,str] of files){const nb=enc.encode(name),db=enc.encode(str),cr=crc32(db);
+      const lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);
+      lh.setUint32(14,cr,true);lh.setUint32(18,db.length,true);lh.setUint32(22,db.length,true);lh.setUint16(26,nb.length,true);
+      parts.push(new Uint8Array(lh.buffer),nb,db);
+      const ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);
+      ch.setUint32(16,cr,true);ch.setUint32(20,db.length,true);ch.setUint32(24,db.length,true);ch.setUint16(28,nb.length,true);ch.setUint32(42,off,true);
+      cen.push(new Uint8Array(ch.buffer),nb);off+=30+nb.length+db.length;}
+    const cs=cen.reduce((a,b)=>a+b.length,0),end=new DataView(new ArrayBuffer(22));
+    end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,cs,true);end.setUint32(16,off,true);
+    return new Blob([...parts,...cen,new Uint8Array(end.buffer)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});}
+  // sheets: [{name, head:[..], widths:[..], rows:[[..]], info:true}]  (info sheets: first column bold, no header styling)
+  function xlsx(sheets){
+    const wsx=s=>{const all=[...(s.head?[s.head]:[]),...s.rows];
+      const cols=(s.widths||[]).map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("");
+      const rows=all.map((r,ri)=>`<row r="${ri+1}">`+r.map((v,ci)=>{const ref=colL(ci)+(ri+1),st=s.head&&ri===0?' s="1"':s.info&&ci===0?' s="2"':s.info?' s="3"':"";
+        if(v===""||v==null)return st?`<c r="${ref}"${st}/>`:"";
+        return isNum(v)?`<c r="${ref}"${st}><v>${v}</v></c>`:`<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;}).join("")+`</row>`).join("");
+      const pane=s.head?`<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`:"";
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${pane}${cols?`<cols>${cols}</cols>`:""}<sheetData>${rows}</sheetData></worksheet>`;};
+    const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`;
+    const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+    const wb=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${xe(s.name.slice(0,31))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")}</sheets></workbook>`;
+    const wbr=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+    const sty=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF6D4AFF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`;
+    return zip([["[Content_Types].xml",ct],["_rels/.rels",rels],["xl/workbook.xml",wb],["xl/_rels/workbook.xml.rels",wbr],["xl/styles.xml",sty],...sheets.map((s,i)=>[`xl/worksheets/sheet${i+1}.xml`,wsx(s)])]);
+  }
+  function xml2003(sheets){
+    const cell=(v,st)=>`<Cell${st?` ss:StyleID="${st}"`:""}><Data ss:Type="${isNum(v)?"Number":"String"}">${xe(v)}</Data></Cell>`;
+    return `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#6D4AFF" ss:Pattern="Solid"/><Alignment ss:WrapText="1"/></Style><Style ss:ID="b"><Font ss:Bold="1"/><Alignment ss:WrapText="1" ss:Vertical="Top"/></Style><Style ss:ID="w"><Alignment ss:WrapText="1" ss:Vertical="Top"/></Style></Styles>`+
+      sheets.map(s=>`<Worksheet ss:Name="${xe(s.name.slice(0,31))}"><Table>${(s.widths||[]).map(w=>`<Column ss:Width="${Math.round(w*6)}"/>`).join("")}`+
+        [...(s.head?[s.head]:[]),...s.rows].map((r,ri)=>`<Row>${r.map((v,ci)=>cell(v,s.head&&ri===0?"h":s.info&&ci===0?"b":s.info?"w":"")).join("")}</Row>`).join("")+`</Table></Worksheet>`).join("")+`</Workbook>`;
+  }
+  // save(name without extension, sheets, saver(name, data, mime)) → picks the format the device can save
+  function save(base,sheets,textOnly,saver){
+    if(textOnly)return saver(base+".xls",xml2003(sheets),"application/vnd.ms-excel");
+    const b=xlsx(sheets),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=base+".xlsx";document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);return base+".xlsx";}
+  // ---- reading
+  async function inflate(u8){if(typeof DecompressionStream!=="function")throw new Error("This device can't open .xlsx files. Save it as CSV, or copy and paste the cells.");
+    const ds=new DecompressionStream("deflate-raw"),out=new Response(new Blob([u8]).stream().pipeThrough(ds));return new Uint8Array(await out.arrayBuffer());}
+  async function unzip(buf){const u=new Uint8Array(buf),dv=new DataView(buf);let e=-1;
+    for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break;}
+    if(e<0)throw new Error("Not a valid .xlsx file");
+    const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={},dec=new TextDecoder();
+    for(let k=0;k<n;k++){const m=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+      const name=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+      if(!/^(xl\/(workbook\.xml|sharedStrings\.xml|_rels\/workbook\.xml\.rels|worksheets\/[^/]+\.xml))$/.test(name))continue;
+      const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true),raw=u.subarray(ds,ds+cs);
+      files[name]=dec.decode(m===0?raw:await inflate(raw));}
+    return files;}
+  const X=t=>new DOMParser().parseFromString(t,"application/xml");
+  const byTag=(n,t)=>[...n.getElementsByTagNameNS("*",t)];
+  const colN=ref=>{const m=/^[A-Z]+/.exec(ref);let n=0;for(const ch of m?m[0]:"A")n=n*26+ch.charCodeAt(0)-64;return n-1;};
+  async function readXlsx(buf){const f=await unzip(buf),ss=f["xl/sharedStrings.xml"]?byTag(X(f["xl/sharedStrings.xml"]),"si").map(si=>byTag(si,"t").map(t=>t.textContent).join("")):[];
+    const wb=X(f["xl/workbook.xml"]||"<x/>"),rel=X(f["xl/_rels/workbook.xml.rels"]||"<x/>"),tgt={};
+    byTag(rel,"Relationship").forEach(r=>tgt[r.getAttribute("Id")]=r.getAttribute("Target").replace(/^\/?(xl\/)?/,""));
+    return byTag(wb,"sheet").map(sh=>{const id=sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")||sh.getAttribute("r:id"),
+      xml=f["xl/"+(tgt[id]||"")];if(!xml)return null;const rows=[];
+      byTag(X(xml),"row").forEach(r=>{const ri=(+r.getAttribute("r")||rows.length+1)-1,row=[];
+        byTag(r,"c").forEach(c=>{const t=c.getAttribute("t"),v=byTag(c,"v")[0];let val="";
+          if(t==="s")val=ss[+(v&&v.textContent)]??"";else if(t==="inlineStr")val=byTag(c,"t").map(x=>x.textContent).join("");
+          else if(t==="b")val=v&&v.textContent==="1"?"TRUE":"FALSE";else if(v){const x=v.textContent;val=t==="str"||t==="e"||isNaN(+x)?x:+x;}
+          row[colN(c.getAttribute("r")||"A")]=val;});
+        rows[ri]=Array.from(row,x=>x??"");});
+      return {name:sh.getAttribute("name"),rows:Array.from(rows,r=>r||[]).filter(r=>r.some(x=>String(x).trim()!==""))};}).filter(Boolean);}
+  function readXml(text){const d=X(text);if(byTag(d,"parsererror").length)throw new Error("Couldn't read this .xls file");
+    return byTag(d,"Worksheet").map(ws=>{const rows=[];byTag(ws,"Row").forEach(r=>{const row=[];let i=0;
+      byTag(r,"Cell").forEach(c=>{const ix=c.getAttribute("ss:Index")||c.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet","Index");if(ix)i=+ix-1;
+        const dEl=byTag(c,"Data")[0],ty=dEl&&(dEl.getAttribute("ss:Type")||dEl.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet","Type"));
+        row[i++]=dEl?(ty==="Number"?+dEl.textContent:dEl.textContent):"";});
+      rows.push(Array.from(row,x=>x??""));});
+      return {name:ws.getAttribute("ss:Name")||ws.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet","Name")||"Sheet",rows:rows.filter(r=>r.some(x=>String(x).trim()!==""))};});}
+  async function read(file,csvParse){const n=file.name.toLowerCase();
+    if(/\.(csv|txt)$/.test(n))return [{name:file.name.replace(/\.[^.]+$/,""),rows:csvParse(await file.text())}];
+    const buf=await file.arrayBuffer(),u=new Uint8Array(buf);
+    if(u[0]===0x50&&u[1]===0x4B)return readXlsx(buf);
+    if(u[0]===0xD0&&u[1]===0xCF)throw new Error("Old Excel 97-2003 (.xls) files can't be read. In Excel use Save As → Excel Workbook (.xlsx) or CSV.");
+    const t=new TextDecoder().decode(u);if(/<Workbook[\s>]/.test(t))return readXml(t);
+    return [{name:file.name,rows:csvParse(t)}];}
+  return {save,read,xlsx,xml2003};
+})();
+
+const ITC3B=[["rcm","3.1(d) Inward supplies liable to reverse charge",1,1,1,1,0],["imp_g","4(A)(1) Import of goods",0,1,0,0,1],["imp_s","4(A)(2) Import of services",0,1,0,0,1],["rc","4(A)(3) Inward liable to reverse charge",0,1,1,1,1],["isd","4(A)(4) Inward from ISD",0,1,1,1,1],["oth","4(A)(5) All other ITC (as per GSTR-2B)",0,1,1,1,1],["rev1","4(B)(1) Reversed: Rules 38, 42, 43 & Sec 17(5)",0,1,1,1,1],["rev2","4(B)(2) Reversed: others",0,1,1,1,1],["in1","4(D)(1) Ineligible: Sec 16(4) & PoS rules",0,1,1,1,1],["in2","4(D)(2) Ineligible: others",0,1,1,1,1],["ex_inter","5 Exempt, nil & composition inward: inter-state",1,0,0,0,0],["ex_intra","5 Exempt, nil & composition inward: intra-state",1,0,0,0,0],["ng_inter","5 Non-GST inward: inter-state",1,0,0,0,0],["ng_intra","5 Non-GST inward: intra-state",1,0,0,0,0],["int","5.1 Interest",0,1,1,1,1]];
+const NILROWS=[["INTRB2B","Inter-state to registered"],["INTRAB2B","Intra-state to registered"],["INTRB2C","Inter-state to unregistered"],["INTRAB2C","Intra-state to unregistered"]];
+function downloadBook(ws){
+  const W=c=>c.map(h=>Math.max(10,Math.min(34,h.length+2)));
+  const head=k=>TPL[k].cols,ex=ws;
+  const it=(R()&&R().itc)||{};
+  const sheets=[
+    {name:"Read me",info:true,widths:[24,96],rows:[["TaxSphere · GST Return Studio template",""],["How to use","Fill the sheets you need (leave the others empty) and upload this file in GST Return Studio → Templates & import. All sheets import into the business and period selected at the top. In the phone app, copy one sheet with its header row and paste it."],
+      ["Sales","One row per item. Rows with the same Invoice No become one invoice. Leave Customer GSTIN blank for unregistered buyers (B2C). E-commerce GSTIN only for sales through Amazon, Flipkart, Meesho etc."],
+      ["Credit-Debit notes","Note Type C = credit note, D = debit note. For unregistered buyers, Unregistered Type is B2CL (inter-state invoice above ₹1 lakh), B2CS, EXPWP or EXPWOP."],
+      ["Exports","Export Type WPAY = with payment of IGST, WOPAY = under LUT/bond. Port code is the 6-character code from the shipping bill."],
+      ["Nil-Exempt","Table 8: nil-rated, exempted and non-GST outward supplies, split by inter/intra-state and registered/unregistered."],
+      ["Documents","Table 13: other document series (receipt vouchers, delivery challans etc.). Invoice and note series are worked out from your registers automatically."],
+      ["GSTR-3B inputs","ITC as per GSTR-2B (Table 4), reverse charge (3.1(d)), exempt/non-GST inward (Table 5) and interest (5.1). Fill only the columns that apply."],
+      ["Rates","GST rates: 0, 0.1, 0.25, 1.5, 3, 5, 18 and 40 (12% and 28% were removed for most goods from 22 Sep 2025). Services (HSN starting 99) use UQC NA."],
+      ["Codes","See the Codes sheet for state codes, UQC units and document natures."]]},
+    {name:"Sales",head:head("sales"),widths:W(head("sales")),rows:ex?TPL.sales.sample:[]},
+    {name:"Credit-Debit notes",head:head("notes"),widths:W(head("notes")),rows:ex?TPL.notes.sample:[]},
+    {name:"Exports",head:head("exports"),widths:W(head("exports")),rows:ex?TPL.exports.sample:[]},
+    {name:"Nil-Exempt",head:["Code","Supply","Nil rated","Exempted","Non-GST"],widths:[11,30,13,13,13],rows:NILROWS.map(([k,l],i)=>[k,l,ex&&i===3?2500:"",ex&&i===3?1200:"",""])},
+    {name:"Documents",head:["Nature no.","Nature of document","From","To","Total issued","Cancelled"],widths:[11,44,16,16,13,11],rows:Object.entries(DOCN).filter(([k])=>!["1","4","5"].includes(k)).map(([k,v])=>[+k,v,ex&&k==="6"?"RV/001":"",ex&&k==="6"?"RV/004":"",ex&&k==="6"?4:"",ex&&k==="6"?0:""])},
+    {name:"GSTR-3B inputs",head:["Code","Item","Taxable / value","IGST","CGST","SGST","Cess"],widths:[10,50,15,12,12,12,10],rows:ITC3B.map(([c,l,tv,i,cg,sg,cs])=>{
+      const v=k=>ex?"":(it[k]??"");return [c,l,tv?v(c==="rcm"?"rcm_tx":c):"—",i?v(c+"_i"):"—",cg?v(c+"_c"):"—",sg?v(c+"_s"):"—",cs?v(c+"_cs"):"—"];})},
+    {name:"Codes",head:["State code","State","","UQC","","Doc no.","Document nature"],widths:[11,34,3,8,3,9,46],rows:(()=>{const st=Object.entries(STATES),dn=Object.entries(DOCN),n=Math.max(st.length,UQC.length,dn.length),o=[];
+      for(let i=0;i<n;i++)o.push([st[i]?st[i][0]:"",st[i]?st[i][1]:"","",UQC[i]||"","",dn[i]?+dn[i][0]:"",dn[i]?dn[i][1]:""]);return o;})()}];
+  const c=client();window.__noGate=1;
+  try{const n=XL.save("TaxSphere_GST_template"+(ex?"_sample":""),sheets,!!(BR&&BR.saveFile),(nm,t,m)=>{save(nm,t,m);return nm;});if(!(BR&&BR.saveFile))toast("Downloaded "+n);}finally{window.__noGate=0;}
+}
+function sheetKindGR(n){n=String(n).toLowerCase();if(/read ?me|code/.test(n))return null;if(/credit|debit|note/.test(n))return "notes";if(/export/.test(n))return "exports";if(/sale|invoice/.test(n))return "sales";
+  if(/nil|exempt|table ?8/.test(n))return "nil";if(/document|table ?13/.test(n))return "docs";if(/3b|itc/.test(n))return "itc";return "";}
+const isBlank=v=>v==null||String(v).trim()===""||String(v).trim()==="—";
+function importOther(kind,rows){
+  if(rows.length<2)return null;const h=rows[0].map(nk),ix=(...w)=>{for(const x of w){const i=h.findIndex(y=>y.startsWith(nk(x)));if(i>=0)return i;}return -1;},d=R();let n=0;
+  if(kind==="nil"){const ic=ix("Code"),is=ix("Supply"),cols={nil:ix("Nil"),expt:ix("Exempt"),ngsup:ix("Non")};
+    for(const r of rows.slice(1)){let code=ic>=0?String(r[ic]).trim().toUpperCase():"";
+      if(!d.nil[code]){const t=String(is>=0?r[is]:r[0]).toLowerCase(),inter=/inter-|inter /.test(t)&&!/intra/.test(t),reg=!/unreg/.test(t);code=(inter?"INTR":"INTRA")+(reg?"B2B":"B2C");}
+      if(!d.nil[code])continue;for(const [f,i] of Object.entries(cols))if(i>=0&&!isBlank(r[i])){d.nil[code][f]=String(num(r[i]));n++;}}
+    return n?`Nil-Exempt ${n} values`:null;}
+  if(kind==="docs"){const i={n:ix("Nature no","Nature","No"),f:ix("From"),t:ix("To"),tot:ix("Total"),c:ix("Cancel")};
+    for(const r of rows.slice(1)){const nat=parseInt(r[i.n]),from=String(r[i.f]??"").trim(),to=String(r[i.t]??"").trim(),tot=num(r[i.tot]);
+      if(!DOCN[nat]||!from||!to||!tot)continue;if(d.docsManual.some(x=>+x.nature===nat&&x.from===from&&x.to===to))continue;
+      d.docsManual.push({nature:String(nat),from,to,totnum:tot,cancel:num(r[i.c])||0});n++;}
+    return n?`Documents ${n} rows`:null;}
+  if(kind==="itc"){const ic=ix("Code"),cols={tv:ix("Taxable","Value"),i:ix("IGST"),c:ix("CGST"),s:ix("SGST"),cs:ix("Cess")};d.itc=d.itc||{};
+    for(const r of rows.slice(1)){const code=String(r[ic>=0?ic:0]).trim();const def=ITC3B.find(x=>x[0]===code);if(!def)continue;
+      const put=(k,v)=>{if(!isBlank(v)){d.itc[k]=String(num(v));n++;}};
+      if(def[2])put(code==="rcm"?"rcm_tx":code,r[cols.tv]);if(def[3])put(code+"_i",r[cols.i]);if(def[4])put(code+"_c",r[cols.c]);if(def[5])put(code+"_s",r[cols.s]);if(def[6])put(code+"_cs",r[cols.cs]);}
+    return n?`GSTR-3B inputs ${n} values`:null;}
+  return null;}
+function importBookGR(book,fallback){
+  if(!client())throw new Error("Add your business first (Business tab)");
+  const named=book.filter(sh=>sheetKindGR(sh.name)),out=[];
+  const todo=named.length?named:[{name:book[0].name,rows:book[0].rows,force:fallback}];
+  for(const sh of todo){const k=sh.force||sheetKindGR(sh.name);if(!sh.rows||sh.rows.length<2)continue;
+    try{if(["sales","notes","exports"].includes(k)){const r=importRows(k,sh.rows);if(r.n)out.push(`${sh.name}: ${r.n} docs`);}else{const r=importOther(k,sh.rows);if(r)out.push(r);}}
+    catch(e){out.push(`${sh.name}: ${e.message}`);}}
+  persist();return out.length?out.join(" · "):"Nothing to import: the sheets are empty";}
 
 /* ======================================================= UI */
 const TABS=[["home","Dashboard"],["clients","Business"],["sales","Sales"],["notes","Credit/Debit notes"],["exports","Exports"],["others","Nil & docs"],["import","Templates & import"],["r1","GSTR-1"],["r3b","GSTR-3B"],["portal","File on portal"]];
@@ -541,15 +693,15 @@ function vOthers(){
     <div class="btns" style="margin-top:8px"><button class="btn alt sm" id="mdAdd">＋ Add document row</button></div></div>`;
 }
 function vImport(){
-  return`<div class="card"><h2>Excel / CSV templates</h2><p class="muted" style="margin-top:0">Download a template, fill it in Excel, Google Sheets or your billing software export (one row per item; rows with the same number become one invoice), then paste it below.</p>
-    <div class="grid g3">${Object.entries(TPL).map(([k,t])=>`<div class="kpi"><b style="font-size:14px">${{sales:"Sales register",notes:"Credit / debit notes",exports:"Export invoices"}[k]}</b><small>${t.cols.length} columns</small>
-      <div class="btns" style="margin-top:8px"><button class="btn sm" data-tpl="${k}">⬇ Blank</button><button class="btn sm alt" data-tpls="${k}">⬇ With sample</button></div></div>`).join("")}</div></div>
+  return`<div class="card"><h2>Excel template <span class="tag">all data in one file</span></h2><p class="muted" style="margin-top:0">One workbook with a sheet for everything this studio uses: <b>Sales</b>, <b>Credit-Debit notes</b>, <b>Exports</b>, <b>Nil-Exempt</b> (Table 8), <b>Documents</b> (Table 13) and <b>GSTR-3B inputs</b> (ITC, reverse charge, interest), plus a Read me and code lists. One row per item; rows with the same number become one invoice.</p>
+    <div class="btns"><button class="btn" data-tplx="0">⬇ Blank template</button><button class="btn alt" data-tplx="1">⬇ With sample rows</button></div>
+    <div class="note info">Fill it in Excel, Google Sheets, WPS or your billing software and upload the whole file: every sheet imports together into <b>${esc((client()||{}).name||"the selected business")}</b> for <b>${periods().find(p=>p[0]===DB.period)?.[1]||DB.period}</b>. In the phone app, copy one sheet at a time and paste it below.</div></div>
   <div class="card"><h2>Import data</h2>
-    <div class="grid g2"><label class="f"><span>This data is</span><select id="impK"><option value="sales">Sales register</option><option value="notes">Credit / debit notes</option><option value="exports">Export invoices</option></select></label>
-      <label class="f ${IN_APP?"hide":""}"><span>CSV file</span><input type="file" id="impFile" accept=".csv,.txt"></label></div>
-    <label class="f" style="margin-top:10px"><span>Or paste cells copied from Excel (include the header row)</span><textarea class="paste" id="impTxt" placeholder="Invoice No	Invoice Date	Customer GSTIN	…"></textarea></label>
-    <div class="btns" style="margin-top:10px"><button class="btn" id="impGo">Import</button><button class="btn ghost" id="impSample">Load sample</button></div>
-    <div class="note info">Columns are matched by header name, so the order doesn't matter. Dates can be DD-MM-YYYY, YYYY-MM-DD or Excel dates. Place of supply can be a state code (27) or name (Maharashtra).</div></div>
+    <label class="f ${IN_APP?"hide":""}"><span>Excel or CSV file (the filled template, or a single sheet)</span><input type="file" id="impFile" accept=".xlsx,.xls,.csv,.txt"></label>
+    <div class="grid g2" style="margin-top:10px"><label class="f"><span>Pasted data is</span><select id="impK"><option value="sales">Sales register</option><option value="notes">Credit / debit notes</option><option value="exports">Export invoices</option><option value="nil">Nil-Exempt (Table 8)</option><option value="docs">Documents (Table 13)</option><option value="itc">GSTR-3B inputs</option></select></label></div>
+    <label class="f" style="margin-top:10px"><span>Paste cells copied from Excel (include the header row)</span><textarea class="paste" id="impTxt" placeholder="Invoice No	Invoice Date	Customer GSTIN	…"></textarea></label>
+    <div class="btns" style="margin-top:10px"><button class="btn" id="impGo">Import pasted data</button><button class="btn ghost" id="impSample">Load sample</button></div>
+    <div class="note info">Columns are matched by header name, so the order doesn't matter and extra columns are ignored. Dates can be DD-MM-YYYY, YYYY-MM-DD or Excel dates. Place of supply can be a state code (27) or name (Maharashtra).</div></div>
   <div class="card"><h2>Backup</h2><div class="btns"><button class="btn alt" id="bk">⬇ Backup all data (JSON)</button></div>
     <label class="f" style="margin-top:10px"><span>Restore: paste backup JSON</span><textarea class="paste" id="rsTxt"></textarea></label><div class="btns" style="margin-top:8px"><button class="btn ghost" id="rs">Restore</button></div></div>`;
 }
@@ -672,11 +824,16 @@ function bind(){
     R().docsManual.push({nature:$("#mdN").value,from:$("#mdF").value.trim(),to:$("#mdT").value.trim(),totnum:t,cancel:c});persist();render();};
   $$("[data-rmdoc]").forEach(b=>b.onclick=()=>{R().docsManual.splice(+b.dataset.rmdoc,1);persist();render();});
   // import
-  $$("[data-tpl]").forEach(b=>b.onclick=()=>downloadTpl(b.dataset.tpl,false));$$("[data-tpls]").forEach(b=>b.onclick=()=>downloadTpl(b.dataset.tpls,true));
+  $$("[data-tplx]").forEach(b=>b.onclick=()=>downloadBook(b.dataset.tplx==="1"));
   if($("#impGo")){
-    const run=text=>{try{const r=importRows($("#impK").value,parseTable(text));toast(`Imported ${r.n} documents (${r.lines} lines)`);$("#impTxt").value="";go($("#impK").value==="sales"?"sales":$("#impK").value);}catch(e){toast(e.message,4000);}};
+    const dest=k=>({sales:"sales",notes:"notes",exports:"exports",nil:"others",docs:"others",itc:"r3b"})[k];
+    const run=text=>{try{const k=$("#impK").value,rows=parseTable(text);
+      if(["sales","notes","exports"].includes(k)){const r=importRows(k,rows);toast(`Imported ${r.n} documents (${r.lines} lines)`);}
+      else{const r=importOther(k,rows);persist();if(!r)throw new Error("Nothing recognised. Paste the sheet with its header row.");toast(r);}
+      $("#impTxt").value="";go(dest(k));}catch(e){toast(e.message,4000);}};
     $("#impGo").onclick=()=>run($("#impTxt").value);
-    if($("#impFile"))$("#impFile").onchange=async e=>{const f=e.target.files[0];if(f)run(await f.text());e.target.value="";};
+    if($("#impFile"))$("#impFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+      try{const msg=importBookGR(await XL.read(f,parseTable),$("#impK").value);toast(msg,5000);go("home");}catch(err){toast(err.message,4000);}};
     $("#impSample").onclick=loadSample;
     $("#bk").onclick=()=>save("SEMI_GST_backup_"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(DB));
     $("#rs").onclick=e=>armed(e.target,"Restore",()=>{try{const x=JSON.parse($("#rsTxt").value);if(!x.clients)throw 0;DB=x;persist();toast("Restored");go("home");}catch(_){toast("That isn't a valid backup");}});}

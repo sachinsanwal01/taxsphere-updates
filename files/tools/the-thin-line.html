@@ -7,11 +7,11 @@ function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*"
 addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
 if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
 try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
-var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on||window.__noGate)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
 try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
 try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
-var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
-document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&!window.__noGate&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on||window.__noGate)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
 })();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Thin Line</title>

@@ -7,17 +7,16 @@ function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*"
 addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
 if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
 try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
-var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on||window.__noGate)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
 try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
 try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
-var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
-document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&!window.__noGate&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on||window.__noGate)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
 })();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6d4aff">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Meesho GST Filing</title>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -151,8 +150,14 @@ html.embedded .toast,html.embedded .semi-credit{display:none!important}
     <label>Meesho e-commerce operator GSTIN (for Table 7 &amp; 14)</label>
     <input id="ecoGstin" maxlength="15" placeholder="Copy from GST portal / Meesho TCS entry" autocapitalize="characters">
     <div class="note">Find Meesho's GSTIN for your state in GSTR-2A → TCS Credit Received on the GST portal, or on your Meesho commission invoice.</div>
-    <label>TCS rate charged by Meesho (%)</label>
-    <input id="tcsRate" type="number" step="0.01" value="0.5">
+    <div id="ecoMsg"></div>
+    <div class="row">
+      <div><label>TCS rate by Meesho (%)</label><input id="tcsRate" type="number" step="0.01" value="0.5"></div>
+      <div><label>Turnover last year (AATO)</label><select id="aato"><option value="upto5">Up to ₹5 crore</option><option value="above5">Above ₹5 crore</option></select></div>
+    </div>
+    <label>Unit (UQC) for HSN summary</label>
+    <select id="uqc"><option value="PCS">PCS – Pieces</option><option value="NOS">NOS – Numbers</option><option value="PRS">PRS – Pairs</option><option value="SET">SET – Sets</option><option value="BOX">BOX – Box</option><option value="PAC">PAC – Packs</option><option value="KGS">KGS – Kilograms</option><option value="MTR">MTR – Metres</option><option value="OTH">OTH – Others</option></select>
+    <div class="note" id="freqNote" style="display:none">Quarterly (QRMP): GSTR-1 is filed once for the whole quarter. Import the Meesho reports of all three months.</div>
     <button class="btn" onclick="saveSetup()">Save &amp; continue →</button>
   </div>
 </section>
@@ -160,17 +165,24 @@ html.embedded .toast,html.embedded .semi-credit{display:none!important}
 <!-- ============ IMPORT ============ -->
 <section class="tab" id="t-import">
   <div class="card">
+    <h2>Excel template <span class="tag">all data in one file</span></h2>
+    <p style="margin:0;font-size:13px;color:var(--mute)">One workbook with every sheet this tool reads: <b>Seller details</b>, <b>Sales</b>, <b>Returns</b>, <b>Documents</b> (Table 13) and <b>GSTR-3B inputs</b>, plus a Read me and state list. Only the columns that matter are included.</p>
+    <div class="btns"><button class="btn" onclick="downloadTemplate(false)">⬇ Blank template</button><button class="btn alt" onclick="downloadTemplate(true)">⬇ With sample rows</button></div>
+    <div class="note">Fill it in Excel, Google Sheets or WPS, then upload the whole file below (all sheets import together). In the phone app, copy each sheet and use <b>Paste from Excel</b>.</div>
+  </div>
+
+  <div class="card">
     <h2>Import Meesho report</h2>
     <ol class="steps">
       <li>Meesho Supplier Panel → <b>Payments</b> → <b>Download</b> → <b>GST Report</b>.</li>
       <li>Extract the ZIP. You get <b>tcs_sales.xlsx</b> and <b>tcs_sales_return.xlsx</b>.</li>
-      <li>Upload both files below (XLSX or CSV).</li>
+      <li>Upload both files below (XLSX or CSV), or the filled TaxSphere template.</li>
     </ol>
     <label>File type</label>
     <select id="ftype"><option value="auto">Auto-detect from file name</option><option value="S">Sales (tcs_sales)</option><option value="R">Returns (tcs_sales_return)</option></select>
     <div class="drop" style="margin-top:10px">
       <input type="file" id="file" multiple accept=".xlsx,.xls,.csv">
-      <b>📂 Tap to choose files</b>tcs_sales / tcs_sales_return
+      <b>📂 Tap to choose files</b>tcs_sales / tcs_sales_return / TaxSphere template
     </div>
     <div class="note inapp" style="display:none">In the TaxSphere app the file picker may not open. If it doesn't, use <b>Paste from Excel</b> below.</div>
     <ul class="files" id="fileList"></ul>
@@ -188,7 +200,7 @@ html.embedded .toast,html.embedded .semi-credit{display:none!important}
       <li>Paste below, pick Sales or Returns, and tap Import. Repeat for <b>tcs_sales_return</b>.</li>
     </ol>
     <label>This data is</label>
-    <select id="pType"><option value="S">Sales (tcs_sales)</option><option value="R">Returns (tcs_sales_return)</option></select>
+    <select id="pType"><option value="S">Sales (tcs_sales / template Sales sheet)</option><option value="R">Returns (tcs_sales_return / template Returns sheet)</option><option value="seller">Seller details sheet</option><option value="docs">Documents sheet (Table 13)</option><option value="3b">GSTR-3B inputs sheet</option></select>
     <label>Pasted data (with header row)</label>
     <textarea id="pasteBox" rows="5" placeholder="Paste copied cells here" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:13px/1.4 ui-monospace,monospace;resize:vertical"></textarea>
     <button class="btn" onclick="importPaste()">Import pasted data</button>
@@ -243,6 +255,7 @@ html.embedded .toast,html.embedded .semi-credit{display:none!important}
   <div class="card">
     <h2>Export &amp; file</h2>
     <p style="margin:0 0 4px;font-size:13px;color:var(--mute)">CSVs follow the GST Offline Tool section layout, so you can import or copy them while filing.</p>
+    <button class="btn pink" onclick="exportJSON()">⬇ GSTR-1 JSON (upload on GST portal)</button>
     <button class="btn" onclick="exportB2CS()">⬇ B2CS (Table 7) CSV</button>
     <button class="btn" onclick="exportHSN()">⬇ HSN summary (Table 12, B2C) CSV</button>
     <button class="btn" onclick="exportT14()">⬇ ECO supplies (Table 14) CSV</button>
@@ -254,10 +267,11 @@ html.embedded .toast,html.embedded .semi-credit{display:none!important}
   <div class="card">
     <h2>Filing checklist</h2>
     <ol class="steps">
-      <li><b>GSTR-1</b> (11th monthly / 13th quarterly): fill Table 7 B2CS state-wise with Meesho GSTIN, Table 12 HSN (B2C tab), Table 14 supplies through ECO, and Table 13 documents issued.</li>
-      <li>Check <b>GSTR-2A → TCS Credit Received</b> and accept Meesho's TCS entry.</li>
-      <li><b>GSTR-3B</b> (20th / 22nd–24th): Table 3.1(a), Table 3.2 state-wise inter-state B2C, Table 4 ITC.</li>
-      <li>Pay balance using TCS cash ledger, then cash.</li>
+      <li><b>GSTR-1</b> (11th monthly / 13th after the quarter): upload the <b>GSTR-1 JSON</b> (Tables 7, 12, 13 and 14) via Prepare Offline, check the summary and file.</li>
+      <li>Found a mistake after filing GSTR-1? File <b>GSTR-1A</b> for the same period <b>before</b> GSTR-3B. GSTR-3B Tables 3.1/3.2 can't be edited any more.</li>
+      <li>Check <b>GSTR-2A → TCS credit received</b>, compare it in the GSTR-3B step (Match with Meesho) and accept Meesho's TCS entry.</li>
+      <li><b>GSTR-3B</b> (20th monthly / 22nd or 24th quarterly): Table 4 ITC from GSTR-2B (Meesho commission & shipping invoices), then pay using the TCS in your cash ledger first.</li>
+      <li>Returns older than 3 years from their due date can no longer be filed, so don't leave any month pending.</li>
     </ol>
     <div class="note">This tool prepares working figures. Verify them against your GSTR-2A/2B and portal auto-fill before submitting, and consult a GST practitioner if unsure. Figures are estimates, not tax advice.</div>
   </div>
@@ -306,6 +320,23 @@ if(EMB){document.documentElement.classList.add("embedded");
   addEventListener("load",tell);setTimeout(tell,50);}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const GSTIN_RE=/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+// GSTIN check digit (same method as the GST portal)
+function gstinCheck(g){g=String(g||"").toUpperCase().trim();if(!GSTIN_RE.test(g))return "format";
+  const cs="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";let sum=0;
+  for(let i=0;i<14;i++){const p=cs.indexOf(g[i])*(i%2?2:1);sum+=Math.floor(p/36)+p%36;}
+  if(cs[(36-sum%36)%36]!==g[14])return "checksum";return STATES.some(x=>x[0]===g.slice(0,2))?"ok":"state";}
+const ecoOk=()=>gstinCheck(DB.setup.eco)==="ok";
+// Return period: monthly = that month; quarterly = the quarter that contains the month (filed with the last month)
+function period(){const S=DB.setup,m=+S.month||1,y=+S.year||new Date().getFullYear();
+  if(S.freq==="Q"){const e=Math.ceil(m/3)*3;return {months:[e-2,e-1,e],end:e,y,label:`${MONTHS[e-3].slice(0,3)}–${MONTHS[e-1].slice(0,3)} ${y} (quarter)`,fp:String(e).padStart(2,"0")+y};}
+  return {months:[m],end:m,y,label:`${MONTHS[m-1]} ${y}`,fp:String(m).padStart(2,"0")+y};}
+// 3B due date for quarterly filers: 22nd for these states, 24th for the rest
+const Q22=["22","23","24","26","27","29","30","31","32","33","34","35","36","37","38"];
+function dues(){const p=period(),S=DB.setup,nx=new Date(p.y,p.end,1),f=d=>new Date(nx.getFullYear(),nx.getMonth(),d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"});
+  return S.freq==="Q"?{r1:f(13),r3b:f(Q22.includes((S.gstin||"").slice(0,2))?22:24)}:{r1:f(11),r3b:f(20)};}
+const HSN_DESC={"6204":"Women's suits, dresses, skirts","6211":"Track suits, other garments","6206":"Women's blouses, shirts","6104":"Women's knitted suits, dresses","6109":"T-shirts, vests","6105":"Men's knitted shirts","6203":"Men's suits, trousers","6205":"Men's shirts","6201":"Coats, jackets","6202":"Women's coats, jackets","6111":"Babies' garments","6209":"Babies' garments","6108":"Women's nightwear, lingerie","6212":"Brassieres","6214":"Shawls, scarves, dupattas","6217":"Clothing accessories","5208":"Cotton fabric","5407":"Synthetic fabric","6302":"Bed linen, towels","6304":"Furnishing articles","7117":"Imitation jewellery","7113":"Jewellery","6402":"Footwear (rubber/plastic)","6403":"Footwear (leather)","6404":"Footwear (textile)","4202":"Bags, wallets","3304":"Beauty, make-up products","3305":"Hair products","8517":"Mobile phones, accessories","8518":"Earphones, speakers","9503":"Toys","3924":"Plastic household articles","7323":"Kitchen articles (steel)","9404":"Mattresses, cushions","6110":"Sweaters, pullovers","6115":"Socks, stockings","6505":"Hats, caps","9102":"Watches","9004":"Spectacles, sunglasses","3926":"Plastic articles"};
+const hsnDesc=h=>HSN_DESC[String(h).slice(0,4)]||"Goods";
+const VALID_RATES=[0,0.1,0.25,1,1.5,3,5,6,7.5,12,18,28,40];
 // TaxSphere Android app: native bridge (saveFile) is injected into this frame or the parent.
 const BR=(()=>{try{return window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){return window.AndroidBridge||null;}})();
 const IN_APP=!!BR||/; wv\)/.test(navigator.userAgent);
@@ -334,26 +365,38 @@ function initSetup(){
   const s=DB.setup;
   $("gstin").value=s.gstin||"";$("tname").value=s.tname||"";$("ecoGstin").value=s.eco||"";
   $("month").value=s.month||pm.getMonth()+1;$("year").value=s.year||pm.getFullYear();
-  $("freq").value=s.freq||"M";$("tcsRate").value=s.tcs??0.5;
+  $("freq").value=s.freq||"M";$("tcsRate").value=s.tcs??0.5;$("aato").value=s.aato||"upto5";$("uqc").value=s.uqc||"PCS";
+  $("freq").onchange=()=>{$("freqNote").style.display=$("freq").value==="Q"?"":"none";};$("freq").onchange();
+  $("ecoGstin").oninput=checkEco;
   const it=DB.itc||{};$("itcI").value=it.i||0;$("itcC").value=it.c||0;$("itcS").value=it.s||0;$("tcsCash").value=it.tcs??"";
-  $("gstin").oninput=checkGstin;checkGstin();hdr();
+  $("gstin").oninput=checkGstin;checkGstin();checkEco();hdr();
 }
 function checkGstin(){
   const v=$("gstin").value.toUpperCase().trim();$("gstin").value=v;
   if(!v){$("gstinMsg").innerHTML="";return;}
-  $("gstinMsg").innerHTML=GSTIN_RE.test(v)
-    ?`<div class="note ok">✓ Valid format · Home state: ${stName(v.slice(0,2))}</div>`
+  const c=gstinCheck(v);
+  $("gstinMsg").innerHTML=c==="ok"?`<div class="note ok">✓ Valid GSTIN · Home state: ${stName(v.slice(0,2))}</div>`
+    :c==="checksum"?`<div class="note bad">This GSTIN's last character doesn't match (check digit). Check for a typing mistake.</div>`
+    :c==="state"?`<div class="note bad">The first two digits aren't a valid state code.</div>`
     :`<div class="note bad">GSTIN should be 15 characters, like 27ABCDE1234F1Z5</div>`;
+  checkEco();
 }
+function checkEco(){const e=$("ecoGstin"),v=e.value.toUpperCase().trim();e.value=v;const g=$("gstin").value.trim();
+  if(!v){$("ecoMsg").innerHTML="";return;}
+  const c=gstinCheck(v);
+  $("ecoMsg").innerHTML=c!=="ok"?`<div class="note bad">Meesho GSTIN looks wrong (${c==="checksum"?"check digit doesn't match":"format"}). Copy it from GSTR-2A → TCS credit.</div>`
+    :g&&v.slice(0,2)!==g.slice(0,2)?`<div class="note bad">Meesho's GSTIN should be from your own state (${stName(g.slice(0,2))}). Meesho collects TCS through its registration in your state.</div>`
+    :`<div class="note ok">✓ Valid e-commerce operator GSTIN</div>`;}
 function saveSetup(){
   const g=$("gstin").value.trim().toUpperCase();
-  if(!GSTIN_RE.test(g)){toast("Enter a valid GSTIN first");return;}
-  DB.setup={gstin:g,tname:$("tname").value.trim(),month:+$("month").value,year:+$("year").value,freq:$("freq").value,eco:$("ecoGstin").value.trim().toUpperCase(),tcs:+$("tcsRate").value||0};
+  const gc=gstinCheck(g);
+  if(gc!=="ok"){toast(gc==="checksum"?"GSTIN check digit doesn't match. Check it again.":"Enter a valid GSTIN first");return;}
+  DB.setup={gstin:g,tname:$("tname").value.trim(),month:+$("month").value,year:+$("year").value,freq:$("freq").value,eco:$("ecoGstin").value.trim().toUpperCase(),tcs:+$("tcsRate").value||0,aato:$("aato").value,uqc:$("uqc").value};
   persist();hdr();toast("Saved");showTab("import");
 }
 function hdr(){const s=DB.setup,p=$("hdrPeriod");
   $("hdrName").textContent=s.tname||"Meesho seller GST";
-  p.textContent=s.gstin?`${MONTHS[s.month-1]} ${s.year} · ${s.gstin}${DB.rows.length?" · "+DB.rows.length+" rows":""}`:"Set your GSTIN and month to start";
+  p.textContent=s.gstin?`${period().label} · ${s.gstin}${DB.rows.length?" · "+DB.rows.length+" rows":""}`:"Set your GSTIN and month to start";
   p.classList.toggle("set",!!s.gstin);if(typeof marks==="function")marks();}
 
 /* ---------------- Import ---------------- */
@@ -376,19 +419,72 @@ $("file").onchange=async e=>{
     try{
       let type=$("ftype").value;
       if(type==="auto")type=/return/i.test(f.name)?"R":"S";
-      const aoa=await readFile(f);
-      const n=ingest(aoa,type,f.name);
-      toast(`${f.name}: ${n} rows imported`);
+      const book=await XL.read(f,parseCSV);
+      toast(`${f.name}: ${importBook(book,type,f.name)}`);
     }catch(err){toast(f.name+": "+err.message);}
   }
   persist();renderFiles();
 };
-async function readFile(f){
-  if(/\.csv$/i.test(f.name))return parseCSV(await f.text());
-  if(!window.XLSX)throw new Error("Excel reader needs internet once. Save the file as CSV, or reconnect.");
-  const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});
-  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:""});
-}
+// A workbook can be Meesho's own report (one sheet) or the TaxSphere template (named sheets)
+function sheetKind(n){n=String(n).toLowerCase();if(/read ?me|state/.test(n))return null;if(/return/.test(n))return "R";if(/sale/.test(n))return "S";
+  if(/seller|setup/.test(n))return "seller";if(/document|table ?13/.test(n))return "docs";if(/3b|itc/.test(n))return "3b";return "";}
+function importBook(book,defType,fname){
+  const named=book.filter(sh=>sheetKind(sh.name)),out=[];
+  if(!named.length){const n=ingest(book[0].rows,defType,fname);return `${n} rows imported`;}
+  for(const sh of named){const k=sheetKind(sh.name);if(!sh.rows.length)continue;
+    try{if(k==="S"||k==="R"){if(sh.rows.length<2)continue;const n=ingest(sh.rows,k,`${fname} · ${sh.name}`);out.push(`${sh.name} ${n}`);}
+      else{const r=importSheet(k,sh.rows);if(r)out.push(r);}}catch(e){out.push(`${sh.name}: ${e.message}`);}}
+  persist();initSetup();if(typeof render==="function")render();
+  return out.length?out.join(" · "):"nothing to import (template is empty)";}
+const fieldMap=rows=>{const m={};rows.forEach(r=>{const k=norm(r[0]);if(k&&String(r[1]??"").trim()!=="")m[k]=String(r[1]).trim();});return m;};
+const fget=(m,...keys)=>{for(const k of keys){const nk=norm(k),hit=Object.keys(m).find(x=>x.startsWith(nk));if(hit)return m[hit];}return null;};
+function importSheet(k,rows){
+  if(k==="seller"){const m=fieldMap(rows),S=DB.setup;let n=0;const set=(key,v)=>{if(v!=null&&v!==""){S[key]=v;n++;}};
+    const g=fget(m,"GSTIN","Your GSTIN");if(g&&gstinCheck(g.toUpperCase())!=="format")set("gstin",g.toUpperCase());
+    set("tname",fget(m,"Trade name","Legal name","Name"));
+    const mo=fget(m,"Return month","Month");if(mo){const x=+mo||MONTHS.findIndex(z=>norm(z)===norm(mo).slice(0,norm(z).length))+1;if(x>=1&&x<=12)set("month",x);}
+    const y=+fget(m,"Year");if(y>2000)set("year",y);
+    const fr=fget(m,"Filing frequency","Frequency");if(fr)set("freq",/q/i.test(fr)?"Q":"M");
+    const e=fget(m,"Meesho GSTIN","E-commerce","ECO");if(e)set("eco",e.toUpperCase());
+    const t=parseFloat(fget(m,"TCS rate","TCS"));if(isFinite(t))set("tcs",t);
+    const a=fget(m,"Turnover","AATO");if(a)set("aato",/above|>|more/i.test(a)?"above5":"upto5");
+    const u=fget(m,"Unit","UQC");if(u)set("uqc",u.toUpperCase().slice(0,3));
+    return n?`Seller details ${n} fields`:"";}
+  if(k==="docs"){const h=rows[0].map(norm),ix=w=>h.findIndex(x=>x.startsWith(norm(w)));DB.docs=DB.docs||{};let n=0;
+    for(const r of rows.slice(1)){const d=String(r[ix("Document")]??r[0]).toLowerCase(),key=/credit/.test(d)?"cn":/invoice/.test(d)?"inv":null;if(!key)continue;
+      const v={from:String(r[ix("From")]??"").trim(),to:String(r[ix("To")]??"").trim(),tot:+r[ix("Total")]||0,cancel:+r[ix("Cancel")]||0};
+      if(v.from||v.tot){DB.docs[key]=v;n++;}}
+    return n?`Documents ${n}`:"";}
+  if(k==="3b"){const m=fieldMap(rows);DB.itc=DB.itc||{};let n=0;const num=v=>v==null||String(v).trim()===""?NaN:parseFloat(String(v).replace(/[,₹\s]/g,""));
+    [["i","IGST ITC"],["c","CGST ITC"],["s","SGST ITC"]].forEach(([k2,l])=>{const v=num(fget(m,l));if(isFinite(v)){DB.itc[k2]=v;n++;}});
+    const tc=num(fget(m,"TCS in cash","TCS credit"));if(isFinite(tc)){DB.itc.tcs=tc;n++;}
+    const rv=num(fget(m,"Net value reported","Meesho reported"));if(isFinite(rv)){DB.recon=rv;n++;}
+    initSetup();return n?`GSTR-3B inputs ${n}`:"";}
+  return "";}
+function downloadTemplate(withSample){
+  const S=DB.setup||{},P=new Date(),pm=new Date(P.getFullYear(),P.getMonth()-1,1),mo=MONTHS[pm.getMonth()],yr=pm.getFullYear();
+  const H=["sub_order_num","order_date","hsn_code","quantity","gst_rate","total_taxable_sale_value","end_customer_state_new"],W=[22,13,11,10,10,24,26];
+  const d=n=>`${String(Math.min(28,n)).padStart(2,"0")}-${String(pm.getMonth()+1).padStart(2,"0")}-${yr}`;
+  const sales=withSample?[["SO-10001",d(2),"6204",1,5,449.52,"Maharashtra"],["SO-10002",d(3),"6211",2,5,898.10,"Delhi"],["SO-10003",d(5),"7117",1,3,215.53,"Karnataka"],["SO-10004",d(8),"6204",1,18,2711.86,"Tamil Nadu"],["SO-10005",d(11),"6109",1,5,320.00,"Uttar Pradesh"]]:[];
+  const rets=withSample?[["SO-10002",d(14),"6211",1,5,449.05,"Delhi"]]:[];
+  const sheets=[
+    {name:"Read me",info:true,widths:[26,90],rows:[["TaxSphere · Meesho GST template",""],["How to use","Fill the sheets you need and upload this file in Meesho GST Filing → Import. Every sheet imports together. In the phone app, copy a sheet (with its header row) and use Paste from Excel."],
+      ["Seller details","Your GSTIN, name, return month and year, Monthly/Quarterly, Meesho's GSTIN (from GSTR-2A → TCS credit), TCS rate (0.5%), turnover band and unit."],
+      ["Sales","One row per Meesho sub-order from tcs_sales. You can paste the matching columns straight from Meesho's report; other columns of that report are not needed."],
+      ["Returns","One row per returned sub-order from tcs_sales_return. Enter the taxable value as a positive number."],
+      ["Documents","Table 13: first and last invoice and credit note numbers, total issued and cancelled."],
+      ["GSTR-3B inputs","Eligible ITC from GSTR-2B (Meesho commission and shipping invoices), the TCS credit in your cash ledger, and the net value Meesho reported (for matching)."],
+      ["Columns","sub_order_num: Meesho sub-order number · order_date: DD-MM-YYYY · hsn_code: 4 digits (6 if turnover above ₹5 crore) · quantity: number of pieces · gst_rate: 0, 3, 5, 18 or 40 · total_taxable_sale_value: value excluding GST · end_customer_state_new: buyer's state name or code"],
+      ["Rates","From 22 Sep 2025 most goods are 5% or 18% (apparel above ₹2,500 per piece is 18%). Imitation jewellery is 3%."],
+      ["Leave out","Order status, product name, SKU, payment and settlement columns are not needed. Cancelled orders should not be listed."]]},
+    {name:"Seller details",head:["Field","Value","Notes"],widths:[30,28,50],rows:[["GSTIN",withSample?"27AAPFU0939F1ZV":S.gstin||"","15 characters"],["Trade name",withSample?"Sample Fashion Store":S.tname||"",""],["Return month",withSample?mo:S.month?MONTHS[S.month-1]:"","January … December or 1-12"],["Year",withSample?yr:S.year||"",""],["Filing frequency",withSample?"Monthly":S.freq==="Q"?"Quarterly":S.freq?"Monthly":"","Monthly or Quarterly"],["Meesho GSTIN",withSample?"27AAACZ1234E1ZN":S.eco||"","From GSTR-2A → TCS credit received"],["TCS rate %",withSample?0.5:S.tcs??"",""],["Turnover last year",withSample?"Up to 5 crore":S.aato==="above5"?"Above 5 crore":S.aato?"Up to 5 crore":"","Up to 5 crore / Above 5 crore"],["Unit (UQC)",withSample?"PCS":S.uqc||"","PCS, NOS, PRS, SET, BOX, PAC, KGS, MTR"]]},
+    {name:"Sales",head:H,widths:W,rows:sales},
+    {name:"Returns",head:H,widths:W,rows:rets},
+    {name:"Documents",head:["Document","From","To","Total issued","Cancelled"],widths:[18,20,20,14,12],rows:[["Invoices",withSample?"MSH/26/0001":"",withSample?"MSH/26/0005":"",withSample?5:"",withSample?0:""],["Credit notes",withSample?"MSH-CN/26/001":"",withSample?"MSH-CN/26/001":"",withSample?1:"",withSample?0:""]]},
+    {name:"GSTR-3B inputs",head:["Field","Value","Notes"],widths:[34,16,50],rows:[["IGST ITC",withSample?120:"","From GSTR-2B"],["CGST ITC",withSample?45:"",""],["SGST ITC",withSample?45:"",""],["TCS in cash ledger",withSample?"":"","Leave blank to use the estimate"],["Net value reported by Meesho",withSample?"":"","GSTR-2A → TCS credit received"]]},
+    {name:"States",head:["Code","State"],widths:[8,40],rows:STATES.map(x=>[x[0],x[1]])}];
+  window.__noGate=1;try{XL.save("TaxSphere_Meesho_GST_template"+(withSample?"_sample":""),sheets,!!(BR&&BR.saveFile),(n,t,m)=>{dl(n,t,m);return n;});}finally{window.__noGate=0;}
+  toast("Template downloaded");}
 function parseCSV(t){
   const out=[];let row=[],cur="",q=false;
   for(let i=0;i<t.length;i++){const c=t[i];
@@ -403,7 +499,8 @@ function ingest(aoa,type,fname){
   let hi=aoa.findIndex(r=>pick(r.map(String),COLS.taxable)>-1&&pick(r.map(String),COLS.state)>-1);
   if(hi<0)throw new Error("couldn't find taxable value / state columns");
   const h=aoa[hi].map(String),ix={};for(const k in COLS)ix[k]=pick(h,COLS[k],['gstin','eco','month','fy','name'].includes(k));
-  const fid=Date.now()+Math.random().toString(36).slice(2,6);let n=0,skipped=0;const meta={};
+  const fid=Date.now()+Math.random().toString(36).slice(2,6);let n=0,skipped=0,dup=0;const meta={};
+  const seen=new Set(DB.rows.filter(x=>x.ord).map(x=>x.t+"|"+x.ord+"|"+x.val));
   for(const r of aoa.slice(hi+1)){
     const val=parseFloat(String(r[ix.taxable]).replace(/[,₹\s]/g,""));
     if(!isFinite(val)||val===0)continue;
@@ -411,8 +508,18 @@ function ingest(aoa,type,fname){
     let rate=ix.rate>-1?parseFloat(r[ix.rate]):NaN; if(!isFinite(rate))rate=5; if(rate>0&&rate<1)rate=r2(rate*100);
     if(ix.status>-1&&/cancel/i.test(r[ix.status]))continue;
     const q=ix.qty>-1?parseFloat(r[ix.qty]):1;
+    const ordv=ix.order>-1?String(r[ix.order]).trim():"";
+    if(ordv&&seen.has(type+"|"+ordv+"|"+val)){dup++;continue;} if(ordv)seen.add(type+"|"+ordv+"|"+val);
+    let rm=ix.month>-1?+r[ix.month]:0,ry=ix.fy>-1?+r[ix.fy]:0;
+    if((!rm||!ry)&&ix.date>-1){const dv=r[ix.date];let dt=null;
+      if(typeof dv==="number"&&dv>20000)dt=new Date(Math.round((dv-25569)*864e5));
+      else{const m1=String(dv).match(/(\d{4})-(\d{1,2})-(\d{1,2})/),m2=String(dv).match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+        if(m1)dt=new Date(+m1[1],+m1[2]-1,+m1[3]);else if(m2)dt=new Date(+m2[3],+m2[2]-1,+m2[1]);}
+      if(dt&&!isNaN(dt)){rm=dt.getMonth()+1;ry=dt.getFullYear();}}
     // keep sign: negative rows in tcs_sales are price adjustments/discounts (qty 0)
-    DB.rows.push({f:fid,t:type,st,rate,val,hsn:ix.hsn>-1?String(r[ix.hsn]).trim():"",qty:isFinite(q)?q:1,ord:ix.order>-1?String(r[ix.order]):""});n++;
+    const row={f:fid,t:type,st,rate,val,hsn:ix.hsn>-1?String(r[ix.hsn]).trim().replace(/\.0+$/,""):"",qty:isFinite(q)?q:1,ord:ordv};
+    if(rm>=1&&rm<=12&&ry>2000){row.m=rm;row.y=ry;}
+    DB.rows.push(row);n++;
     if(!meta.gstin&&ix.gstin>-1&&GSTIN_RE.test(String(r[ix.gstin]).trim()))meta.gstin=String(r[ix.gstin]).trim();
     if(!meta.eco&&ix.eco>-1&&GSTIN_RE.test(String(r[ix.eco]).trim()))meta.eco=String(r[ix.eco]).trim();
     if(!meta.month&&ix.month>-1&&+r[ix.month])meta.month=+r[ix.month];
@@ -427,7 +534,7 @@ function ingest(aoa,type,fname){
   if(S.tcs==null)S.tcs=0.5;if(!S.freq)S.freq="M";
   if(ch){initSetup();}
   DB.files.push({id:fid,name:fname,type,n});
-  if(skipped)setTimeout(()=>toast(`${skipped} rows skipped (unknown state)`),2600);
+  if(skipped||dup)setTimeout(()=>toast([skipped?`${skipped} rows skipped (unknown state)`:"",dup?`${dup} duplicate orders skipped (already imported)`:""].filter(Boolean).join(" · ")),2600);
   return n;
 }
 function renderFiles(){
@@ -445,7 +552,9 @@ function importPaste(){
   const t=$("pasteBox").value;if(!t.trim()){toast("Paste the copied cells first");return;}
   try{
     const aoa=t.includes("\t")?t.split(/\r?\n/).map(l=>l.split("\t")).filter(r=>r.some(x=>x.trim()!=="")):parseCSV(t);
-    const type=$("pType").value,n=ingest(aoa,type,(type==="R"?"Pasted returns":"Pasted sales")+" "+new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}));
+    const type=$("pType").value;
+    if(!["S","R"].includes(type)){const r=importSheet(type,aoa);persist();renderFiles();$("pasteBox").value="";toast(r||"Nothing recognised. Paste the sheet with its header row.");return;}
+    const n=ingest(aoa,type,(type==="R"?"Pasted returns":"Pasted sales")+" "+new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}));
     persist();renderFiles();$("pasteBox").value="";toast(`${n} rows imported`);
   }catch(err){toast("Couldn't read it: "+err.message);}
 }
@@ -455,10 +564,12 @@ function clearData(){const b=$("clrBtn");
   b._arm=0;b.textContent="Clear all data";DB.rows=[];DB.files=[];persist();renderFiles();toast("Cleared");}
 function loadSample(){
   if(!GSTIN_RE.test(DB.setup.gstin||"")){const now=new Date(),pm=new Date(now.getFullYear(),now.getMonth()-1,1);
-    DB.setup={gstin:"27AAPFU0939F1ZV",tname:"Sample Fashion Store",month:pm.getMonth()+1,year:pm.getFullYear(),freq:"M",eco:"27AAACZ1234E1ZK",tcs:0.5};initSetup();}
+    DB.setup={gstin:"27AAPFU0939F1ZV",tname:"Sample Fashion Store",month:pm.getMonth()+1,year:pm.getFullYear(),freq:"M",eco:"27AAACZ1234E1ZN",tcs:0.5,aato:"upto5",uqc:"PCS"};initSetup();}
   const home=(DB.setup.gstin||"27").slice(0,2),sts=[home,"07","09","29","33","19","24","08"],h=["6204","6211","6109","7117"];
   const fid="sample";DB.rows=DB.rows.filter(r=>r.f!==fid);DB.files=DB.files.filter(f=>f.id!==fid);
-  for(let i=0;i<120;i++){const v=r2(150+Math.random()*650);DB.rows.push({f:fid,t:i%9===0?"R":"S",st:sts[i%sts.length],rate:i%5===0?12:5,val:v,hsn:h[i%4],qty:1,ord:"S"+i});}
+  const P=period();
+  for(let i=0;i<120;i++){const big=i%7===0,v=r2(big?2600+Math.random()*1500:150+Math.random()*650);DB.rows.push({f:fid,t:i%9===0?"R":"S",st:sts[i%sts.length],rate:big&&h[i%4]!=="7117"?18:h[i%4]==="7117"?3:5,val:v,hsn:h[i%4],qty:1,ord:"S"+i,m:P.end,y:P.y});}
+  DB.docs={inv:{from:"MSH/26/0001",to:"MSH/26/0107",tot:107,cancel:0},cn:{from:"MSH-CN/26/001",to:"MSH-CN/26/014",tot:14,cancel:0}};
   DB.files.push({id:fid,name:"Sample data",type:"S",n:120});persist();renderFiles();hdr();toast("Sample loaded: 120 orders");showTab("g1");
 }
 
@@ -483,8 +594,51 @@ function compute(){
   // 3.2: inter-state to unregistered, by POS
   const t32={};posArr.filter(p=>p.inter).forEach(p=>{t32[p.st]=t32[p.st]||{st:p.st,val:0,i:0};t32[p.st].val+=p.val;t32[p.st].i+=p.i;});
   const tcsEst={i:tot.inter*tcsR,c:tot.intra*tcsR/2,s:tot.intra*tcsR/2};
-  return {home,posArr,hsnArr,t32:Object.values(t32),tot,tcsEst,tax:tot.i+tot.c+tot.s};
+  const P=period(),out=DB.rows.filter(r=>r.m&&(r.y!==P.y||!P.months.includes(r.m))).length;
+  return {home,posArr,hsnArr,t32:Object.values(t32),tot,tcsEst,tax:tot.i+tot.c+tot.s,outside:out};
 }
+
+/* ---------------- GSTR-1 JSON (upload on the GST portal: Prepare offline → Upload) ---------------- */
+function docsDet(){const D=DB.docs||{},out=[];
+  const one=(n,x)=>{if(!x||!x.from||!x.to||!(+x.tot>0))return;const c=Math.max(0,+x.cancel||0);out.push({doc_num:n,docs:[{num:1,from:String(x.from).slice(0,16),to:String(x.to).slice(0,16),totnum:+x.tot,cancel:c,net_issue:+x.tot-c}]});};
+  one(1,D.inv);one(5,D.cn);return out;}
+function r1Build(){
+  const d=compute(),S=DB.setup,eco=ecoOk()?S.eco:"",P=period();
+  const b2cs=d.posArr.filter(p=>p.val>0.004).map(p=>{const o={sply_ty:p.inter?"INTER":"INTRA",pos:p.st,typ:eco?"E":"OE",rt:p.rate,txval:r2(p.val)};
+    if(eco)o.etin=eco;if(p.inter)o.iamt=r2(p.i);else{o.camt=r2(p.c);o.samt=r2(p.s);}o.csamt=0;return o;});
+  const neg=d.posArr.filter(p=>p.val<-0.004);
+  const hsnOk=d.hsnArr.filter(h=>h.val>0.004),hsnNeg=d.hsnArr.filter(h=>h.val<-0.004);
+  const hsn_b2c=hsnOk.map((h,i)=>({num:i+1,hsn_sc:String(h.hsn),desc:hsnDesc(h.hsn),uqc:S.uqc||"PCS",qty:Math.max(0,h.qty),rt:h.rate,txval:r2(h.val),iamt:r2(h.i),camt:r2(h.c),samt:r2(h.s),csamt:0}));
+  const j={gstin:S.gstin,fp:P.fp,version:"GST3.0.4",hash:"hash"};
+  if(b2cs.length)j.b2cs=b2cs;
+  j.hsn={hsn_b2b:[],hsn_b2c};
+  j.doc_issue={doc_det:docsDet()};
+  if(eco&&b2cs.length){const sum=k=>r2(b2cs.reduce((a,x)=>a+(x[k]||0),0));j.supeco={clttx:[{etin:eco,suppval:sum("txval"),igst:sum("iamt"),cgst:sum("camt"),sgst:sum("samt"),cess:0}]};}
+  // checks
+  const iss=[],S2=DB.setup,minH=S2.aato==="above5"?6:4,after=P.y>2025||(P.y===2025&&P.end>=10);
+  if(gstinCheck(S2.gstin)!=="ok")iss.push(["e","Your GSTIN is not valid. Fix it in Setup."]);
+  if(!b2cs.length)iss.push(["e","No positive sales to report for this period."]);
+  if(!S2.eco)iss.push(["w","Meesho's GSTIN is missing, so Table 7 uses type OE and Table 14 is left out. Add it in Setup."]);
+  else if(!eco)iss.push(["e","Meesho's GSTIN in Setup is not valid. Table 14 can't be filled until it's fixed."]);
+  const badH=hsnOk.filter(h=>!/^\d+$/.test(h.hsn)||h.hsn.length<minH);
+  if(badH.length)iss.push(["e",`${badH.length} HSN line(s) have a missing or short HSN (need ${minH}+ digits): ${badH.slice(0,4).map(h=>esc(h.hsn)).join(", ")}`]);
+  const badR=[...new Set(d.posArr.map(p=>p.rate).filter(r=>!VALID_RATES.includes(r)))];
+  if(badR.length)iss.push(["e",`Rates not allowed on the portal: ${badR.join("%, ")}%`]);
+  const old=[...new Set(d.posArr.map(p=>p.rate).filter(r=>r===12||r===28))];
+  if(after&&old.length)iss.push(["w",`${old.join("% and ")}% rates found. From 22 Sep 2025 most goods moved to 5% or 18% (apparel above ₹2,500 is 18%). Check your product rates in the Meesho Supplier Panel.`]);
+  if(neg.length)iss.push(["w",`${neg.length} state/rate line(s) are negative (returns more than sales) and are left out of the JSON: ${neg.map(p=>p.st+"-"+esc(stName(p.st))+" @"+p.rate+"% "+inr(p.val)).join("; ")}. Report them in Table 10 (B2CS amendment) for the month of the original sale.`]);
+  if(hsnNeg.length)iss.push(["w",`${hsnNeg.length} HSN line(s) are negative and left out of Table 12.`]);
+  if(d.outside)iss.push(["w",`${d.outside} imported row(s) belong to a different month than ${esc(P.label)}. Check you imported the right Meesho report.`]);
+  if(!j.doc_issue.doc_det.length)iss.push(["w","Table 13 (documents issued) is empty. Add your invoice number range below. Most portals accept the return without it, but it is required."]);
+  return {j,iss,errors:iss.filter(x=>x[0]==="e").length};
+}
+function exportJSON(){if(!guard())return;const R=r1Build();
+  if(R.errors){showTab("g1");toast("Fix the red items first, then download");return;}
+  dl(`GSTR1_${DB.setup.gstin}_${R.j.fp}.json`,JSON.stringify(R.j),"application/json");}
+function saveDocs(){const v=id=>$(id).value.trim();
+  DB.docs={inv:{from:v("dInvF"),to:v("dInvT"),tot:+v("dInvN")||0,cancel:+v("dInvC")||0},cn:{from:v("dCnF"),to:v("dCnT"),tot:+v("dCnN")||0,cancel:+v("dCnC")||0}};
+  persist();render();toast("Documents saved");}
+function saveRecon(){DB.recon=$("reconVal").value===""?null:+$("reconVal").value;persist();render();toast("Updated");}
 
 /* ---------------- Render GSTR-1 ---------------- */
 function needSetup(){const smp=`<button class="btn alt" onclick="loadSample()">Try sample data</button>`;
@@ -493,8 +647,16 @@ function needSetup(){const smp=`<button class="btn alt" onclick="loadSample()">T
 function render(){
   const ns=needSetup();if(ns){$("g1").innerHTML=ns;$("g3").innerHTML=ns;return;}
   const d=compute(),T=d.tot,eco=DB.setup.eco||"—";
-  const neg=d.posArr.filter(p=>p.val<0);
+  const neg=d.posArr.filter(p=>p.val<0),R=r1Build(),DU=dues(),D=DB.docs||{},nS=DB.rows.filter(r=>r.t==="S").length,nR=DB.rows.filter(r=>r.t==="R").length;
+  const iv=(x,k)=>esc(((D[x]||{})[k])??"");
   $("g1").innerHTML=`
+  <div class="card"><h2>GSTR-1 JSON <span class="tag">upload on GST portal</span></h2>
+    <p style="margin:0 0 8px;font-size:13px;color:var(--mute)">Period <b>${esc(period().label)}</b> · due <b>${DU.r1}</b>. Contains Table 7 (B2CS), Table 12 (HSN B2C), Table 13 (documents) and Table 14 (Meesho).</p>
+    ${R.iss.length?R.iss.map(([t,m])=>`<div class="note ${t==="e"?"bad":""}">${t==="e"?"✗":"!"} ${m}</div>`).join(""):`<div class="note ok">✓ All checks passed. Ready to upload.</div>`}
+    <button class="btn" onclick="exportJSON()" ${R.errors?'style="opacity:.55"':""}>⬇ Download GSTR-1 JSON</button>
+    <details style="margin-top:10px;font-size:13px"><summary style="cursor:pointer;font-weight:600;color:var(--accent)">How to upload on the GST portal</summary>
+      <ol class="steps" style="margin-top:6px"><li>gst.gov.in → <b>Services → Returns → Returns Dashboard</b> → pick the period.</li><li>GSTR-1 → <b>Prepare Offline → Upload</b> → choose this JSON file.</li><li>Wait for “Processed”. If there's an error report, open it, fix here and upload again.</li><li><b>Prepare Online</b> → check the summary (Tables 7, 12, 13, 14) → Generate summary → File with DSC/EVC.</li></ol></details>
+  </div>`+`
   <div class="card"><h2>Summary</h2>
     <div class="kpis">
       <div class="kpi"><small>Gross sales</small><strong>${inr(T.gS)}</strong></div>
@@ -513,7 +675,7 @@ function render(){
   </div>
   <div class="card"><h2>Table 12 – HSN summary <span class="tag">B2C tab</span></h2>
     <div class="tbl"><table><thead><tr><th>HSN</th><th>Rate</th><th>UQC</th><th>Qty</th><th>Taxable</th><th>IGST</th><th>CGST</th><th>SGST</th></tr></thead><tbody>
-    ${d.hsnArr.map(h=>`<tr><td>${esc(h.hsn)}</td><td>${h.rate}%</td><td>NOS</td><td>${h.qty}</td><td>${inr(h.val)}</td><td>${inr(h.i)}</td><td>${inr(h.c)}</td><td>${inr(h.s)}</td></tr>`).join("")}
+    ${d.hsnArr.map(h=>`<tr><td>${esc(h.hsn)}</td><td>${h.rate}%</td><td>${esc(DB.setup.uqc||"PCS")}</td><td>${h.qty}</td><td>${inr(h.val)}</td><td>${inr(h.i)}</td><td>${inr(h.c)}</td><td>${inr(h.s)}</td></tr>`).join("")}
     </tbody></table></div>
     ${d.hsnArr.some(h=>h.hsn==="NA"||h.hsn.length<4)?`<div class="note bad">Some rows have missing/short HSN. Use at least 4 digits (6 if turnover &gt; ₹5 crore).</div>`:""}
   </div>
@@ -522,8 +684,14 @@ function render(){
     <tbody><tr><td>${esc(eco)}</td><td>${inr(T.net)}</td><td>${inr(T.i)}</td><td>${inr(T.c)}</td><td>${inr(T.s)}</td></tr></tbody></table></div>
   </div>
   <div class="card"><h2>Table 13 – Documents issued</h2>
-    <p style="margin:0;font-size:13px">Invoices (sub-orders): <b>${DB.rows.filter(r=>r.t==="S").length}</b> · Credit notes (returns): <b>${DB.rows.filter(r=>r.t==="R").length}</b></p>
-    <div class="note">Enter the actual invoice/credit note serial ranges from your Meesho invoices.</div>
+    <p style="margin:0;font-size:13px;color:var(--mute)">Imported: <b>${nS}</b> sales (invoices) · <b>${nR}</b> returns (credit notes). Copy the first and last numbers from your Meesho invoices (Supplier Panel → Payments / Orders → invoices).</p>
+    <h3>Invoices for outward supply</h3>
+    <div class="row"><div><label>From</label><input id="dInvF" value="${iv("inv","from")}" maxlength="16"></div><div><label>To</label><input id="dInvT" value="${iv("inv","to")}" maxlength="16"></div></div>
+    <div class="row"><div><label>Total issued</label><input id="dInvN" type="number" value="${iv("inv","tot")||nS}"></div><div><label>Cancelled</label><input id="dInvC" type="number" value="${iv("inv","cancel")||0}"></div></div>
+    <h3>Credit notes</h3>
+    <div class="row"><div><label>From</label><input id="dCnF" value="${iv("cn","from")}" maxlength="16"></div><div><label>To</label><input id="dCnT" value="${iv("cn","to")}" maxlength="16"></div></div>
+    <div class="row"><div><label>Total issued</label><input id="dCnN" type="number" value="${iv("cn","tot")||nR}"></div><div><label>Cancelled</label><input id="dCnC" type="number" value="${iv("cn","cancel")||0}"></div></div>
+    <button class="btn alt" onclick="saveDocs()">Save documents</button>
   </div>`;
   renderG3(d);
 }
@@ -542,7 +710,9 @@ function setoff(d){
 }
 function renderG3(d){
   const T=d.tot,S=setoff(d),cashTot=S.cash.i+S.cash.c+S.cash.s;
+  const DU=dues(),RV=DB.recon,diff=RV!=null?r2(T.net-RV):null,pct=RV?Math.abs(diff)/Math.abs(RV)*100:0;
   $("g3").innerHTML=`
+  <div class="note" style="margin:0 0 12px">GSTR-3B due <b>${DU.r3b}</b>. Table 3.1 and 3.2 now fill in automatically from your GSTR-1 and can't be edited in GSTR-3B (from the July 2025 period). To correct them, file <b>GSTR-1A</b> for the same period before filing GSTR-3B.</div>
   <div class="card"><h2>Table 3.1(a) – Outward taxable supplies</h2>
     <div class="tbl"><table><thead><tr><th>Field</th><th>Amount</th></tr></thead><tbody>
       <tr><td>Total taxable value</td><td>${inr(T.net)}</td></tr>
@@ -569,45 +739,139 @@ function renderG3(d){
       <div class="kpi"><small>ITC carried forward</small><strong>${inr(S.leftItc.i+S.leftItc.c+S.leftItc.s)}</strong></div>
     </div>
     <div class="note">TCS is credited to your electronic cash ledger only after Meesho files GSTR-8 and you accept it. Enter the actual amount in the field above for exact figures. Set-off order is simplified; the portal's own set-off screen is final.</div>
+  </div>
+  <div class="card"><h2>Match with Meesho's GSTR-8 <span class="tag">reconciliation</span></h2>
+    <p style="margin:0;font-size:13px;color:var(--mute)">On the GST portal open <b>GSTR-2A → TCS credit received</b> (or Services → Ledgers → TCS) and enter the <b>net value</b> Meesho reported for you this period.</p>
+    <label>Net value reported by Meesho (₹)</label><input id="reconVal" type="number" step="0.01" value="${RV??""}" placeholder="from GSTR-2A TCS credit">
+    <button class="btn alt" onclick="saveRecon()">Compare</button>
+    ${RV!=null?`<div class="kpis" style="margin-top:10px"><div class="kpi"><small>Your net value</small><strong>${inr(T.net)}</strong></div><div class="kpi"><small>Meesho reported</small><strong>${inr(RV)}</strong></div>
+      <div class="kpi big"><small>Difference</small><strong>${inr(diff)}</strong></div></div>
+      ${pct<=1?`<div class="note ok">✓ Matches within 1%. Accept the TCS credit in GSTR-2A.</div>`:`<div class="note bad">Differs by ${pct.toFixed(1)}%. Check for missing report files, late returns of earlier months, or orders cancelled after the report. Mismatches can lead to a notice (DRC-01C/ASMT-10), so explain or correct them via GSTR-1A.</div>`}`:""}
   </div>`;
 }
 
 /* ---------------- Exports ---------------- */
 function dl(name,text,mime="text/csv"){
-  if(BR&&BR.saveFile){try{BR.saveFile(name,mime,(/excel/.test(mime)?"":"﻿")+text);return;}catch(e){}}
-  const b=new Blob(["﻿"+text],{type:mime});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast("Downloaded "+name);}
+  const bom=/excel|json/.test(mime)?"":"﻿";   // the GST portal rejects JSON that starts with a BOM
+  if(BR&&BR.saveFile){try{BR.saveFile(name,mime,bom+text);return;}catch(e){}}
+  const b=new Blob([bom+text],{type:mime});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast("Downloaded "+name);}
 const csv=rows=>rows.map(r=>r.map(x=>/[",\n]/.test(String(x))?`"${String(x).replace(/"/g,'""')}"`:x).join(",")).join("\n");
 const tag=()=>`${DB.setup.gstin||"GSTIN"}_${String(DB.setup.month||"").padStart(2,"0")}${DB.setup.year||""}`;
 function guard(){const n=needSetup();if(n){toast("Add GSTIN and import data first");return false;}return true;}
 function exportB2CS(){if(!guard())return;const d=compute(),eco=DB.setup.eco||"";
   dl(`B2CS_${tag()}.csv`,csv([["Type","Place Of Supply","Applicable % of Tax Rate","Rate","Taxable Value","Cess Amount","E-Commerce GSTIN"],...d.posArr.map(p=>[eco?"E":"OE",`${p.st}-${stName(p.st)}`,"",p.rate,r2(p.val),0,eco])]));}
 function exportHSN(){if(!guard())return;const d=compute();
-  dl(`HSN_B2C_${tag()}.csv`,csv([["HSN","Description","UQC","Total Quantity","Total Value","Rate","Taxable Value","Integrated Tax Amount","Central Tax Amount","State/UT Tax Amount","Cess Amount"],...d.hsnArr.map(h=>[h.hsn,"","NOS-NUMBERS",h.qty,r2(h.val+h.i+h.c+h.s),h.rate,r2(h.val),r2(h.i),r2(h.c),r2(h.s),0])]));}
+  dl(`HSN_B2C_${tag()}.csv`,csv([["HSN","Description","UQC","Total Quantity","Total Value","Rate","Taxable Value","Integrated Tax Amount","Central Tax Amount","State/UT Tax Amount","Cess Amount"],...d.hsnArr.map(h=>[h.hsn,hsnDesc(h.hsn),({PCS:"PCS-PIECES",NOS:"NOS-NUMBERS",PRS:"PRS-PAIRS",SET:"SET-SETS",BOX:"BOX-BOX",PAC:"PAC-PACKS",KGS:"KGS-KILOGRAMS",MTR:"MTR-METERS",OTH:"OTH-OTHERS"})[DB.setup.uqc||"PCS"],h.qty,r2(h.val+h.i+h.c+h.s),h.rate,r2(h.val),r2(h.i),r2(h.c),r2(h.s),0])]));}
 function exportT14(){if(!guard())return;const d=compute(),T=d.tot;
   dl(`Table14_ECO_${tag()}.csv`,csv([["GSTIN of E-Commerce Operator","Net value of supplies","Integrated tax","Central tax","State/UT tax","Cess"],[DB.setup.eco||"",r2(T.net),r2(T.i),r2(T.c),r2(T.s),0]]));}
-// Excel 2003 XML workbook: plain text, opens in Excel/Sheets/WPS, and can go through the app's text-only saveFile bridge.
-function xmlBook(sheets){
-  const x=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const cell=v=>typeof v==="number"&&isFinite(v)?`<Cell><Data ss:Type="Number">${v}</Data></Cell>`:`<Cell><Data ss:Type="String">${x(v)}</Data></Cell>`;
-  return `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">`+
-    sheets.map(([n,a])=>`<Worksheet ss:Name="${x(n)}"><Table>${a.map(r=>`<Row>${r.map(cell).join("")}</Row>`).join("")}</Table></Worksheet>`).join("")+`</Workbook>`;
-}
 function exportXlsx(){if(!guard())return;
-  const d=compute(),T=d.tot,S=setoff(d),sheets=[];
-  const useXml=(BR&&BR.saveFile)||!window.XLSX;
-  const wb=useXml?null:XLSX.utils.book_new(),add=(n,a)=>useXml?sheets.push([n,a]):XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),n);
-  add("Summary",[["GSTIN",DB.setup.gstin],["Name",DB.setup.tname||""],["Period",`${MONTHS[DB.setup.month-1]} ${DB.setup.year}`],["Meesho GSTIN",DB.setup.eco||""],[],["Gross sales",r2(T.gS)],["Returns",r2(T.gR)],["Net taxable",r2(T.net)],["IGST",r2(T.i)],["CGST",r2(T.c)],["SGST",r2(T.s)],["TCS estimate",r2(d.tcsEst.i+d.tcsEst.c+d.tcsEst.s)],["Cash payable (est.)",r2(S.cash.i+S.cash.c+S.cash.s)]]);
-  add("B2CS",[["POS","Rate","Taxable","IGST","CGST","SGST"],...d.posArr.map(p=>[`${p.st}-${stName(p.st)}`,p.rate,r2(p.val),r2(p.i),r2(p.c),r2(p.s)])]);
-  add("HSN",[["HSN","Rate","Qty","Taxable","IGST","CGST","SGST"],...d.hsnArr.map(h=>[h.hsn,h.rate,h.qty,r2(h.val),r2(h.i),r2(h.c),r2(h.s)])]);
-  add("3B_3.2",[["POS","Taxable","IGST"],...d.t32.map(x=>[`${x.st}-${stName(x.st)}`,r2(x.val),r2(x.i)])]);
-  add("Rows",[["Type","State","Rate","Taxable","HSN","Qty","Sub-order"],...DB.rows.map(r=>[r.t==="R"?"Return":"Sale",r.st,r.rate,r.val,r.hsn,r.qty,r.ord])]);
-  if(useXml){dl(`Meesho_GST_${tag()}.xls`,xmlBook(sheets),"application/vnd.ms-excel");return;}
-  XLSX.writeFile(wb,`Meesho_GST_${tag()}.xlsx`);toast("Excel downloaded");}
+  const d=compute(),T=d.tot,S=setoff(d),P=period();
+  const sheets=[
+    {name:"Summary",info:true,widths:[28,22],rows:[["GSTIN",DB.setup.gstin],["Name",DB.setup.tname||""],["Period",P.label],["Meesho GSTIN",DB.setup.eco||""],["",""],["Gross sales",r2(T.gS)],["Returns",r2(T.gR)],["Net taxable",r2(T.net)],["IGST",r2(T.i)],["CGST",r2(T.c)],["SGST",r2(T.s)],["TCS estimate",r2(d.tcsEst.i+d.tcsEst.c+d.tcsEst.s)],["Cash payable (est.)",r2(S.cash.i+S.cash.c+S.cash.s)]]},
+    {name:"Table 7 B2CS",head:["Place of supply","Rate %","Taxable","IGST","CGST","SGST"],widths:[26,8,14,12,12,12],rows:d.posArr.map(p=>[`${p.st}-${stName(p.st)}`,p.rate,r2(p.val),r2(p.i),r2(p.c),r2(p.s)])},
+    {name:"Table 12 HSN",head:["HSN","Description","UQC","Rate %","Qty","Taxable","IGST","CGST","SGST"],widths:[10,30,8,8,8,14,12,12,12],rows:d.hsnArr.map(h=>[h.hsn,hsnDesc(h.hsn),DB.setup.uqc||"PCS",h.rate,h.qty,r2(h.val),r2(h.i),r2(h.c),r2(h.s)])},
+    {name:"3B Table 3.2",head:["Place of supply","Taxable","IGST"],widths:[26,14,12],rows:d.t32.map(x=>[`${x.st}-${stName(x.st)}`,r2(x.val),r2(x.i)])},
+    {name:"Orders",head:["Type","Sub-order","Month","State","Rate %","Taxable","HSN","Qty"],widths:[9,22,9,24,8,12,10,6],rows:DB.rows.map(r=>[r.t==="R"?"Return":"Sale",r.ord||"",r.m?`${String(r.m).padStart(2,"0")}-${r.y}`:"",`${r.st}-${stName(r.st)}`,r.rate,r.val,r.hsn,r.qty])}];
+  XL.save(`Meesho_GST_${tag()}`,sheets,!!(BR&&BR.saveFile),(n,t,m)=>{dl(n,t,m);return n;});
+  if(!(BR&&BR.saveFile))toast("Excel downloaded");}
 function copySummary(){if(!guard())return;const d=compute(),T=d.tot,S=setoff(d);
-  const t=`Meesho GST working – ${MONTHS[DB.setup.month-1]} ${DB.setup.year}\nGSTIN: ${DB.setup.gstin}\nGross sales: ${inr(T.gS)}\nReturns: ${inr(T.gR)}\nNet taxable: ${inr(T.net)}\nIGST: ${inr(T.i)} | CGST: ${inr(T.c)} | SGST: ${inr(T.s)}\nTCS (est.): ${inr(d.tcsEst.i+d.tcsEst.c+d.tcsEst.s)}\nCash payable (est.): ${inr(S.cash.i+S.cash.c+S.cash.s)}`;
+  const t=`Meesho GST working – ${period().label}\nGSTIN: ${DB.setup.gstin}\nGross sales: ${inr(T.gS)}\nReturns: ${inr(T.gR)}\nNet taxable: ${inr(T.net)}\nIGST: ${inr(T.i)} | CGST: ${inr(T.c)} | SGST: ${inr(T.s)}\nTCS (est.): ${inr(d.tcsEst.i+d.tcsEst.c+d.tcsEst.s)}\nCash payable (est.): ${inr(S.cash.i+S.cash.c+S.cash.s)}`;
   const legacy=()=>{const a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}a.remove();return ok;};
   const show=()=>{$("copyOut").innerHTML=`<label>Copy this summary</label><textarea rows="9" readonly style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:12.5px/1.4 ui-monospace,monospace">${esc(t)}</textarea>`;toast("Long-press the text to copy");};
   (navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Copied"),()=>{legacy()?toast("Copied"):show();});}
+
+/* ---------------- XL: small Excel writer/reader (no internet, no library) ----------------
+   write: real .xlsx when the device can save binary files, Excel-XML .xls inside the Android app (text-only saving).
+   read:  .xlsx, Excel-XML .xls and .csv → [{name, rows}] */
+const XL=(()=>{
+  const xe=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
+  const colL=n=>{let s="";n++;while(n){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;};
+  const isNum=v=>typeof v==="number"&&isFinite(v);
+  // ---- CRC32 + stored zip
+  const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+  const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;};
+  function zip(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+    for(const [name,str] of files){const nb=enc.encode(name),db=enc.encode(str),cr=crc32(db);
+      const lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);
+      lh.setUint32(14,cr,true);lh.setUint32(18,db.length,true);lh.setUint32(22,db.length,true);lh.setUint16(26,nb.length,true);
+      parts.push(new Uint8Array(lh.buffer),nb,db);
+      const ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);
+      ch.setUint32(16,cr,true);ch.setUint32(20,db.length,true);ch.setUint32(24,db.length,true);ch.setUint16(28,nb.length,true);ch.setUint32(42,off,true);
+      cen.push(new Uint8Array(ch.buffer),nb);off+=30+nb.length+db.length;}
+    const cs=cen.reduce((a,b)=>a+b.length,0),end=new DataView(new ArrayBuffer(22));
+    end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,cs,true);end.setUint32(16,off,true);
+    return new Blob([...parts,...cen,new Uint8Array(end.buffer)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});}
+  // sheets: [{name, head:[..], widths:[..], rows:[[..]], info:true}]  (info sheets: first column bold, no header styling)
+  function xlsx(sheets){
+    const wsx=s=>{const all=[...(s.head?[s.head]:[]),...s.rows];
+      const cols=(s.widths||[]).map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("");
+      const rows=all.map((r,ri)=>`<row r="${ri+1}">`+r.map((v,ci)=>{const ref=colL(ci)+(ri+1),st=s.head&&ri===0?' s="1"':s.info&&ci===0?' s="2"':s.info?' s="3"':"";
+        if(v===""||v==null)return st?`<c r="${ref}"${st}/>`:"";
+        return isNum(v)?`<c r="${ref}"${st}><v>${v}</v></c>`:`<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;}).join("")+`</row>`).join("");
+      const pane=s.head?`<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`:"";
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${pane}${cols?`<cols>${cols}</cols>`:""}<sheetData>${rows}</sheetData></worksheet>`;};
+    const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`;
+    const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+    const wb=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${xe(s.name.slice(0,31))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")}</sheets></workbook>`;
+    const wbr=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+    const sty=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF6D4AFF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`;
+    return zip([["[Content_Types].xml",ct],["_rels/.rels",rels],["xl/workbook.xml",wb],["xl/_rels/workbook.xml.rels",wbr],["xl/styles.xml",sty],...sheets.map((s,i)=>[`xl/worksheets/sheet${i+1}.xml`,wsx(s)])]);
+  }
+  function xml2003(sheets){
+    const cell=(v,st)=>`<Cell${st?` ss:StyleID="${st}"`:""}><Data ss:Type="${isNum(v)?"Number":"String"}">${xe(v)}</Data></Cell>`;
+    return `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#6D4AFF" ss:Pattern="Solid"/><Alignment ss:WrapText="1"/></Style><Style ss:ID="b"><Font ss:Bold="1"/><Alignment ss:WrapText="1" ss:Vertical="Top"/></Style><Style ss:ID="w"><Alignment ss:WrapText="1" ss:Vertical="Top"/></Style></Styles>`+
+      sheets.map(s=>`<Worksheet ss:Name="${xe(s.name.slice(0,31))}"><Table>${(s.widths||[]).map(w=>`<Column ss:Width="${Math.round(w*6)}"/>`).join("")}`+
+        [...(s.head?[s.head]:[]),...s.rows].map((r,ri)=>`<Row>${r.map((v,ci)=>cell(v,s.head&&ri===0?"h":s.info&&ci===0?"b":s.info?"w":"")).join("")}</Row>`).join("")+`</Table></Worksheet>`).join("")+`</Workbook>`;
+  }
+  // save(name without extension, sheets, saver(name, data, mime)) → picks the format the device can save
+  function save(base,sheets,textOnly,saver){
+    if(textOnly)return saver(base+".xls",xml2003(sheets),"application/vnd.ms-excel");
+    const b=xlsx(sheets),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=base+".xlsx";document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);return base+".xlsx";}
+  // ---- reading
+  async function inflate(u8){if(typeof DecompressionStream!=="function")throw new Error("This device can't open .xlsx files. Save it as CSV, or copy and paste the cells.");
+    const ds=new DecompressionStream("deflate-raw"),out=new Response(new Blob([u8]).stream().pipeThrough(ds));return new Uint8Array(await out.arrayBuffer());}
+  async function unzip(buf){const u=new Uint8Array(buf),dv=new DataView(buf);let e=-1;
+    for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break;}
+    if(e<0)throw new Error("Not a valid .xlsx file");
+    const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={},dec=new TextDecoder();
+    for(let k=0;k<n;k++){const m=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+      const name=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+      if(!/^(xl\/(workbook\.xml|sharedStrings\.xml|_rels\/workbook\.xml\.rels|worksheets\/[^/]+\.xml))$/.test(name))continue;
+      const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true),raw=u.subarray(ds,ds+cs);
+      files[name]=dec.decode(m===0?raw:await inflate(raw));}
+    return files;}
+  const X=t=>new DOMParser().parseFromString(t,"application/xml");
+  const byTag=(n,t)=>[...n.getElementsByTagNameNS("*",t)];
+  const colN=ref=>{const m=/^[A-Z]+/.exec(ref);let n=0;for(const ch of m?m[0]:"A")n=n*26+ch.charCodeAt(0)-64;return n-1;};
+  async function readXlsx(buf){const f=await unzip(buf),ss=f["xl/sharedStrings.xml"]?byTag(X(f["xl/sharedStrings.xml"]),"si").map(si=>byTag(si,"t").map(t=>t.textContent).join("")):[];
+    const wb=X(f["xl/workbook.xml"]||"<x/>"),rel=X(f["xl/_rels/workbook.xml.rels"]||"<x/>"),tgt={};
+    byTag(rel,"Relationship").forEach(r=>tgt[r.getAttribute("Id")]=r.getAttribute("Target").replace(/^\/?(xl\/)?/,""));
+    return byTag(wb,"sheet").map(sh=>{const id=sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")||sh.getAttribute("r:id"),
+      xml=f["xl/"+(tgt[id]||"")];if(!xml)return null;const rows=[];
+      byTag(X(xml),"row").forEach(r=>{const ri=(+r.getAttribute("r")||rows.length+1)-1,row=[];
+        byTag(r,"c").forEach(c=>{const t=c.getAttribute("t"),v=byTag(c,"v")[0];let val="";
+          if(t==="s")val=ss[+(v&&v.textContent)]??"";else if(t==="inlineStr")val=byTag(c,"t").map(x=>x.textContent).join("");
+          else if(t==="b")val=v&&v.textContent==="1"?"TRUE":"FALSE";else if(v){const x=v.textContent;val=t==="str"||t==="e"||isNaN(+x)?x:+x;}
+          row[colN(c.getAttribute("r")||"A")]=val;});
+        rows[ri]=Array.from(row,x=>x??"");});
+      return {name:sh.getAttribute("name"),rows:Array.from(rows,r=>r||[]).filter(r=>r.some(x=>String(x).trim()!==""))};}).filter(Boolean);}
+  function readXml(text){const d=X(text);if(byTag(d,"parsererror").length)throw new Error("Couldn't read this .xls file");
+    return byTag(d,"Worksheet").map(ws=>{const rows=[];byTag(ws,"Row").forEach(r=>{const row=[];let i=0;
+      byTag(r,"Cell").forEach(c=>{const ix=c.getAttribute("ss:Index")||c.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet","Index");if(ix)i=+ix-1;
+        const dEl=byTag(c,"Data")[0],ty=dEl&&(dEl.getAttribute("ss:Type")||dEl.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet","Type"));
+        row[i++]=dEl?(ty==="Number"?+dEl.textContent:dEl.textContent):"";});
+      rows.push(Array.from(row,x=>x??""));});
+      return {name:ws.getAttribute("ss:Name")||ws.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet","Name")||"Sheet",rows:rows.filter(r=>r.some(x=>String(x).trim()!==""))};});}
+  async function read(file,csvParse){const n=file.name.toLowerCase();
+    if(/\.(csv|txt)$/.test(n))return [{name:file.name.replace(/\.[^.]+$/,""),rows:csvParse(await file.text())}];
+    const buf=await file.arrayBuffer(),u=new Uint8Array(buf);
+    if(u[0]===0x50&&u[1]===0x4B)return readXlsx(buf);
+    if(u[0]===0xD0&&u[1]===0xCF)throw new Error("Old Excel 97-2003 (.xls) files can't be read. In Excel use Save As → Excel Workbook (.xlsx) or CSV.");
+    const t=new TextDecoder().decode(u);if(/<Workbook[\s>]/.test(t))return readXml(t);
+    return [{name:file.name,rows:csvParse(t)}];}
+  return {save,read,xlsx,xml2003};
+})();
 
 /* ---------------- Boot ---------------- */
 load();initSetup();renderFiles();
