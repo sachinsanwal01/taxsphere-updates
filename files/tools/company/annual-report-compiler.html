@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annual Report Compiler — Director's &amp; Auditor's Report</title>
+<style>
+  :root{
+    --navy:#152238;
+    --navy-2:#1E3358;
+    --navy-soft:#2B3E60;
+    --paper:#FBFAF6;
+    --page-bg:#EEF1F6;
+    --line:#DADFE8;
+    --ink:#232733;
+    --ink-soft:#5C6373;
+    --brass:#9C7A34;
+    --brass-light:#C9A667;
+    --ok:#2F6F4E;
+    --ok-bg:#E7F3EC;
+    --na:#7A8195;
+    --na-bg:#EEF0F4;
+    --pending:#B3492F;
+    --pending-bg:#FBEAE5;
+    --card:#FFFFFF;
+    --radius:10px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    background:var(--page-bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--brass);}
+
+  /* ---------- App shell ---------- */
+  #app{display:flex; min-height:100vh;}
+
+  .sidebar{
+    width:250px;
+    flex:0 0 250px;
+    background:linear-gradient(180deg,var(--navy),var(--navy-2));
+    color:#EDEFF5;
+    padding:22px 16px 16px;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+  }
+  .brand{
+    font-family:var(--serif);
+    font-size:20px;
+    letter-spacing:.3px;
+    line-height:1.25;
+    padding-bottom:14px;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    margin-bottom:16px;
+  }
+  .brand small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--brass-light);margin-top:4px;}
+
+  .navitem{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px;
+    padding:11px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+    margin-bottom:4px;
+    color:#D7DCE8;
+    transition:background .15s ease;
+  }
+  .navitem:hover{background:rgba(255,255,255,.06);}
+  .navitem.active{background:rgba(255,255,255,.12); color:#fff; font-weight:600;}
+  .navitem .count{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--brass-light);
+    background:rgba(255,255,255,.08);
+    padding:2px 6px;
+    border-radius:20px;
+  }
+  .sidebar-foot{
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.12);
+    font-size:11.5px;
+    color:#9AA3B8;
+    line-height:1.5;
+  }
+
+  .main{flex:1; min-width:0; padding:30px 38px 90px;}
+  .topbar{
+    display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    margin-bottom:26px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .topbar h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:27px;
+    letter-spacing:-.2px;
+    margin:0;
+    color:var(--navy);
+  }
+  .topbar p{margin:6px 0 0; color:var(--ink-soft); font-size:13.5px;}
+
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn{
+    font-family:var(--sans);
+    font-size:13px;
+    font-weight:600;
+    padding:9px 15px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--navy);
+    cursor:pointer;
+    transition:all .15s ease;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{border-color:var(--brass); color:var(--brass); box-shadow:0 2px 8px rgba(21,34,56,.06);}
+  .btn.primary{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .btn.primary:hover{background:var(--navy-2); color:#fff;}
+  .btn.brass{background:var(--brass); color:#fff; border-color:var(--brass);}
+  .btn.brass:hover{background:#86692C; color:#fff;}
+  .btn.ghost{background:transparent;}
+  .btn.small{padding:6px 11px; font-size:12px; color:var(--ink-soft);}
+  .btn.small:hover{color:var(--brass);}
+
+  /* ---------- Panels ---------- */
+  .panel{display:none;}
+  .panel.active{display:block; animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:translateY(0);}}
+
+  /* Company info form */
+  .formgrid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    background:var(--card);
+    padding:26px;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(21,34,56,.04);
+  }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field.wide{grid-column:span 3;}
+  .field.half{grid-column:span 1.5;}
+  .field label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-soft);}
+  .field input, .field textarea{
+    font-family:var(--sans);
+    font-size:14px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    color:var(--ink);
+    background:#FDFDFB;
+    transition:border-color .15s ease;
+  }
+  .field input:hover{border-color:#C6CCD8;}
+  .field input:focus, .field textarea:focus, .card textarea:focus{outline:2px solid var(--brass-light); outline-offset:1px; border-color:var(--brass);}
+  .form-divider{
+    grid-column:span 3;
+    display:flex; align-items:center; gap:10px;
+    margin:8px 0 -2px;
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--brass);
+  }
+  .form-divider::after{content:""; flex:1; height:1px; background:var(--line);}
+  .formnote{margin-top:16px; font-size:12.5px; color:var(--ink-soft); line-height:1.65;}
+
+  /* Group heading */
+  .group-heading{
+    display:flex; align-items:center; gap:12px;
+    margin:38px 0 16px;
+    padding-bottom:10px;
+    border-bottom:2px solid var(--navy);
+  }
+  .group-heading .gnum{
+    font-family:var(--serif);
+    font-size:13px;
+    font-weight:700;
+    color:#fff;
+    background:var(--navy);
+    width:26px; height:26px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .group-heading h2{
+    font-family:var(--serif);
+    font-size:18.5px;
+    font-weight:700;
+    margin:0;
+    color:var(--navy);
+    flex:1;
+  }
+  .group-heading .gcount{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--brass);
+    background:#FBF3E4;
+    padding:3px 9px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .panel > .group-heading:first-of-type{margin-top:8px;}
+
+  /* Clause card */
+  .card{
+    display:flex;
+    gap:14px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--line);
+    border-radius:var(--radius);
+    padding:17px 20px;
+    margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(21,34,56,.03);
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{box-shadow:0 4px 16px rgba(21,34,56,.07);}
+  .card[data-state="yes"]{border-left-color:var(--ok);}
+  .card[data-state="no"]{border-left-color:var(--na);}
+  .card[data-state="pending"]{border-left-color:var(--pending);}
+
+  .card-num{
+    flex:0 0 30px;
+    font-family:var(--serif);
+    font-size:20px;
+    font-weight:700;
+    color:var(--line);
+    line-height:1;
+    padding-top:3px;
+    user-select:none;
+  }
+  .card[data-state="yes"] .card-num{color:var(--ok);}
+  .card[data-state="no"] .card-num{color:var(--na);}
+  .card-main{flex:1; min-width:0;}
+
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap;}
+  .card-title-wrap{flex:1; min-width:240px;}
+  .ref-tag{
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:600;
+    color:var(--brass);
+    background:#FBF3E4;
+    padding:2.5px 8px;
+    border-radius:5px;
+    letter-spacing:.2px;
+    white-space:nowrap;
+    display:inline-block;
+  }
+  .card-title-wrap h3{font-size:15.5px; margin:8px 0 4px; color:var(--ink); font-weight:700; letter-spacing:-.1px;}
+  .card-title-wrap .guidance{font-size:12.5px; color:var(--ink-soft); line-height:1.55; max-width:62ch;}
+
+  .toggle-group{display:flex; gap:7px; flex-shrink:0;}
+  .toggle-group input{display:none;}
+  .opt{display:inline-block;}
+  .opt span{
+    font-size:12px; font-weight:600;
+    padding:7px 13px;
+    border-radius:20px;
+    border:1.5px solid var(--line);
+    cursor:pointer;
+    color:var(--ink-soft);
+    display:inline-block;
+    transition:all .12s ease;
+  }
+  .opt span:hover{border-color:var(--brass-light);}
+  .opt.yes input:checked + span{background:var(--ok-bg); color:var(--ok); border-color:var(--ok); font-weight:700;}
+  .opt.no input:checked + span{background:var(--na-bg); color:var(--na); border-color:var(--na); font-weight:700;}
+
+  .card-body{margin-top:14px; padding-top:14px; border-top:1px solid #F0EFEA;}
+  .card-body textarea{
+    width:100%;
+    min-height:78px;
+    font-family:var(--sans);
+    font-size:13.5px;
+    line-height:1.6;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    resize:vertical;
+    color:var(--ink);
+    background:#FDFDFB;
+  }
+  .card-body textarea:hover{border-color:#C6CCD8;}
+  .card-body .na-box textarea{min-height:48px; background:#FCFAF7;}
+  .card-body .field-label{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-soft); margin-bottom:6px; display:block;}
+  .hidden{display:none !important;}
+  .card-foot{margin-top:10px; display:flex; justify-content:flex-end;}
+  .del-btn{font-size:11.5px; color:var(--pending); background:none; border:none; cursor:pointer; font-weight:600;}
+  .del-btn:hover{text-decoration:underline;}
+
+  .add-clause-row{margin:10px 0 6px;}
+
+  /* progress bar */
+  .progress-wrap{display:flex; align-items:center; gap:10px; margin-bottom:18px;}
+  .progress-bar{flex:1; height:8px; background:#E3E7EF; border-radius:6px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--brass),var(--ok)); width:0%; transition:width .25s ease;}
+  .progress-label{font-size:12px; color:var(--ink-soft); white-space:nowrap; font-family:var(--mono);}
+
+  /* Preview */
+  .preview-controls{display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+  .preview-controls .btn.tabbtn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .paper{
+    max-width:800px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow:0 8px 30px rgba(20,30,50,.10);
+    padding:60px 64px 70px;
+    font-family:var(--serif);
+    color:#20242E;
+    line-height:1.7;
+    font-size:14px;
+  }
+  .paper .letterhead-rule{border:none; border-top:2.5px solid var(--navy); border-bottom:1px solid var(--brass); height:0; margin:0 0 26px;}
+  .paper h2.doc-title{text-align:center; font-size:21px; letter-spacing:1px; margin:0 0 6px; text-transform:uppercase; font-weight:700;}
+  .paper .doc-sub{text-align:center; font-size:12.5px; color:#5A5F6B; margin-bottom:30px; font-family:var(--sans); line-height:1.6;}
+  .paper .doc-sub strong{color:#20242E;}
+  .paper .intro-line{margin-bottom:22px; font-size:14px;}
+  .paper h3.pgroup{
+    counter-reset:clausenum;
+    font-size:13px; font-weight:700;
+    color:var(--navy);
+    background:#F1EFE6;
+    padding:8px 14px;
+    margin:30px 0 16px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    font-family:var(--sans);
+    border-left:3px solid var(--brass);
+  }
+  .paper .pclause{margin-bottom:18px; padding-left:2px; page-break-inside:avoid;}
+  .paper .pclause .pnum-ref{
+    display:flex; align-items:baseline; gap:8px; margin-bottom:3px; flex-wrap:wrap;
+  }
+  .paper .pclause .pnum{font-family:var(--sans); font-weight:700; font-size:13px; color:var(--navy);}
+  .paper .pclause .pref{font-family:var(--sans); font-size:10.5px; font-weight:600; color:var(--brass); letter-spacing:.3px; text-transform:uppercase;}
+  .paper .pclause .ptitle{font-weight:700; font-size:14.5px; margin-bottom:5px; font-style:italic;}
+  .paper .pclause .ptext{font-size:13.8px; white-space:pre-wrap; text-align:justify; padding-left:20px;}
+  .paper .pclause .ptext.na{color:#84899A; font-style:italic;}
+  .paper .sign{margin-top:50px; font-size:13.5px; font-family:var(--sans);}
+  .paper .sign p{font-family:var(--serif); font-size:14px;}
+  .paper .sign .line{margin:4px 0;}
+  .paper .sign .sigspace{height:34px;}
+
+  @media print{
+    @page{ margin:16mm 14mm; }
+    .sidebar, .topbar, .toolbar, .preview-controls, .add-clause-row, .progress-wrap{display:none !important;}
+    .main{padding:0;}
+    body{background:#fff;}
+    .paper{box-shadow:none; border:none; max-width:100%; padding:0;}
+    .paper h3.pgroup{background:none; padding-left:0;}
+    #app{display:block;}
+  }
+
+  @media (max-width:900px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%; flex:none; height:auto; position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:4px;}
+    .brand{width:100%; border-bottom:none; margin-bottom:8px;}
+    .formgrid{grid-template-columns:1fr 1fr;}
+    .main{padding:18px;}
+  }
+
+  .empty-note{font-size:13px; color:var(--ink-soft); background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; text-align:center;}
+  .toast{
+    position:fixed; bottom:20px; right:20px;
+    background:var(--navy); color:#fff; padding:11px 16px;
+    border-radius:8px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.2);
+    opacity:0; transform:translateY(8px); transition:all .25s ease; pointer-events:none; z-index:999;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+<style>@media (max-width:700px){.formgrid{grid-template-columns:minmax(0,1fr)!important;padding:16px!important}.formgrid .field{grid-column:auto!important;min-width:0}.main{padding:12px!important}}</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="brand">Annual Report Compiler
+      <small>Director's &amp; Auditor's Report</small>
+    </div>
+    <div class="navitem active" data-panel="company">Company &amp; Signatory Details</div>
+    <div class="navitem" data-panel="director">Director's Report <span class="count" id="count-director">0/0</span></div>
+    <div class="navitem" data-panel="auditor">Auditor's Report <span class="count" id="count-auditor">0/0</span></div>
+    <div class="navitem" data-panel="preview">Preview &amp; Export</div>
+    <div class="sidebar-foot">
+      Mark every clause <strong>Applicable</strong> or <strong>Not Applicable</strong>, edit the drafting text, then compile and export. Add your own clauses where the standard list doesn't cover something specific to the company.
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="page-title">Company &amp; Signatory Details</h1>
+        <p id="page-sub">Used to auto-fill the report headers and signature block.</p>
+      </div>
+    </div>
+
+    <!-- COMPANY PANEL -->
+    <div class="panel active" id="panel-company">
+      <div class="formgrid">
+        <div class="field wide"><label>Company Name</label><input id="c-name" placeholder="ABC Private Limited"></div>
+        <div class="field"><label>CIN</label><input id="c-cin" placeholder="U00000MH2010PTC000000"></div>
+        <div class="field"><label>Financial Year Ended</label><input id="c-fy" placeholder="31 March 2026"></div>
+        <div class="field"><label>Board Meeting Date (approval)</label><input id="c-boardDate" placeholder="e.g. 15 September 2026"></div>
+        <div class="field wide"><label>Registered Office Address</label><input id="c-office" placeholder="Registered office address"></div>
+
+        <div class="field wide" style="margin-top:6px;"><label style="color:var(--brass);">— Auditor / Signatory details —</label></div>
+        <div class="field"><label>Audit Firm Name</label><input id="a-firm" placeholder="XYZ &amp; Co., Chartered Accountants"></div>
+        <div class="field"><label>Firm Registration No. (FRN)</label><input id="a-frn" placeholder="000000N"></div>
+        <div class="field"><label>Partner Name</label><input id="a-partner" placeholder="CA. John Doe"></div>
+        <div class="field"><label>Membership No.</label><input id="a-membership" placeholder="000000"></div>
+        <div class="field"><label>UDIN</label><input id="a-udin" placeholder="26000000AAAAAA0000"></div>
+        <div class="field"><label>Place of Signing</label><input id="a-place" placeholder="Mumbai"></div>
+        <div class="field"><label>Date of Report</label><input id="a-date" placeholder="15 September 2026"></div>
+      </div>
+      <p class="formnote">These fields populate the report headers, "for and on behalf of" lines and the signature block in the Preview &amp; Export tab. Nothing here is sent anywhere — everything stays in this browser tab unless you export it.</p>
+    </div>
+
+    <!-- DIRECTOR PANEL -->
+    <div class="panel" id="panel-director">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-director"></div></div>
+        <div class="progress-label" id="progress-label-director">0 / 0 reviewed</div>
+      </div>
+      <div id="director-groups"></div>
+    </div>
+
+    <!-- AUDITOR PANEL -->
+    <div class="panel" id="panel-auditor">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-auditor"></div></div>
+        <div class="progress-label" id="progress-label-auditor">0 / 0 reviewed</div>
+      </div>
+      <div id="auditor-groups"></div>
+    </div>
+
+    <!-- PREVIEW PANEL -->
+    <div class="panel" id="panel-preview">
+      <div class="preview-controls">
+        <button class="btn tabbtn active" data-view="director">Director's Report</button>
+        <button class="btn tabbtn" data-view="auditor">Auditor's Report</button>
+        <span style="flex:1"></span>
+        <button class="btn brass" id="btn-export-doc">⭳ Export as Word (.doc)</button>
+        <button class="btn primary" id="btn-print">🖨 Print / Save as PDF</button>
+      </div>
+      <div class="paper" id="preview-paper"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   DATA MODEL
+   ========================================================================= */
+function mk(id, ref, title, guidance, applicable, text){
+  return {id, ref, title, guidance, applicable, text: text||"", naReason:"", custom:false};
+}
+
+const directorGroups = [
+  { name:"Financial Results &amp; State of Affairs", items:[
+    mk("d01","Sec 134(3)(i)","State of the Company's Affairs","Overview of operations, performance and business highlights during the year.","yes","The Directors are pleased to present the state of affairs of {{company}} for the financial year ended {{fy}}. The Company continued its operations in line with its stated objects, and the Board is satisfied with the overall performance during the year under review."),
+    mk("d02","Sec 134(3)(o)","Financial Results Summary","Brief summary of turnover, profit before tax, tax, profit after tax and carried-forward balance.","yes","A summary of the financial results of the Company for the year under review, as compared with the previous year, is set out below:\n[Insert Turnover / Total Income, Profit before Tax, Tax Expense, Profit after Tax, Balance carried to Balance Sheet]"),
+    mk("d03","Sec 134(3)(k)","Amounts Transferred to Reserves","State the amount, if any, proposed to be carried to reserves.","yes","The Board does not propose to transfer any amount to the General Reserve for the year under review. / An amount of ₹[●] has been transferred to [Reserve] during the year."),
+    mk("d04","Sec 134(3)(k)","Dividend Recommendation","State dividend recommended/declared, or reasons if none recommended.","yes","With a view to conserve resources for future growth, the Board of Directors does not recommend any dividend for the financial year ended {{fy}}. / The Board is pleased to recommend a dividend of ₹[●] per equity share for the year under review, subject to approval of members at the ensuing Annual General Meeting."),
+    mk("d05","Sec 134(3)(l)","Material Changes &amp; Commitments After Balance Sheet Date","Disclose material changes and commitments affecting the financial position between the balance sheet date and the report date.","yes","There have been no material changes and commitments affecting the financial position of the Company between the end of the financial year ({{fy}}) and the date of this report."),
+    mk("d06","Rule 8(5)(i)","Change in Nature of Business","Disclose any change in the nature of business during the year, if any.","no","There has been no change in the nature of business of the Company during the year under review."),
+  ]},
+  { name:"Governance &amp; Board Matters", items:[
+    mk("d07","Sec 134(3)(b)","Number of Board Meetings","State the number of Board meetings held during the year with dates.","yes","During the year under review, [●] meetings of the Board of Directors were held on the following dates: [insert dates]. The gap between two consecutive meetings did not exceed the maximum interval prescribed under the Companies Act, 2013."),
+    mk("d08","Sec 134(5)","Directors' Responsibility Statement","Mandatory statement covering accounting standards followed, accounting policies, adequate accounting records, going concern basis and internal financial controls.","yes","Pursuant to Section 134(5) of the Companies Act, 2013, the Board of Directors, to the best of their knowledge and belief, confirm that:\n(a) in the preparation of the annual accounts, the applicable accounting standards have been followed and there are no material departures;\n(b) appropriate accounting policies have been selected and applied consistently, and judgments and estimates made are reasonable and prudent so as to give a true and fair view of the state of affairs and profit/loss of the Company for the year;\n(c) proper and sufficient care has been taken for the maintenance of adequate accounting records in accordance with the provisions of this Act for safeguarding the assets of the Company and for preventing and detecting fraud and other irregularities;\n(d) the annual accounts have been prepared on a going concern basis;\n(e) internal financial controls have been laid down and were operating effectively; and\n(f) proper systems have been devised to ensure compliance with the provisions of all applicable laws and such systems were adequate and operating effectively."),
+    mk("d09","Sec 149(6)","Declaration by Independent Directors","Applicable only if the Company has independent directors on its Board.","no","The Company has received declarations from all Independent Directors confirming that they meet the criteria of independence as prescribed under Section 149(6) of the Companies Act, 2013 and Regulation 16(1)(b) of the SEBI (LODR) Regulations, 2015, as applicable."),
+    mk("d10","Sec 178(3)","Policy on Directors' Appointment &amp; Remuneration","Applicable if the Company is required to constitute a Nomination and Remuneration Committee.","no","The Company has, through its Nomination and Remuneration Committee, framed a policy for the appointment and remuneration of Directors, Key Managerial Personnel and Senior Management, including criteria for determining qualifications, positive attributes and independence. The policy is available on the Company's website at [link]."),
+    mk("d11","Sec 134(3)(p)","Annual Evaluation of Board Performance","Applicable to listed companies and other prescribed public companies.","no","Pursuant to the provisions of the Companies Act, 2013 and SEBI (LODR) Regulations, 2015, the Board has carried out an annual performance evaluation of itself, its Committees, and individual Directors through a structured questionnaire circulated during the year."),
+    mk("d12","Sec 177","Composition of Audit Committee","Applicable where constitution of an Audit Committee is mandatory.","no","The Audit Committee comprises [●] Directors, namely [names], and all recommendations made by the Audit Committee during the year were accepted by the Board."),
+    mk("d13","Sec 177(9)","Vigil Mechanism / Whistle Blower Policy","Applicable where constitution of a Vigil Mechanism is mandatory.","no","The Company has established a Vigil Mechanism/Whistle Blower Policy for Directors and employees to report genuine concerns. The details of the policy are posted on the Company's website at [link], and no complaints were received/[●] complaints were received and resolved during the year."),
+  ]},
+  { name:"Related Party Transactions, Loans &amp; Investments", items:[
+    mk("d14","Sec 186","Particulars of Loans, Guarantees, Investments","Disclose particulars of loans given, guarantees provided or investments made under Section 186.","yes","The particulars of loans given, guarantees provided and investments made during the year, covered under the provisions of Section 186 of the Companies Act, 2013, are disclosed in the notes to the financial statements forming part of this Annual Report. / The Company has not given any loans, guarantees or made investments falling within the purview of Section 186 during the year under review."),
+    mk("d15","Sec 188 / AOC-2","Related Party Transactions","Particulars of contracts/arrangements with related parties in Form AOC-2.","yes","All related party transactions entered into during the financial year were on an arm's length basis and in the ordinary course of business. There were no material related party transactions requiring disclosure under Section 188(1). The relevant disclosures in Form AOC-2 are annexed to this report as Annexure [●]."),
+  ]},
+  { name:"Other Statutory Disclosures", items:[
+    mk("d16","Sec 134(3)(a)","Extract of Annual Return","Web-link to the Annual Return placed on the Company's website, as prescribed under Rule 12.","yes","In accordance with Section 92(3) read with Rule 12 of the Companies (Management and Administration) Rules, 2014, the Annual Return of the Company as on {{fy}} is available on the Company's website at [link]."),
+    mk("d17","Sec 134(3)(m)","Conservation of Energy, Technology Absorption, Foreign Exchange","Mandatory disclosure under Rule 8 of the Companies (Accounts) Rules, 2014.","yes","A. Conservation of Energy: [details / Not applicable given the nature of the Company's activities]\nB. Technology Absorption: [details, if any]\nC. Foreign Exchange Earnings and Outgo: Earnings — ₹[●]; Outgo — ₹[●]."),
+    mk("d18","Rule 8(5)(iv)","Risk Management Policy","Statement indicating development and implementation of a risk management policy, where applicable.","no","The Company has devised a Risk Management Policy for identification and mitigation of risks that, in the opinion of the Board, may threaten the existence of the Company."),
+    mk("d19","Sec 135","Corporate Social Responsibility (CSR) Initiatives","Applicable only if the Company meets the net worth/turnover/net profit thresholds under Section 135.","no","The Company's CSR policy and initiatives, together with the Annual Report on CSR activities in the prescribed format, are annexed to this report as Annexure [●]. The Company has spent ₹[●] against the prescribed CSR obligation of ₹[●] for the year."),
+    mk("d20","Rule 8(1)","Details of Subsidiaries, Joint Ventures and Associates","A report on the performance and financial position of each subsidiary/associate/JV in Form AOC-1, where applicable.","no","The Company does not have any subsidiary, joint venture or associate company as on {{fy}}. / A statement containing salient features of the financial statements of subsidiaries/associates/joint ventures in Form AOC-1 is annexed as Annexure [●]."),
+    mk("d21","Sec 73-76","Public Deposits","State whether deposits were accepted, and compliance status, or that none were accepted.","yes","The Company has not accepted any deposits from the public within the meaning of Sections 73 and 76 of the Companies Act, 2013 read with the Companies (Acceptance of Deposits) Rules, 2014 during the year under review."),
+    mk("d22","Rule 8(5)(vii)","Significant &amp; Material Orders by Regulators/Courts","Details of significant/material orders passed by regulators or courts impacting the going concern status and future operations.","yes","There are no significant or material orders passed by any regulator, court or tribunal impacting the going concern status or the Company's operations in future."),
+    mk("d23","Rule 8(5)(viii)","Adequacy of Internal Financial Controls","Statement on adequacy of internal financial controls with reference to the financial statements.","yes","The Company has in place adequate internal financial controls with reference to the financial statements, commensurate with the size, scale and complexity of its operations, and no material weaknesses were observed during the year."),
+    mk("d24","Sec 134(3)(f)","Explanation on Auditor's Qualifications / Remarks","Board's comments on every qualification, reservation, adverse remark or disclaimer in the Auditor's Report and Secretarial Audit Report.","yes","The Statutory Auditors' Report and the Secretarial Audit Report do not contain any qualification, reservation, adverse remark or disclaimer, and hence do not call for any further explanation or comments from the Board under Section 134(3)(f)."),
+    mk("d25","Sec 204","Secretarial Audit Report","Applicable to every listed company and other prescribed classes of companies.","no","Pursuant to Section 204 of the Companies Act, 2013, the Secretarial Audit Report issued by [Name of Practising Company Secretary] in Form MR-3 is annexed to this report as Annexure [●]."),
+    mk("d26","Sec 148","Maintenance of Cost Records","Applicable where the Company is required to maintain cost records under Section 148(1).","no","The Company is required to maintain cost records as specified under Section 148(1) of the Companies Act, 2013, and such accounts and records are made and maintained accordingly."),
+    mk("d27","Sec 197(12)","Particulars of Employees / Managerial Remuneration","Applicable where employee remuneration exceeds the prescribed thresholds under Rule 5.","no","Details of remuneration and particulars of employees as required under Section 197(12) read with Rule 5 of the Companies (Appointment and Remuneration of Managerial Personnel) Rules, 2014 are annexed to this report as Annexure [●]."),
+    mk("d28","Sec 54/62","Sweat Equity, ESOP &amp; Preferential Allotment","Applicable if the Company has issued sweat equity, ESOPs, or shares on a preferential/private placement basis.","no","During the year under review, the Company has not issued any sweat equity shares, employee stock options, or shares otherwise than for cash / on a preferential basis, except as disclosed below: [details]."),
+    mk("d29","Sec 68","Buy-back of Securities","Applicable if the Company has undertaken a buy-back of its own securities during the year.","no","The Company has not bought back any of its securities during the year under review."),
+    mk("d30","POSH Act, 2013","Sexual Harassment of Women at Workplace — Disclosure","Mandatory disclosure of the number of complaints received/disposed under the POSH Act, 2013, regardless of company size.","yes","The Company has constituted an Internal Committee under the Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013. During the year under review, [no complaints were received / ● complaints were received, of which ● were resolved]."),
+    mk("d31","IBC, 2016","Applications / Proceedings under the Insolvency and Bankruptcy Code","Mandatory disclosure under Rule 8(5)(xi) of any application made or proceeding pending under the IBC.","yes","No application has been made and no proceeding is pending against the Company under the Insolvency and Bankruptcy Code, 2016 as at the end of the financial year."),
+    mk("d32","Rule 8(5)(xii)","One-Time Settlement — Valuation Difference","Applicable if the Company has settled loans from banks/financial institutions during the year at a one-time settlement.","no","Not applicable — the Company has not undertaken any one-time settlement of loans availed from banks or financial institutions during the year, and accordingly there is no such valuation difference to report."),
+    mk("d33","LODR Reg. 34","Corporate Governance Report","Applicable to listed companies under the SEBI (LODR) Regulations, 2015.","no","A separate report on Corporate Governance along with the Practising Company Secretary's certificate on its compliance forms part of this Annual Report as Annexure [●]."),
+    mk("d34","LODR Reg. 34(2)(f)","Business Responsibility &amp; Sustainability Report (BRSR)","Applicable to the top listed entities by market capitalisation, as prescribed by SEBI.","no","In compliance with Regulation 34(2)(f) of the SEBI (LODR) Regulations, 2015, the Business Responsibility and Sustainability Report is annexed to this Annual Report as Annexure [●]."),
+    mk("d36","Schedule III","Compliance with Schedule III — Format of Financial Statements","Confirmation that the financial statements are prepared in the format prescribed under Schedule III (Division I/II/III, as applicable) to the Companies Act, 2013.","yes","The financial statements of the Company for the year ended {{fy}} have been prepared in accordance with the format prescribed under Schedule III to the Companies Act, 2013, read with the applicable Accounting Standards / Indian Accounting Standards (Ind AS) notified under Section 133 of the Act, and give a true and fair view of the state of affairs, profit or loss and cash flows of the Company for the year."),
+    mk("d37","Schedule III — ARI","Additional Regulatory Information &amp; Ratio Disclosures","Confirmation that the Additional Regulatory Information mandated under the amended Schedule III (title deeds, benami property, struck-off companies, layering of borrowed funds, crypto-currency, undisclosed income, financial ratios, etc.) has been disclosed in the notes to the financial statements.","yes","Pursuant to the amendments to Schedule III to the Companies Act, 2013, the Company has disclosed the prescribed Additional Regulatory Information in the notes forming part of the financial statements, including (as applicable) title deeds of immovable property not held in the Company's name, details of any benami property proceedings, borrowings secured against current assets, wilful defaulter status, relationship with companies struck off under Section 248, registration/satisfaction of charges with the Registrar of Companies, compliance with the prescribed number of layers of companies, compliance with approved schemes of arrangement, utilisation of borrowed funds and share premium, undisclosed income, details of crypto/virtual currency transactions, and an explanation for material changes in key financial ratios as compared to the previous year."),
+    mk("d35","—","Acknowledgement","Closing acknowledgement/appreciation paragraph.","yes","The Board places on record its sincere appreciation for the continued support and co-operation extended by the shareholders, customers, vendors, bankers, employees, and regulatory and government authorities during the year under review."),
+  ]},
+];
+
+const auditorGroups = [
+  { name:"Opinion &amp; Reporting under Standards on Auditing", items:[
+    mk("a01","SA 700","Opinion","The auditor's opinion on the financial statements — unmodified, qualified, adverse or disclaimer.","yes","We have audited the accompanying financial statements of {{company}} (\"the Company\"), which comprise the Balance Sheet as at {{fy}}, the Statement of Profit and Loss, the Cash Flow Statement for the year then ended, and notes to the financial statements. In our opinion and to the best of our information and according to the explanations given to us, the aforesaid financial statements give a true and fair view in conformity with the accounting principles generally accepted in India."),
+    mk("a02","SA 705","Basis for Opinion","Statement that the audit was conducted in accordance with SAs, reference to auditor's responsibility section, independence and ethical requirements, and sufficiency of audit evidence.","yes","We conducted our audit in accordance with the Standards on Auditing (SAs) specified under Section 143(10) of the Companies Act, 2013. Our responsibilities under those Standards are further described in the Auditor's Responsibilities section of our report. We are independent of the Company in accordance with the Code of Ethics issued by the Institute of Chartered Accountants of India together with the ethical requirements relevant to our audit, and we have fulfilled our other ethical responsibilities in accordance with these requirements. We believe that the audit evidence we have obtained is sufficient and appropriate to provide a basis for our opinion."),
+    mk("a03","SA 701","Key Audit Matters","Mandatory only for listed entities; describes matters that were of most significance in the audit.","no","Key audit matters are those matters that, in our professional judgment, were of most significance in our audit of the financial statements of the current period. [Describe each key audit matter and how it was addressed in the audit.]"),
+    mk("a04","SA 706","Emphasis of Matter","Include only if there is a matter appropriately presented/disclosed that is fundamental to users' understanding.","no","We draw attention to Note [●] to the financial statements regarding [matter]. Our opinion is not modified in respect of this matter."),
+    mk("a05","SA 720","Other Information","Statement on management's responsibility for other information (e.g. Director's Report) and auditor's responsibility to read it.","yes","The Company's Board of Directors is responsible for the other information. The other information comprises the information included in the Director's Report, but does not include the financial statements and our auditor's report thereon. Our opinion on the financial statements does not cover the other information, and we do not express any form of assurance conclusion thereon. In connection with our audit, our responsibility is to read the other information and, in doing so, consider whether it is materially inconsistent with the financial statements or our knowledge obtained during the audit. We have nothing to report in this regard."),
+    mk("a06","SA 700","Management's Responsibility for the Financial Statements","Description of management's responsibility for preparation, internal controls and going concern assessment.","yes","The Company's Board of Directors is responsible for the matters stated in Section 134(5) of the Act with respect to the preparation of these financial statements that give a true and fair view of the financial position, financial performance and cash flows of the Company, including the maintenance of adequate accounting records, safeguarding of assets, prevention and detection of frauds and other irregularities, selection and application of appropriate accounting policies, and design, implementation and maintenance of adequate internal financial controls."),
+    mk("a07","SA 700","Auditor's Responsibility for the Audit of the Financial Statements","Standard description of the auditor's objectives — reasonable assurance, professional judgment, and communication with those charged with governance.","yes","Our objectives are to obtain reasonable assurance about whether the financial statements as a whole are free from material misstatement, whether due to fraud or error, and to issue an auditor's report that includes our opinion. As part of an audit in accordance with SAs, we exercise professional judgment and maintain professional skepticism throughout the audit, and we communicate with those charged with governance regarding, among other matters, the planned scope and timing of the audit and significant audit findings."),
+  ]},
+  { name:"Report on Other Legal &amp; Regulatory Requirements — Section 143(3)", items:[
+    mk("a08","Sec 143(3)(a)","Information &amp; Explanations Obtained","Confirmation that all information and explanations necessary for the audit were obtained.","yes","We have sought and obtained all the information and explanations which, to the best of our knowledge and belief, were necessary for the purposes of our audit."),
+    mk("a09","Sec 143(3)(b)","Proper Books of Account","Confirmation that proper books of account as required by law have been kept, so far as appears from an examination of those books.","yes","In our opinion, proper books of account as required by law have been kept by the Company so far as it appears from our examination of those books, including relevant records relating to the preparation of the aforesaid financial statements."),
+    mk("a10","Sec 143(3)(c)","Agreement with Books of Account","Confirmation that the Balance Sheet, Statement of Profit and Loss and Cash Flow Statement are in agreement with the books of account.","yes","The Balance Sheet, the Statement of Profit and Loss, and the Cash Flow Statement dealt with by this Report are in agreement with the books of account."),
+    mk("a11","Sec 143(3)(d)","Compliance with Accounting Standards","Confirmation that the financial statements comply with the Accounting Standards specified under Section 133.","yes","In our opinion, the aforesaid financial statements comply with the Accounting Standards specified under Section 133 of the Act, read with relevant rules issued thereunder."),
+    mk("a12","Sec 143(3)(g)","Directors' Disqualification under Sec 164(2)","Confirmation on directors and their disqualification status, based on written representations received.","yes","On the basis of the written representations received from the directors as on {{fy}}, taken on record by the Board of Directors, none of the directors is disqualified as on that date from being appointed as a director in terms of Section 164(2) of the Act."),
+    mk("a13","Sec 143(3)(i)","Internal Financial Controls — Adequacy &amp; Operating Effectiveness","Reporting on the adequacy and operating effectiveness of internal financial controls over financial reporting, with reference to a separate Annexure (Sec 143(3)(i) report).","yes","With respect to the adequacy of the internal financial controls over financial reporting of the Company and the operating effectiveness of such controls, refer to our separate Report in Annexure [●]. Our report expresses an unmodified opinion on the adequacy and operating effectiveness of the Company's internal financial controls over financial reporting."),
+    mk("a14","Sec 197(16)","Managerial Remuneration under Sec 197","Reporting on whether remuneration paid to directors is in accordance with Section 197.","yes","In our opinion and according to the information and explanations given to us, the remuneration paid by the Company to its directors during the year is in accordance with the provisions of Section 197 read with Schedule V to the Act."),
+    mk("a15","Rule 11(a)-(e)","Rule 11 Matters","Combined disclosure: pending litigations, provision for foreseeable losses, IEPF delays, dividend declaration compliance under Sec 123, and audit trail (edit log) requirement.","yes","With respect to the other matters to be included in the Auditor's Report in accordance with Rule 11 of the Companies (Audit and Auditors) Rules, 2014, in our opinion and to the best of our information and according to the explanations given to us:\n(i) The Company has disclosed the impact of pending litigations on its financial position in its financial statements — refer Note [●];\n(ii) The Company did not have any long-term contracts including derivative contracts for which there were any material foreseeable losses;\n(iii) There has been no delay in transferring amounts, required to be transferred, to the Investor Education and Protection Fund by the Company;\n(iv)(a) Management has represented that no funds have been advanced or loaned to any other person with the understanding that it shall lend or invest such funds on behalf of the Company;\n(iv)(b) Management has represented that no funds have been received by the Company from any person with the understanding that the Company shall lend or invest such funds on behalf of the ultimate beneficiaries;\n(v) The dividend declared/paid during the year is in compliance with Section 123 of the Act;\n(vi) Based on our examination, the Company has used accounting software which has a feature of recording an audit trail (edit log) facility, and the same has operated throughout the year for all relevant transactions, and no instance of the audit trail being tampered with was noticed."),
+  ]},
+  { name:"Companies (Auditor's Report) Order, 2020 (CARO) — Applicability", items:[
+    mk("a16","CARO 2020","Applicability Statement","State whether CARO 2020 applies to the Company (it does not apply to certain small/private companies meeting the exemption thresholds).","yes","As required by the Companies (Auditor's Report) Order, 2020 (\"the Order\") issued by the Central Government in terms of Section 143(11) of the Act, we give in Annexure [A] a statement on the matters specified in paragraphs 3 and 4 of the Order, to the extent applicable. / The Company is exempt from the applicability of the Order as it meets the exemption criteria prescribed under paragraph 2 of the Order, being a private company not falling within the specified thresholds of paid-up capital, borrowings and total revenue."),
+  ]},
+  { name:"Annexure A — CARO 2020 Clause-wise Reporting (Paragraph 3)", items:[
+    mk("caro01","Cl. (i)","Property, Plant &amp; Equipment / Intangible Assets","Records of PPE, physical verification, title deeds, revaluation, and benami property proceedings.","no","(a) The Company has maintained proper records showing full particulars, including quantitative details and situation of Property, Plant and Equipment.\n(b) The Property, Plant and Equipment have been physically verified by the management during the year in accordance with a phased programme, and no material discrepancies were noticed.\n(c) The title deeds of all immovable properties held by the Company are held in the name of the Company.\n(d) The Company has not revalued its Property, Plant and Equipment during the year.\n(e) No proceedings have been initiated or are pending against the Company for holding benami property under the Prohibition of Benami Property Transactions Act, 1988."),
+    mk("caro02","Cl. (ii)","Inventory","Physical verification of inventory and working capital bank sanction discrepancies.","no","(a) The inventory, except goods-in-transit, has been physically verified by the management during the year, and no material discrepancies were noticed on such verification.\n(b) The Company has not been sanctioned working capital limits in excess of ₹5 crore, in aggregate, from banks or financial institutions on the basis of security of current assets."),
+    mk("caro03","Cl. (iii)","Investments, Loans, Advances &amp; Guarantees","Investments in, or loans/advances/guarantees to, companies, firms, LLPs or other parties.","no","The Company has not made investments in, provided any guarantee or security, or granted any loans or advances in the nature of loans, secured or unsecured, to companies, firms, Limited Liability Partnerships or any other parties during the year."),
+    mk("caro04","Cl. (iv)","Compliance with Sections 185 &amp; 186","Loans, investments, guarantees and security in compliance with Sections 185 and 186 of the Act.","no","In our opinion and according to the information and explanations given to us, the Company has complied with the provisions of Sections 185 and 186 of the Act in respect of loans, investments, guarantees and security, to the extent applicable."),
+    mk("caro05","Cl. (v)","Deposits Accepted","Compliance with Sections 73 to 76 in respect of deposits accepted from the public.","no","The Company has not accepted any deposits or amounts deemed to be deposits within the meaning of Sections 73 to 76 of the Act; accordingly, this clause is not applicable."),
+    mk("caro06","Cl. (vi)","Cost Records","Requirement to maintain cost records under Section 148(1) of the Act.","no","The Central Government has not prescribed maintenance of cost records under sub-section (1) of Section 148 of the Act for the products/services of the Company; accordingly, this clause is not applicable."),
+    mk("caro07","Cl. (vii)","Statutory Dues","Deposit of undisputed statutory dues (GST, PF, ESI, Income Tax, etc.) and details of disputed dues.","no","(a) The Company has been generally regular in depositing undisputed statutory dues including Goods and Services Tax, Provident Fund, Employees' State Insurance, Income Tax, and other material statutory dues with the appropriate authorities, and there were no arrears as at the balance sheet date outstanding for more than six months.\n(b) There are no statutory dues referred to above which have not been deposited on account of any dispute."),
+    mk("caro08","Cl. (viii)","Unrecorded Income in Tax Assessments","Income surrendered or disclosed as unrecorded income during tax assessments under the Income Tax Act.","no","There were no transactions relating to previously unrecorded income that were surrendered or disclosed as income during the year in the tax assessments under the Income Tax Act, 1961."),
+    mk("caro09","Cl. (ix)","Repayment of Loans &amp; Borrowings","Default in repayment of loans/borrowings to banks, financial institutions, government or debenture holders.","no","(a) The Company has not defaulted in repayment of loans or borrowings or in the payment of interest to any lender during the year.\n(b) The Company has not been declared a wilful defaulter by any bank, financial institution or other lender.\n(c) Term loans availed by the Company were applied for the purposes for which they were obtained.\n(d) No funds raised on short-term basis have been utilised for long-term purposes.\n(e) The Company has not taken any funds from any entity to meet the obligations of its subsidiaries, associates or joint ventures.\n(f) The Company has not raised loans during the year on the pledge of securities held in its subsidiaries, joint ventures or associate companies."),
+    mk("caro10","Cl. (x)","Utilisation of Money Raised","Utilisation of moneys raised via IPO/further public offer and term loans for stated purposes.","no","(a) The Company did not raise any moneys by way of initial public offer or further public offer (including debt instruments) during the year.\n(b) The Company has not made any preferential allotment or private placement of shares or convertible debentures during the year."),
+    mk("caro11","Cl. (xi)","Fraud Reporting","Any fraud by/on the Company noticed or reported during the year, and reporting under Section 143(12).","no","(a) No fraud by the Company or on the Company has been noticed or reported during the year.\n(b) No report under sub-section (12) of Section 143 has been filed in Form ADT-4 with the Central Government during the year.\n(c) We have not come across any whistle-blower complaints received during the year by the Company."),
+    mk("caro12","Cl. (xii)","Nidhi Company Compliance","Applicable only where the Company is a Nidhi Company — net owned funds and deposit liability ratio.","no","The Company is not a Nidhi Company; accordingly, this clause is not applicable."),
+    mk("caro13","Cl. (xiii)","Related Party Transactions","Compliance with Sections 177 and 188 in respect of transactions with related parties.","no","In our opinion, all transactions with related parties are in compliance with Sections 177 and 188 of the Act, where applicable, and the details have been disclosed in the financial statements as required by the applicable accounting standards."),
+    mk("caro14","Cl. (xiv)","Internal Audit System","Applicability and adequacy of the internal audit system, commensurate with the size and nature of business.","no","(a) In our opinion, the Company has an internal audit system commensurate with the size and nature of its business.\n(b) We have considered the internal audit reports issued to the Company during the year and covering the period up to [date] for the period under audit."),
+    mk("caro15","Cl. (xv)","Non-Cash Transactions with Directors","Compliance with Section 192 for non-cash transactions with directors or persons connected with them.","no","The Company has not entered into any non-cash transactions with directors or persons connected with them; accordingly, the provisions of Section 192 of the Act are not applicable."),
+    mk("caro16","Cl. (xvi)","NBFC Registration Requirement","Registration requirement under Section 45-IA of the Reserve Bank of India Act, 1934.","no","The Company is not required to be registered under Section 45-IA of the Reserve Bank of India Act, 1934, and has not conducted any Non-Banking Financial or Housing Finance activities during the year."),
+    mk("caro17","Cl. (xvii)","Cash Losses","Cash losses incurred in the current and immediately preceding financial year.","no","The Company has not incurred any cash losses during the financial year covered by our audit and the immediately preceding financial year."),
+    mk("caro18","Cl. (xviii)","Resignation of Statutory Auditors","Whether there has been a resignation of statutory auditors during the year, and related considerations.","no","There has been no resignation of the statutory auditors of the Company during the year under review."),
+    mk("caro19","Cl. (xix)","Material Uncertainty — Going Concern","Assessment of financial ratios, ageing, expected dates of realisation of financial assets and payment of financial liabilities, and material uncertainty on meeting liabilities.","no","On the basis of the financial ratios, ageing and expected dates of realisation of financial assets and payment of financial liabilities, other information accompanying the financial statements, and our knowledge of the Board and management plans, we are of the opinion that no material uncertainty exists as on the date of the audit report that the Company is capable of meeting its liabilities existing at the date of the balance sheet as and when they fall due within a period of one year from the balance sheet date."),
+    mk("caro20","Cl. (xx)","Unspent CSR Amount","Transfer of unspent CSR amount to a specified fund under Schedule VII or to an unspent CSR account, as applicable.","no","In our opinion, there is no unspent amount under sub-section (5) of Section 135 of the Act pursuant to any project, other than ongoing projects, requiring a transfer to a Fund specified in Schedule VII of the Act; accordingly, this clause is not applicable to the Company for the year."),
+    mk("caro21","Cl. (xxi)","Qualifications in Subsidiaries' CARO Reports","Applicable only to consolidated financial statements — details of qualifications or adverse remarks in the CARO reports of subsidiaries/associates/joint ventures included in the consolidation.","no","This clause is applicable only in the case of consolidated financial statements and is not applicable to the standalone financial statements of the Company."),
+  ]},
+  { name:"Annexure B — Additional Regulatory Information under Schedule III", items:[
+    mk("sch01","Sch III — Note","Financial Statements Prepared in Accordance with Schedule III","Confirmation that the balance sheet and statement of profit and loss are drawn up in the format prescribed under Schedule III (Division I/II/III, as applicable) to the Act.","yes","We have verified that the accompanying financial statements have been prepared in the format prescribed under Schedule III (Division [I/II/III]) to the Companies Act, 2013, and that the disclosures required thereunder, including the Additional Regulatory Information set out below, have been made in the notes to the financial statements, to the extent applicable to the Company."),
+    mk("sch02","Sch III(A)","Title Deeds of Immovable Property Not Held in Company's Name","Verification of the note disclosing immovable properties whose title deeds are not held in the name of the Company.","no","According to the information and explanations given to us and based on our examination of the records, the title deeds of all immovable properties disclosed in the financial statements are held in the name of the Company; accordingly, no disclosure under this head is required."),
+    mk("sch03","Sch III(B)","Revaluation of Property, Plant &amp; Equipment / Intangible Assets","Verification of disclosure where the Company has revalued its Property, Plant and Equipment or intangible assets, including the basis of valuation.","no","The Company has not revalued its Property, Plant and Equipment (including right-of-use assets) or intangible assets during the year; accordingly, no disclosure or valuer's report is applicable under this head."),
+    mk("sch04","Sch III(C)","Loans/Advances to Promoters, Directors, KMPs &amp; Related Parties","Verification of disclosure of loans or advances in the nature of loans granted to promoters, directors, KMPs and related parties, repayable on demand or without specifying terms of repayment.","no","No loans or advances in the nature of loans have been granted to promoters, directors, KMPs or other related parties, either severally or jointly with any other person, that are repayable on demand or without specifying any terms or period of repayment."),
+    mk("sch05","Sch III(D)","Capital Work-in-Progress — Ageing Schedule","Verification of the age-wise breakup of Capital Work-in-Progress and disclosure of projects overdue or exceeding their cost as compared to the original plan.","no","The age-wise breakup of Capital Work-in-Progress, together with details of projects that are overdue or have exceeded their original cost, has been disclosed in the notes to the financial statements, to the extent applicable."),
+    mk("sch06","Sch III(E)","Intangible Assets under Development — Ageing Schedule","Verification of the age-wise breakup of intangible assets under development and projects overdue or exceeding cost.","no","The Company does not have any intangible assets under development as at the balance sheet date; accordingly, no ageing schedule is applicable."),
+    mk("sch07","Sch III(F)","Details of Benami Property Held","Verification of disclosure of any proceedings initiated or pending against the Company for holding benami property under the Prohibition of Benami Property Transactions Act, 1988.","no","No proceedings have been initiated or are pending against the Company for holding any benami property under the Prohibition of Benami Property Transactions Act, 1988 and the rules made thereunder."),
+    mk("sch08","Sch III(G)","Borrowings Secured Against Current Assets — Reconciliation","Where borrowings are secured against current assets, verification that quarterly/monthly returns or statements filed with banks or financial institutions are in agreement with the books of account.","no","The Company has not been sanctioned working capital limits in excess of ₹5 crore, in aggregate, from banks or financial institutions on the basis of security of current assets; accordingly, this disclosure is not applicable."),
+    mk("sch09","Sch III(H)","Wilful Defaulter Declaration","Verification of disclosure as to whether the Company has been declared a wilful defaulter by any bank, financial institution or other lender.","no","The Company has not been declared a wilful defaulter by any bank, financial institution or other lender or government authority during the year."),
+    mk("sch10","Sch III(I)","Relationship with Companies Struck Off under Section 248","Verification of disclosure of transactions with companies struck off under Section 248 of the Act or Section 560 of the Companies Act, 1956.","no","The Company has not entered into any transactions with companies struck off under Section 248 of the Companies Act, 2013 or Section 560 of the Companies Act, 1956 during the year."),
+    mk("sch11","Sch III(J)","Registration / Satisfaction of Charges with the Registrar of Companies","Verification of disclosure where any charge or satisfaction of charge is yet to be registered with the Registrar of Companies beyond the statutory period.","no","There are no charges or satisfactions of charges which are yet to be registered with the Registrar of Companies beyond the statutory period, and where applicable, the reasons therefor have been disclosed in the notes."),
+    mk("sch12","Sch III(K)","Compliance with Number of Layers of Companies","Verification of compliance with Section 2(87) read with the Companies (Restriction on Number of Layers) Rules, 2017.","no","The Company has complied with the number of layers prescribed under clause (87) of Section 2 of the Act read with the Companies (Restriction on Number of Layers) Rules, 2017."),
+    mk("sch13","Sch III(L)","Compliance with Approved Scheme(s) of Arrangement","Verification of disclosure where the Company has entered into a scheme of arrangement approved by a competent authority, and adjustments made in accordance with the accounting standards versus the scheme.","no","No scheme of arrangement has been approved by the competent authority in terms of Sections 230 to 237 of the Act during the year; accordingly, this disclosure is not applicable."),
+    mk("sch14","Sch III(M)","Utilisation of Borrowed Funds &amp; Share Premium (Layering / Ultimate Beneficiaries)","Verification that no funds have been advanced or received to/from any person with the understanding of lending, investing or providing guarantees on behalf of ultimate beneficiaries.","yes","Refer to the corresponding disclosure at Rule 11(e) above; the same verification and conclusion apply for the purposes of the Additional Regulatory Information required to be disclosed in the notes to the financial statements under Schedule III."),
+    mk("sch15","Sch III(N)","Undisclosed Income under Tax Laws","Verification of disclosure of any transaction not recorded in the books that has been surrendered or disclosed as income during the year in tax assessments.","no","There have been no transactions which are not recorded in the books of account that have been surrendered or disclosed as income during the year in the tax assessments under the Income Tax Act, 1961, nor any previously unrecorded income requiring disclosure."),
+    mk("sch16","Sch III(O)","Details of Crypto Currency or Virtual Currency","Verification of disclosure of profit or loss, amount of currency held, and deposits/advances from any person for trading or investing in crypto/virtual currency.","no","The Company has not traded or invested in crypto currency or virtual currency during the year, and accordingly no disclosure is required under this head."),
+    mk("sch17","Sch III(P)","Explanation for Variance in Financial Ratios (&gt;25%)","Verification of the explanatory note for any financial ratio disclosed in the financial statements that has changed by 25% or more as compared to the preceding year.","yes","We have reviewed management's explanations for the variance in each of the financial ratios disclosed in the notes to the financial statements where the movement as compared to the preceding financial year exceeds 25%, and are satisfied that the explanations given are reasonable and adequately disclosed."),
+  ]},
+];
+
+/* Flatten for lookup */
+const itemsById = {};
+[...directorGroups, ...auditorGroups].forEach(g=>g.items.forEach(it=>itemsById[it.id]=it));
+
+/* =========================================================================
+   STATE / COMPANY INFO
+   ========================================================================= */
+const company = {
+  name:"", cin:"", fy:"", boardDate:"", office:"",
+  firm:"", frn:"", partner:"", membership:"", udin:"", place:"", date:""
+};
+
+const companyFieldMap = {
+  "c-name":"name","c-cin":"cin","c-fy":"fy","c-boardDate":"boardDate","c-office":"office",
+  "a-firm":"firm","a-frn":"frn","a-partner":"partner","a-membership":"membership",
+  "a-udin":"udin","a-place":"place","a-date":"date"
+};
+Object.keys(companyFieldMap).forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener("input", ()=>{ company[companyFieldMap[id]] = el.value; });
+});
+
+function tok(str){
+  if(!str) return "";
+  return str
+    .replaceAll("{{company}}", company.name || "[Company Name]")
+    .replaceAll("{{fy}}", company.fy || "[Financial Year End]");
+}
+
+/* =========================================================================
+   RENDERING CLAUSE GROUPS
+   ========================================================================= */
+function cardHTML(item, num){
+  const st = item.applicable === "yes" ? "yes" : item.applicable === "no" ? "no" : "pending";
+  return `
+  <div class="card" data-id="${item.id}" data-state="${st}">
+    <div class="card-num">${num}</div>
+    <div class="card-main">
+      <div class="card-head">
+        <div class="card-title-wrap">
+          <span class="ref-tag">${item.ref}</span>
+          <h3>${item.title}</h3>
+          <div class="guidance">${item.guidance}</div>
+        </div>
+        <div class="toggle-group">
+          <label class="opt yes">
+            <input type="radio" name="app-${item.id}" value="yes" ${item.applicable==="yes"?"checked":""}>
+            <span>✓ Applicable</span>
+          </label>
+          <label class="opt no">
+            <input type="radio" name="app-${item.id}" value="no" ${item.applicable==="no"?"checked":""}>
+            <span>— Not Applicable</span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="yes-box ${item.applicable==="no"?"hidden":""}">
+          <span class="field-label">Drafting text</span>
+          <textarea class="text-input" placeholder="Enter the wording for this clause...">${escapeHtml(item.text)}</textarea>
+        </div>
+        <div class="na-box ${item.applicable==="no"?"":"hidden"}">
+          <span class="field-label">Reason not applicable (optional, shown in the compiled report)</span>
+          <textarea class="na-input" placeholder="e.g. The Company does not meet the applicability threshold under...">${escapeHtml(item.naReason)}</textarea>
+        </div>
+      </div>
+      ${item.custom ? `<div class="card-foot"><button class="del-btn" data-del="${item.id}">Remove this custom clause</button></div>` : ""}
+    </div>
+  </div>`;
+}
+function escapeHtml(s){
+  return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderGroups(containerEl, groups, sectionKey){
+  containerEl.innerHTML = groups.map((g,gi)=>`
+    <div class="group-heading">
+      <span class="gnum">${gi+1}</span>
+      <h2>${g.name}</h2>
+      <span class="gcount">${g.items.length} clause${g.items.length===1?"":"s"}</span>
+    </div>
+    <div class="group-items" data-gi="${gi}">
+      ${g.items.map((it,ii)=>cardHTML(it, String(ii+1).padStart(2,"0"))).join("")}
+    </div>
+    <div class="add-clause-row"><button class="btn small" data-addto="${gi}" data-section="${sectionKey}">+ Add a custom clause to this group</button></div>
+  `).join("");
+
+  // set textarea values as properties (avoids HTML-escaping edge cases beyond basic escaping above)
+  containerEl.querySelectorAll(".card").forEach(card=>{
+    const id = card.dataset.id;
+    const item = itemsById[id];
+    card.querySelector(".text-input").value = item.text;
+    card.querySelector(".na-input").value = item.naReason;
+  });
+}
+
+function attachDelegatedEvents(containerEl, groups, sectionKey){
+  containerEl.addEventListener("change", e=>{
+    if(e.target.matches('input[type=radio]')){
+      const card = e.target.closest(".card");
+      const id = card.dataset.id;
+      const item = itemsById[id];
+      item.applicable = e.target.value;
+      card.dataset.state = item.applicable;
+      card.querySelector(".yes-box").classList.toggle("hidden", item.applicable==="no");
+      card.querySelector(".na-box").classList.toggle("hidden", item.applicable!=="no");
+      updateProgress(sectionKey, groups);
+    }
+  });
+  containerEl.addEventListener("input", e=>{
+    if(e.target.matches(".text-input")){
+      const id = e.target.closest(".card").dataset.id;
+      itemsById[id].text = e.target.value;
+    }
+    if(e.target.matches(".na-input")){
+      const id = e.target.closest(".card").dataset.id;
+      itemsById[id].naReason = e.target.value;
+    }
+  });
+  containerEl.addEventListener("click", e=>{
+    if(e.target.matches("[data-addto]")){
+      const gi = +e.target.dataset.addto;
+      addCustomClause(groups, gi, sectionKey, containerEl);
+    }
+    if(e.target.matches("[data-del]")){
+      const id = e.target.dataset.del;
+      removeCustomClause(groups, id, sectionKey, containerEl);
+    }
+  });
+}
+
+let customSeq = 1;
+function addCustomClause(groups, gi, sectionKey, containerEl){
+  semiForm("Add a custom clause", [["Title of the custom clause","Additional Disclosure"],["Reference / section (optional)","\u2014"],["Short guidance note shown under the title (optional)","Custom clause added for this company."]], function(v){
+    const title = v[0], ref = v[1] || "\u2014", guidance = v[2] || "";
+    const id = "custom-" + (customSeq++) + "-" + Date.now();
+    const item = mk(id, ref, title || "Untitled clause", guidance, "yes", "");
+    item.custom = true;
+    itemsById[id] = item;
+    groups[gi].items.push(item);
+    renderGroups(containerEl, groups, sectionKey);
+    updateProgress(sectionKey, groups);
+  });
+}
+function removeCustomClause(groups, id, sectionKey, containerEl){
+  if(!confirm("Remove this clause? This cannot be undone.")) return;
+  groups.forEach(g=>{ g.items = g.items.filter(it=>it.id!==id); });
+  delete itemsById[id];
+  renderGroups(containerEl, groups, sectionKey);
+  updateProgress(sectionKey, groups);
+}
+
+function updateProgress(sectionKey, groups){
+  let total=0, done=0;
+  groups.forEach(g=>g.items.forEach(it=>{ total++; if(it.applicable==="yes"||it.applicable==="no") done++; }));
+  document.getElementById("progress-"+sectionKey).style.width = total? (done/total*100)+"%":"0%";
+  document.getElementById("progress-label-"+sectionKey).textContent = `${done} / ${total} reviewed`;
+  document.getElementById("count-"+sectionKey).textContent = `${done}/${total}`;
+}
+
+const directorContainer = document.getElementById("director-groups");
+const auditorContainer = document.getElementById("auditor-groups");
+renderGroups(directorContainer, directorGroups, "director");
+renderGroups(auditorContainer, auditorGroups, "auditor");
+attachDelegatedEvents(directorContainer, directorGroups, "director");
+attachDelegatedEvents(auditorContainer, auditorGroups, "auditor");
+updateProgress("director", directorGroups);
+updateProgress("auditor", auditorGroups);
+
+/* =========================================================================
+   NAVIGATION
+   ========================================================================= */
+const navTitles = {
+  company:["Company &amp; Signatory Details","Used to auto-fill the report headers and signature block."],
+  director:["Director's Report","Cover every mandatory item, mark applicable / not applicable, and edit the drafting text."],
+  auditor:["Auditor's Report","Standard SA reporting, Section 143(3) matters, and CARO 2020 clause-wise reporting."],
+  preview:["Preview &amp; Export","Review the compiled report exactly as it will be exported, then export or print."]
+};
+document.querySelectorAll(".navitem").forEach(nav=>{
+  nav.addEventListener("click", ()=>{
+    document.querySelectorAll(".navitem").forEach(n=>n.classList.remove("active"));
+    nav.classList.add("active");
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    const key = nav.dataset.panel;
+    document.getElementById("panel-"+key).classList.add("active");
+    document.getElementById("page-title").innerHTML = navTitles[key][0];
+    document.getElementById("page-sub").innerHTML = navTitles[key][1];
+    if(key==="preview") renderPreview(currentPreview);
+  });
+});
+
+/* =========================================================================
+   PREVIEW
+   ========================================================================= */
+let currentPreview = "director";
+document.querySelectorAll(".tabbtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentPreview = btn.dataset.view;
+    renderPreview(currentPreview);
+  });
+});
+
+function compiledGroupsHtml(groups){
+  let n = 0;
+  return groups.map(g=>{
+    const items = g.items.map(it=>{
+      n++;
+      const isNA = it.applicable === "no";
+      const bodyText = isNA
+        ? (it.naReason ? escapeHtml(tok(it.naReason)) : "Not Applicable to the Company for the year under review.")
+        : escapeHtml(tok(it.text)) || "[Not yet drafted]";
+      return `<div class="pclause">
+        <div class="pnum-ref"><span class="pnum">${n}.</span><span class="pref">${it.ref}</span></div>
+        <div class="ptitle">${it.title}${isNA ? " — Not Applicable" : ""}</div>
+        <div class="ptext${isNA?" na":""}">${bodyText}</div>
+      </div>`;
+    }).join("");
+    return `<h3 class="pgroup">${g.name}</h3>${items}`;
+  }).join("");
+}
+
+function renderPreview(which){
+  const paper = document.getElementById("preview-paper");
+  const compName = company.name || "[Company Name]";
+  const fy = company.fy || "[Financial Year End]";
+  if(which==="director"){
+    paper.innerHTML = `
+      <hr class="letterhead-rule">
+      <h2 class="doc-title">Report of the Board of Directors</h2>
+      <div class="doc-sub"><strong>${compName}</strong><br>CIN: ${company.cin||"[CIN]"} &nbsp;·&nbsp; Financial Year Ended ${fy}</div>
+      <p class="intro-line">To,<br>The Members,<br>${compName}</p>
+      <p class="intro-line">Your Directors are pleased to present their Report on the business and operations of the Company, together with the audited financial statements, for the financial year ended ${fy}.</p>
+      ${compiledGroupsHtml(directorGroups)}
+      <div class="sign">
+        <p>For and on behalf of the Board of Directors of<br><strong>${compName}</strong></p>
+        <div class="sigspace"></div>
+        <div class="line">_____________________</div>
+        <div class="line">Director</div>
+        <div class="line" style="margin-top:16px;">Place: ${company.place||"[Place]"}</div>
+        <div class="line">Date: ${company.date||"[Date]"}</div>
+      </div>
+    `;
+  } else {
+    paper.innerHTML = `
+      <hr class="letterhead-rule">
+      <h2 class="doc-title">Independent Auditor's Report</h2>
+      <div class="doc-sub">To the Members of <strong>${compName}</strong><br>Report on the Audit of the Financial Statements — Year Ended ${fy}</div>
+      ${compiledGroupsHtml(auditorGroups)}
+      <div class="sign">
+        <p>For <strong>${company.firm||"[Audit Firm Name]"}</strong><br>Chartered Accountants<br>Firm Registration No.: ${company.frn||"[FRN]"}</p>
+        <div class="sigspace"></div>
+        <div class="line">_____________________</div>
+        <div class="line">${company.partner||"[Partner Name]"}</div>
+        <div class="line">Partner</div>
+        <div class="line">Membership No.: ${company.membership||"[Membership No.]"}</div>
+        <div class="line">UDIN: ${company.udin||"[UDIN]"}</div>
+        <div class="line" style="margin-top:16px;">Place: ${company.place||"[Place]"}</div>
+        <div class="line">Date: ${company.date||"[Date]"}</div>
+      </div>
+    `;
+  }
+}
+renderPreview(currentPreview);
+
+/* =========================================================================
+   EXPORT — WORD (.doc) & PRINT
+   ========================================================================= */
+document.getElementById("btn-export-doc").addEventListener("click", ()=>{
+  renderPreview(currentPreview);
+  const content = document.getElementById("preview-paper").innerHTML;
+  const docHtml = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="utf-8"><title>Report</title>
+  <style>
+    body{font-family:Georgia,serif; font-size:12pt; color:#111; line-height:1.55;}
+    .letterhead-rule{border:none; border-top:2pt solid #16233F; margin:0 0 18pt;}
+    h2.doc-title{text-align:center; text-transform:uppercase; font-size:16pt; letter-spacing:1pt; margin-bottom:4pt;}
+    .doc-sub{text-align:center; font-size:10.5pt; color:#444; margin-bottom:20pt;}
+    .intro-line{margin-bottom:14pt;}
+    h3.pgroup{font-size:12pt; text-transform:uppercase; background:#F1EFE6; border-left:3pt solid #9C7A34; padding:6pt 10pt; margin-top:22pt; margin-bottom:12pt;}
+    .pclause{margin-bottom:14pt;}
+    .pnum-ref{margin-bottom:2pt;}
+    .pnum{font-weight:bold; font-size:11pt; color:#16233F; margin-right:8pt;}
+    .pref{font-size:9pt; color:#8a6d2f; text-transform:uppercase; font-weight:bold;}
+    .ptitle{font-weight:bold; font-style:italic; font-size:11.5pt; margin-bottom:4pt;}
+    .ptext{white-space:pre-wrap; font-size:11pt; text-align:justify; padding-left:14pt;}
+    .ptext.na{color:#777; font-style:italic;}
+    .sign{margin-top:34pt;}
+    .sigspace{height:26pt;}
+  </style></head>
+  <body>${content}</body></html>`;
+  const blob = new Blob(['\ufeff', docHtml], {type:'application/msword'});
+  const filename = (currentPreview==="director" ? "Directors-Report_" : "Auditors-Report_") + (company.name||"Company").replace(/[^a-z0-9]+/gi,"_") + ".doc";
+  triggerDownload(blob, filename);
+  showToast("Word document exported.");
+});
+
+document.getElementById("btn-print").addEventListener("click", ()=>{
+  renderPreview(currentPreview);
+  document.querySelectorAll(".navitem").forEach(n=>n.classList.remove("active"));
+  document.querySelector('[data-panel="preview"]').classList.add("active");
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-preview").classList.add("active");
+  setTimeout(()=>window.print(), 80);
+});
+
+/* =========================================================================
+   DOWNLOAD / TOAST HELPERS
+   ========================================================================= */
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+</script>
+<script>
+/* TaxSphere app: in-page form instead of prompt(), which the Android WebView can't show */
+function semiForm(title,fields,cb){var o=document.createElement('div');
+o.style.cssText='position:fixed;inset:0;background:rgba(10,15,30,.55);z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:16px';
+var h='<div style="background:#fff;color:#16233F;border-radius:14px;padding:18px;width:100%;max-width:420px;box-shadow:0 18px 50px rgba(0,0,0,.35);font:14px/1.45 system-ui,sans-serif"><div style="font-weight:700;font-size:16px;margin-bottom:10px">'+title+'</div>';
+fields.forEach(function(f,i){h+='<label style="display:block;font-size:12px;font-weight:600;color:#54627A;margin:8px 0 4px">'+f[0]+'</label><input data-i="'+i+'" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #D6DAE4;border-radius:8px;font:14px system-ui,sans-serif">';});
+h+='<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button data-x="0" style="padding:10px 16px;border:1px solid #D6DAE4;background:#fff;border-radius:8px;font-weight:600">Cancel</button><button data-x="1" style="padding:10px 16px;border:0;background:#132449;color:#fff;border-radius:8px;font-weight:600">Add</button></div></div>';
+o.innerHTML=h;document.body.appendChild(o);var ins=o.querySelectorAll('input');fields.forEach(function(f,i){ins[i].value=f[1]||'';});ins[0].focus();ins[0].select();
+o.addEventListener('click',function(e){var x=e.target.getAttribute&&e.target.getAttribute('data-x');if(x===null&&e.target!==o)return;o.remove();
+ if(x==='1')cb([].map.call(ins,function(n){return n.value;}));});}
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

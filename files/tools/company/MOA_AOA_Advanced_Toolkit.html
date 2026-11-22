@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOA & AOA Advanced Toolkit | Companies Act, 2013</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1b2a38;
+  --ink-2:#28394a;
+  --brass:#9c7a34;
+  --brass-light:#c9a256;
+  --paper:#fbfaf6;
+  --paper-line:#e2dcc9;
+  --canvas:#eef1f2;
+  --line:#d6dde2;
+  --text:#232b31;
+  --muted:#66727b;
+  --accent-red:#7a2734;
+  --focus:#2f6f8f;
+  --ok:#1f7a3d;
+  --ok-bg:#e6f4ea;
+  --ok-bd:#b7dfc3;
+  --soon:#8a6d1f;
+  --soon-bg:#fff3d6;
+  --soon-bd:#f0d38a;
+  --late:#a33a3a;
+  --late-bg:#fdeaea;
+  --late-bd:#f3c6c6;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  font-family:'Inter',system-ui,Arial,sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, #26445c22, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #9c7a3422, transparent 55%),
+    var(--canvas);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.45;
+}
+header.top{
+  background:linear-gradient(120deg,#04070c 0%,#081a30 30%,#0e2c52 55%,#13437a 78%,#1b5fa6 100%);
+  background-size:240% 240%;
+  animation:gflow 16s ease infinite;
+  color:#fff;
+  padding:22px 28px 20px;
+  box-shadow:0 14px 30px -14px rgba(0,0,0,.65), inset 0 -1px 0 rgba(255,255,255,.06);
+  position:relative;
+  z-index:5;
+}
+@keyframes gflow{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+header.top .crest{display:flex;align-items:center;gap:14px;}
+header.top .mark{
+  width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(155deg,#0f2340 0%,#020509 70%);
+  border:1px solid rgba(70,150,220,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Source Serif 4',serif;font-weight:700;font-size:16px;color:#6cb2ea;
+  flex:0 0 auto;
+  box-shadow:
+    0 10px 18px -8px rgba(0,0,0,.65),
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -6px 10px rgba(0,0,0,.5),
+    0 0 14px -4px rgba(40,120,200,.55);
+  transform-style:preserve-3d;
+  transition:transform .35s ease;
+}
+header.top .crest:hover .mark{ transform:rotateY(14deg) rotateX(6deg) translateZ(2px); }
+header.top h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px;text-shadow:0 1px 0 rgba(0,0,0,.25);}
+header.top p.tag{margin:3px 0 0;font-size:12.5px;color:#c8d2da;}
+header.top .disclaimer{
+  margin-top:14px;font-size:12px;color:#dbe3e8;
+  border-top:1px solid rgba(255,255,255,.15);padding-top:10px;
+}
+
+.app{
+  max-width:1360px;margin:26px auto 60px;padding:0 20px;
+  display:grid;grid-template-columns:minmax(340px,460px) 1fr;gap:24px;
+  align-items:flex-start;
+}
+.app.hide{display:none;}
+@media (max-width: 980px){ .app{grid-template-columns:1fr;} }
+
+.toptabs{
+  background:linear-gradient(180deg,#0d1721,#0a141d);
+  display:flex;gap:2px;padding:0 24px;
+  box-shadow:0 6px 16px -10px rgba(0,0,0,.6);
+  position:relative;z-index:4;
+  overflow-x:auto;
+}
+.toptabs button{
+  appearance:none;border:none;background:transparent;
+  color:rgba(255,255,255,.6);padding:12px 18px;font-size:13px;font-weight:700;
+  cursor:pointer;border-bottom:3px solid transparent;font-family:inherit;white-space:nowrap;
+  transition:color .2s ease, border-color .2s ease;
+}
+.toptabs button:hover{ color:#fff; }
+.toptabs button.active{ color:#fff;border-bottom-color:#1b5fa6;background:rgba(255,255,255,.04); }
+
+/* ---- Guide tab ---- */
+.guide-wrap{max-width:1180px;margin:26px auto 60px;padding:0 20px;display:none;}
+.guide-wrap.show{display:block;}
+.guide-nav{
+  position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:6px;
+  background:rgba(238,241,242,.92);backdrop-filter:blur(4px);
+  padding:10px 2px 12px;margin-bottom:12px;border-bottom:1px solid var(--line);
+}
+.guide-nav a{
+  font-size:11.3px;font-weight:700;color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 12px;
+  white-space:nowrap;transition:all .15s ease;
+}
+.guide-nav a:hover{border-color:var(--focus);color:var(--focus);background:#eef7fb;}
+.guide-card{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:28px 32px 36px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+}
+.guide-card .g-title{font-size:19px;font-weight:700;color:var(--ink);margin:0 0 4px;}
+.guide-card .g-sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;font-style:italic;}
+.guide-note{
+  background:linear-gradient(180deg,#eef7fb,#e2f0f6);border:1px solid #bcdcea;color:#1c5578;
+  border-radius:7px;padding:12px 16px;font-size:12.5px;margin-bottom:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+}
+.guide-note a{color:#123a54;font-weight:700;}
+.note-inline{
+  background:#fbf7ee;border:1px solid #ecd396;border-radius:6px;
+  padding:9px 12px;font-size:12.6px;color:#6b4c00;margin:-4px 0 16px;
+}
+.guide-card h2{
+  background:linear-gradient(120deg,#0e2c52,#04070c);
+  color:#fff;padding:9px 14px;border-radius:6px;font-size:14px;letter-spacing:.3px;
+  margin:30px 0 14px;scroll-margin-top:64px;
+  box-shadow:0 6px 14px -8px rgba(10,20,35,.5);
+}
+.guide-card h2:first-of-type{margin-top:4px;}
+.guide-card h3{color:var(--ink);font-size:13.6px;margin:22px 0 10px;}
+.guide-card h4{
+  color:var(--ink);background:#eef4f8;border-left:4px solid var(--focus);
+  padding:6px 10px;font-size:13px;margin:20px 0 10px;border-radius:3px;
+}
+.guide-card p{font-size:13.3px;line-height:1.6;margin:0 0 12px;color:#2b333a;}
+.guide-card ul,.guide-card ol{font-size:13.3px;line-height:1.6;margin:0 0 14px 20px;padding:0;color:#2b333a;}
+.guide-card li{margin-bottom:5px;}
+.gtable-wrap{overflow-x:auto;margin:10px 0 20px;}
+table.gtable{border-collapse:collapse;width:100%;font-size:12.6px;min-width:560px;}
+table.gtable th{ background:var(--ink);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11.8px;border:1px solid #0a141d; }
+table.gtable td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;background:#fff;}
+table.gtable td.b{font-weight:700;background:#f5f7f8;}
+.guide-foot{font-size:11.5px;color:var(--muted);margin-top:20px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:#eef4f8;color:#1c5578;border:1px solid #cfe3ee;margin-right:4px;}
+.pill-brass{background:#fbf3e2;color:#7d611f;border-color:#ecd9ab;}
+.pill-red{background:#fdeaea;color:#a33a3a;border-color:#f3c6c6;}
+
+/* ---- Navigator (due-date) tab ---- */
+.nav-wrap{max-width:1180px;margin:26px auto 60px;padding:0 20px;display:none;}
+.nav-wrap.show{display:block;}
+.calc-card{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:22px 24px 26px;margin-bottom:22px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+}
+.calc-card h2{margin:0 0 4px;font-size:17px;color:var(--ink);}
+.calc-card .g-sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;font-style:italic;}
+.calc-fields{display:flex;flex-wrap:wrap;gap:12px 14px;margin-bottom:6px;}
+.calc-fields .fitem{flex:1 1 220px;}
+.calc-dynamic{display:flex;flex-wrap:wrap;gap:12px 14px;margin:12px 0;padding:14px;background:#f7f9f8;border:1px solid #dfe7e4;border-radius:8px;}
+.calc-dynamic .fitem{flex:1 1 220px;}
+.timeline{margin-top:18px;}
+.tl-item{
+  display:flex;gap:14px;align-items:flex-start;padding:13px 15px;border-radius:9px;margin-bottom:10px;
+  border:1px solid var(--line);background:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 8px 16px -14px rgba(20,30,45,.3);
+}
+.tl-item.ok{border-left:5px solid var(--ok);}
+.tl-item.soon{border-left:5px solid var(--soon-bd);background:#fffdf5;}
+.tl-item.late{border-left:5px solid var(--late);background:#fff9f9;}
+.tl-item.info{border-left:5px solid var(--focus);}
+.tl-date{flex:0 0 108px;text-align:center;}
+.tl-date .dnum{font-size:20px;font-weight:700;color:var(--ink);line-height:1.1;}
+.tl-date .dsub{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+.tl-body{flex:1 1 auto;min-width:0;}
+.tl-form{font-size:13.4px;font-weight:700;color:var(--ink);}
+.tl-desc{font-size:12.4px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.tl-status{flex:0 0 auto;font-size:10.8px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:4px 10px;border-radius:20px;white-space:nowrap;height:fit-content;}
+.tl-status.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-bd);}
+.tl-status.soon{background:var(--soon-bg);color:var(--soon);border:1px solid var(--soon-bd);}
+.tl-status.late{background:var(--late-bg);color:var(--late);border:1px solid var(--late-bd);}
+.tl-status.info{background:#eef4f8;color:#1c5578;border:1px solid #cfe3ee;}
+.ref-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.ref-chip{
+  border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;font-family:inherit;
+}
+.ref-chip:hover{border-color:var(--focus);color:var(--ink);}
+.ref-chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+/* ---- Shared form styling ---- */
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+  transition:box-shadow .3s ease, transform .3s ease;
+}
+.panel-form{padding:22px 22px 26px;}
+.panel-form:hover{ box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 26px 46px -22px rgba(20,30,45,.4), 0 6px 14px -6px rgba(20,30,45,.2); }
+.panel-preview{
+  position:sticky; top:20px;
+  padding:0; overflow:hidden;
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 40px);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 30px 55px -24px rgba(20,30,45,.45), 0 8px 18px -8px rgba(20,30,45,.22);
+}
+.preview-head{
+  padding:14px 20px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,#fbfaf7,#f2f1ec);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+  gap:10px;flex-wrap:wrap;
+}
+.preview-head span.lbl{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.preview-head span.fmt{font-size:11.5px;color:var(--muted);}
+.preview-tools{display:flex;align-items:center;gap:10px;}
+.doc-toggle{display:flex;gap:2px;background:#eef1f3;padding:3px;border-radius:8px;}
+.doc-toggle button{
+  border:none;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:700;
+  cursor:pointer;font-family:inherit;background:transparent;color:#5a6672;
+}
+.doc-toggle button.active{background:#fff;color:var(--ink);box-shadow:0 2px 6px -2px rgba(20,30,45,.3);}
+.preview-scroll{
+  overflow-y:auto;padding:34px 26px;
+  background:
+    radial-gradient(700px 260px at 50% 0%, rgba(20,30,45,.05), transparent 65%),
+    var(--canvas);
+}
+.cert-copy{
+  background:linear-gradient(180deg,#fffdf9 0%, var(--paper) 100%);
+  border:1px solid var(--paper-line);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 2px 3px rgba(20,30,40,.05), 0 18px 34px -16px rgba(20,30,40,.35), 0 40px 60px -30px rgba(20,30,40,.25);
+  max-width:740px;margin:0 auto;
+  padding:46px 50px 54px;
+  font-family:'Source Serif 4',Georgia,serif;
+  color:#20272c;
+}
+.cert-copy .co-name{font-size:17px;font-weight:700;text-align:center;letter-spacing:.3px;}
+.cert-copy .co-meta{font-size:12.5px;text-align:center;color:#4a5158;margin-top:3px;}
+.cert-copy .rule{border:none;border-top:2px solid var(--brass);margin:16px 0 18px;}
+.cert-copy .cert-title{ text-align:center;font-size:12.5px;letter-spacing:.4px;color:#3a414a;margin-bottom:4px; }
+.cert-copy .cert-title.big{font-size:15px;font-weight:700;letter-spacing:1px;margin-bottom:2px;}
+.cert-copy .item-title{
+  font-weight:700;font-size:13.6px;letter-spacing:.2px;
+  margin:24px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--paper-line);
+}
+.cert-copy .item-tag{font-size:10.8px;font-weight:700;color:var(--focus);text-transform:uppercase;letter-spacing:.5px;margin-right:8px;}
+.cert-copy .res-body p{font-size:13.6px;margin:0 0 12px;text-align:justify;}
+.cert-copy .sign-block{margin-top:36px;font-size:13.4px;}
+.cert-copy .sign-block .for-co{margin-bottom:40px;}
+.cert-copy .sign-line{border-top:1px solid #444;width:230px;margin-bottom:6px;}
+.cert-copy .sign-meta{font-size:12.5px;color:#4a5158;}
+.cert-copy ol.clauses{margin:0 0 14px 20px;padding:0;font-size:13.6px;}
+.cert-copy ol.clauses li{margin-bottom:10px;text-align:justify;}
+.cert-copy ol.regs{margin:0 0 14px 20px;padding:0;font-size:13.4px;}
+.cert-copy ol.regs li{margin-bottom:11px;text-align:justify;}
+.cert-copy .reg-heading{font-weight:700;font-size:12.6px;letter-spacing:.3px;color:#3a414a;margin:18px 0 6px;text-transform:uppercase;}
+.cert-copy table.subs{border-collapse:collapse;width:100%;font-size:12px;margin:12px 0 16px;}
+.cert-copy table.subs th{background:#eef1f2;border:1px solid var(--paper-line);padding:5px 7px;text-align:left;font-weight:700;}
+.cert-copy table.subs td{border:1px solid var(--paper-line);padding:6px 7px;vertical-align:top;}
+.ph{color:#a9917e;font-style:italic;}
+
+fieldset.grp{
+  border:1px solid var(--line);border-radius:9px;
+  padding:14px 16px 16px;margin:0 0 16px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfbfa 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 8px 16px -12px rgba(20,30,45,.22), 0 1px 2px rgba(20,30,45,.04);
+}
+fieldset.grp legend{ font-size:12px;font-weight:700;color:var(--ink);padding:0 6px;letter-spacing:.3px; }
+.frow{display:flex;flex-wrap:wrap;gap:12px 14px;margin-bottom:10px;}
+.frow:last-child{margin-bottom:0;}
+.fitem{flex:1 1 200px;display:flex;flex-direction:column;gap:4px;}
+.fitem.full{flex-basis:100%;}
+.fitem label{font-size:12px;font-weight:600;color:#374149;}
+.fitem .hint{font-size:11px;color:var(--muted);font-weight:400;}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  border:1px solid var(--line);border-radius:6px;
+  padding:8px 9px;font-size:13px;font-family:inherit;color:var(--text);width:100%;
+  background:#fdfdfc;
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), inset 0 -1px 0 rgba(255,255,255,.6);
+  transition:box-shadow .2s ease, border-color .2s ease;
+}
+textarea{resize:vertical;min-height:52px;font-family:inherit;}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--focus);
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), 0 0 0 3px rgba(47,111,143,.16);
+}
+.note-box{
+  font-size:12px;color:#6b4c00;background:linear-gradient(180deg,#fffaf0,#fff3d9);
+  border:1px solid #ecd396;border-radius:6px;padding:8px 10px;margin-top:4px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 3px 6px -3px rgba(140,100,0,.2);
+}
+.cond-section{display:none;}
+.cond-section.show{display:block;}
+.frow.cond-section.show{display:flex;}
+.section-tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;background:#eef1f3;padding:4px;border-radius:8px;
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.12);
+}
+.section-tab{
+  border:none;border-radius:6px;padding:9px 6px;font-size:12px;font-weight:700;line-height:1.25;
+  cursor:pointer;font-family:inherit;background:transparent;color:#5a6672;
+  transition:background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.section-tab:hover{ color:var(--ink); }
+.section-tab.active{ background:linear-gradient(180deg,#ffffff,#f4f6f7);color:var(--ink);box-shadow:0 2px 6px -2px rgba(20,30,45,.3), 0 1px 0 rgba(255,255,255,.8) inset; }
+
+.agenda-check{
+  display:flex;align-items:flex-start;gap:9px;padding:7px 9px;border-radius:7px;
+  cursor:pointer;transition:background .15s ease;
+}
+.agenda-check:hover{ background:#f2f6f5; }
+.agenda-check input{ margin-top:2px;flex:0 0 auto;width:auto; }
+.agenda-check span{font-size:12.6px;color:var(--text);line-height:1.4;}
+
+.actions{ display:flex;flex-wrap:wrap;gap:9px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line); }
+.btn{ border:none;border-radius:8px;padding:11px 17px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;position:relative;transition:transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+.btn:hover{ filter:brightness(1.04); }
+.btn:active{ transform:translateY(2px); }
+.btn-primary{
+  background:linear-gradient(180deg,#2e4256,var(--ink) 60%,#152029);
+  color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 1px 0 rgba(255,255,255,.06), 0 8px 16px -6px rgba(10,16,22,.55), 0 3px 0 #0d151c;
+}
+.btn-outline{
+  background:linear-gradient(180deg,#ffffff,#f4f5f6);
+  border:1px solid var(--line);color:var(--text);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(20,30,45,.3), 0 2px 0 #cfd6db;
+}
+.btn-sm{ padding:6px 11px;font-size:11.5px;border-radius:6px; }
+.btn-brass{
+  background:linear-gradient(180deg,#fffaf0,#fbf1da);
+  border:1px solid var(--brass);color:#7d611f;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(156,122,52,.4), 0 2px 0 #b9944c;
+}
+.btn-danger{
+  background:linear-gradient(180deg,#fff5f5,#fbe9ea);
+  border:1px solid var(--accent-red);color:var(--accent-red);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(122,39,52,.35), 0 2px 0 #c98d95;
+}
+.foot-note{ font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5; }
+
+/* ---- subscriber table editor ---- */
+.subs-editor{overflow-x:auto;margin-bottom:8px;}
+table.subs-edit{border-collapse:collapse;width:100%;min-width:520px;}
+table.subs-edit th,table.subs-edit td{border:1px solid var(--line);padding:5px;vertical-align:top;}
+table.subs-edit th{background:#f4f6f7;font-size:11px;text-align:left;}
+table.subs-edit input{width:100%;border:1px solid transparent;background:transparent;font:inherit;font-size:12.3px;padding:4px 5px;border-radius:4px;}
+table.subs-edit input:focus{border-color:var(--focus);background:#fff;outline:none;}
+.subs-remove{border:none;background:#fdeaea;color:#a33a3a;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;line-height:1;}
+.subs-remove:hover{background:#f8d3d3;}
+
+.app-footer{
+  margin-top:40px;
+  background:linear-gradient(120deg,#000000 0%,#050912 28%,#0a1830 52%,#123a6b 76%,#1a4fa8 100%);
+  background-size:240% 240%;
+  animation:gflow 18s ease infinite;
+  color:#dce8ff;
+  padding:22px 28px 16px;
+  box-shadow:0 -14px 30px -18px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.app-footer .foot-wrap{max-width:1360px;margin:0 auto;font-size:11.5px;color:#9db4dd;line-height:1.6;}
+
+@media (max-width: 480px){
+  .fitem{flex-basis:100%;}
+  .toptabs{padding:0 8px;}
+  .toptabs button{padding:11px 12px;font-size:12px;}
+  header.top{padding:16px 16px 14px;}
+  .app,.guide-wrap,.nav-wrap{padding:0 12px;}
+  .cert-copy{padding:28px 18px 34px;}
+  .calc-fields .fitem,.calc-dynamic .fitem{flex-basis:100%;}
+}
+body{overflow-x:hidden;}
+
+@media print{
+  header.top,.panel-form,.preview-head,.actions,.foot-note,.toptabs,.guide-wrap,.nav-wrap,.app-footer,.doc-toggle{display:none !important;}
+  body{background:#fff;}
+  .app{display:block;max-width:none;margin:0;padding:0;}
+  .panel-preview{position:static;box-shadow:none;border:none;max-height:none;}
+  .preview-scroll{padding:0;background:#fff;}
+  .cert-copy{box-shadow:none;border:none;max-width:none;margin:0;padding:14mm 16mm;}
+  .doc-block{display:block !important;}
+}
+</style>
+<style id="rk-mobile-fix">@media (max-width:700px){.app,.grid2{grid-template-columns:minmax(0,1fr)!important}.app>*,.grid2>*,.panel,.panel-form,.panel-preview,.calc-card,.side-panel,.fld{min-width:0!important;max-width:100%!important}.panel-preview{overflow-x:auto}nav.toptabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}nav.toptabs>*{flex:0 0 auto}table.thresh{display:block;overflow-x:auto;max-width:100%}.fld input,.fld select,.fld .inw{max-width:100%;min-width:0}header.top .brand{min-width:0;flex-wrap:wrap}header.top .brand *{white-space:normal;min-width:0}.unibar,.pager,.fbar .grid{flex-wrap:wrap}.fbar .fld{flex:1 1 100%}.unibar input{min-width:0;flex:1 1 100%}fieldset{min-width:0!important;max-width:100%}fieldset *{max-width:100%}}</style></head>
+<body>
+
+<header class="top">
+  <div class="crest">
+    <div class="mark">M&A</div>
+    <div>
+      <h1>MOA &amp; AOA Advanced Toolkit</h1>
+      <p class="tag">Memorandum &amp; Articles of Association &middot; Drafting, Alteration Procedures, Penalties &amp; Due-Date Navigator &mdash; under the Companies Act, 2013</p>
+    </div>
+  </div>
+  <div class="disclaimer">
+    Draft a Memorandum and Articles of Association in the Generator tab, study every alteration procedure and penalty in the Compliance Guide, and compute filing deadlines for a specific alteration in the Due-Date Navigator. Free template for general convenience &mdash; not a substitute for professional advice. Figures are stated as of September 2026 and are amended from time to time; always verify the current position on <strong>mca.gov.in</strong> or with a practising Company Secretary before relying on any figure in this tool.
+  </div>
+</header>
+
+<nav class="toptabs">
+  <button type="button" class="active" id="tabBtnGenerator" onclick="showTopTab('generator')">MOA &amp; AOA Generator</button>
+  <button type="button" id="tabBtnGuide" onclick="showTopTab('guide')">Compliance Guide</button>
+  <button type="button" id="tabBtnNav" onclick="showTopTab('navigator')">Due-Date Navigator</button>
+</nav>
+
+<div class="app" id="appGenerator">
+
+  <!-- ============ FORM PANEL ============ -->
+  <div class="panel panel-form" id="formPanel">
+
+    <div class="section-tabs" id="sectionTabs">
+      <button type="button" class="section-tab active" data-sec="moa" onclick="setFormSection('moa')">Memorandum (MOA)</button>
+      <button type="button" class="section-tab" data-sec="aoa" onclick="setFormSection('aoa')">Articles (AOA)</button>
+    </div>
+
+    <div class="cond-section show" id="moaSection">
+
+    <fieldset class="grp">
+      <legend>Company basics</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Proposed / existing company name (without suffix)</label>
+          <input type="text" id="companyName" placeholder="Bluecrest Technologies">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>Type of company</label>
+          <select id="companyType" onchange="onTypeChange()">
+            <option value="private_shares">Private company limited by shares</option>
+            <option value="public_shares">Public company limited by shares</option>
+            <option value="opc">One Person Company (OPC)</option>
+            <option value="guarantee_noshare">Company limited by guarantee — no share capital</option>
+            <option value="guarantee_share">Company limited by guarantee — having share capital</option>
+            <option value="unlimited_share">Unlimited company — having share capital</option>
+            <option value="unlimited_noshare">Unlimited company — no share capital</option>
+            <option value="section8">Section 8 company (not-for-profit)</option>
+          </select>
+        </div>
+        <div class="fitem">
+          <label>CIN (existing company, if any)</label>
+          <input type="text" id="cin" placeholder="U72900MH2024PTC410001">
+        </div>
+      </div>
+      <div class="frow" id="tableRow">
+        <div class="fitem">
+          <label>Memorandum form (Schedule I)</label>
+          <input type="text" id="moaTable" readonly>
+          <span class="hint">Auto-selected from company type; Tables A–E under Sections 4 &amp; 5.</span>
+        </div>
+        <div class="fitem">
+          <label>Articles form (Schedule I)</label>
+          <input type="text" id="aoaTable" readonly>
+          <span class="hint">Tables F–J; Table F (company limited by shares) is the default most companies adopt.</span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Clause I — Name</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Name suffix</label>
+          <input type="text" id="nameSuffix" readonly>
+          <span class="hint">Section 4(1)(a): the last word must correctly reflect the liability/type of company. OPCs must carry "(OPC) Private Limited"; Section 8 companies are exempt from "Limited"/"Private Limited" under Section 8(1)(a)-(b) once licensed.</span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Clause II — Registered office / State</legend>
+      <div class="frow">
+        <div class="fitem">
+          <label>State / UT of registered office</label>
+          <select id="regState">
+            <option value="">— Select —</option>
+          </select>
+        </div>
+        <div class="fitem">
+          <label>ROC / jurisdiction (optional)</label>
+          <input type="text" id="rocJuris" placeholder="Registrar of Companies, Mumbai">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Full registered office address (for the AOA cover / letterhead only — not part of Clause II itself)</label>
+          <textarea id="regAddress" placeholder="4th Floor, Crest Business Park, Andheri East, Mumbai, Maharashtra – 400069"></textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Clause III — Objects</legend>
+      <div class="note-box">List one object per line. The first list becomes the objects to be pursued on incorporation; the second is matters necessary in furtherance of them (Section 4(1)(c)). Since the Companies (Amendment) Act, 2015, a single unified "objects" clause is sufficient — the main/ancillary split below is optional drafting practice, not a statutory requirement.</div>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Objects to be pursued on incorporation</label>
+          <textarea id="mainObjects" rows="4" placeholder="To carry on the business of designing, developing, licensing and providing software products and technology consulting services in India and abroad.&#10;To provide data processing, cloud hosting and information-technology-enabled services to clients in India and abroad."></textarea>
+        </div>
+        <div class="fitem full">
+          <label>Matters necessary for furtherance of the above (ancillary objects)</label>
+          <textarea id="ancillaryObjects" rows="4" placeholder="To acquire, hold, deal in and dispose of any intellectual property, patents, trademarks and copyrights connected with the Company's business.&#10;To open bank accounts, borrow or raise money and secure the same by mortgage, charge or otherwise."></textarea>
+        </div>
+      </div>
+      <div class="frow cond-section" id="s8ObjectsRow">
+        <div class="fitem full">
+          <label>Charitable / not-for-profit objects (Section 8)</label>
+          <textarea id="s8Objects" rows="3" placeholder="Promotion of education, skill development and digital literacy among underserved communities"></textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Clause IV — Liability</legend>
+      <div class="frow">
+        <div class="fitem">
+          <label>Liability type</label>
+          <input type="text" id="liabilityType" readonly>
+          <span class="hint">Driven by the company type selected above (Section 4(1)(d), Sections 21–23 of the Act).</span>
+        </div>
+        <div class="fitem cond-section" id="guaranteeAmtRow">
+          <label>Guarantee amount per member (₹)</label>
+          <input type="text" id="guaranteeAmt" placeholder="1,00,000">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Clause V — Capital</legend>
+      <div class="frow cond-section" id="capitalRow">
+        <div class="fitem">
+          <label>Authorised share capital (₹)</label>
+          <input type="text" id="authCapital" placeholder="1,00,00,000">
+        </div>
+        <div class="fitem">
+          <label>No. of equity shares</label>
+          <input type="text" id="equityShares" placeholder="10,00,000">
+        </div>
+        <div class="fitem">
+          <label>Face value per equity share (₹)</label>
+          <input type="text" id="faceValue" placeholder="10">
+        </div>
+      </div>
+      <div class="frow cond-section" id="prefRow">
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:4px 0;"><input type="checkbox" id="hasPref" onchange="renderPreview()"><span>Include a preference-share class</span></label>
+        </div>
+        <div class="fitem" id="prefCountItem"><label>No. of preference shares</label><input type="text" id="prefShares" placeholder="1,00,000"></div>
+        <div class="fitem" id="prefFvItem"><label>Face value per preference share (₹)</label><input type="text" id="prefFace" placeholder="100"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Clause VI — Association / Subscription &amp; subscribers</legend>
+      <div class="note-box">Add each subscriber to the Memorandum. Every subscriber must take at least one share (unless the company has no share capital).</div>
+      <div class="subs-editor">
+        <table class="subs-edit" id="subsTable">
+          <thead><tr>
+            <th style="width:22%">Name (with father's/husband's name)</th>
+            <th style="width:38%">Address, description &amp; occupation</th>
+            <th style="width:15%">DIN / ID</th>
+            <th style="width:15%">No. of shares taken</th>
+            <th style="width:10%"></th>
+          </tr></thead>
+          <tbody id="subsBody"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="addSubscriberRow()">+ Add subscriber</button>
+    </fieldset>
+
+    </div>
+
+    <div class="cond-section" id="aoaSection">
+
+    <fieldset class="grp">
+      <legend>Adoption approach</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label>How should the Articles be built?</label>
+          <select id="aoaMode" onchange="renderPreview()">
+            <option value="table">Adopt the applicable Table (F/G/H/I/J) in full, unmodified — Section 5(7)</option>
+            <option value="custom">Adopt the applicable Table subject to the customised regulations below — Section 5(7)</option>
+          </select>
+          <span class="hint">A company may adopt all or any of the model-article regulations applicable to it (Section 5(7)); anything not excluded or modified continues to apply automatically (Section 5(8)) for a company registered after commencement of the Act.</span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Regulations to draft in full (tick to include)</legend>
+      <div id="regChecklist"></div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Private-company transfer restrictions</legend>
+      <div class="frow cond-section" id="pvtRestrictRow">
+        <div class="fitem full">
+          <label class="agenda-check"><input type="checkbox" id="rofr" checked onchange="renderPreview()"><span>Include right-of-first-refusal (pre-emption) restriction on transfer of shares</span></label>
+        </div>
+        <div class="fitem full">
+          <label class="agenda-check"><input type="checkbox" id="restrictInvite" checked onchange="renderPreview()"><span>Restrict invitation to the public to subscribe for securities (Section 2(68)(ii))</span></label>
+        </div>
+        <div class="fitem full">
+          <label class="agenda-check"><input type="checkbox" id="cap200" checked onchange="renderPreview()"><span>Limit membership to 200, excluding present/former employee-members (Section 2(68)(i))</span></label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Board &amp; managerial particulars</legend>
+      <div class="frow">
+        <div class="fitem"><label>Minimum number of directors</label><input type="text" id="minDirectors" placeholder="2"></div>
+        <div class="fitem"><label>Maximum number of directors</label><input type="text" id="maxDirectors" placeholder="12"></div>
+        <div class="fitem"><label>First directors (one per line)</label><textarea id="firstDirectors" placeholder="Mr. Arjun Mehta, DIN 08123456&#10;Ms. Kavita Rao, DIN 08234567"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Entrenchment provision (optional) — Section 5(3)–(4)</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label class="agenda-check"><input type="checkbox" id="entrench" onchange="renderPreview()"><span>Entrench one or more Articles (make them alterable only by a more restrictive procedure than an ordinary special resolution)</span></label>
+        </div>
+      </div>
+      <div class="frow cond-section" id="entrenchDetailRow">
+        <div class="fitem full">
+          <label>Article(s) to be entrenched &amp; the higher threshold required</label>
+          <textarea id="entrenchDetail" placeholder="Article [•] (composition of the Board) may only be altered by a resolution passed with the affirmative vote of not less than 90% of the members entitled to vote."></textarea>
+        </div>
+      </div>
+      <div class="note-inline">Notice of an entrenchment provision must be given to the Registrar at incorporation (Form INC-2/INC-7) or, for an existing company, in Form MGT-14 within 30 days of the date the articles became entrenched.</div>
+    </fieldset>
+
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" onclick="downloadWord()">Download as Word (.doc)</button>
+      <button type="button" class="btn btn-outline" onclick="safePrint()">Print / Save as PDF</button>
+      <button type="button" class="btn btn-outline" onclick="copyDocText()">Copy Text</button>
+      <button type="button" class="btn btn-brass" onclick="loadSample()">Load Sample</button>
+      <button type="button" class="btn btn-danger" onclick="clearForm()">Clear form</button>
+    </div>
+    <p class="foot-note">In the print dialog, choose &ldquo;Save as PDF&rdquo; to download, or a printer to print. <strong>If a download button doesn't respond,</strong> you're probably viewing this inside an embedded preview &mdash; open the saved HTML file directly in a browser tab (Chrome/Edge/Safari) and try again, or use &ldquo;Copy Text&rdquo; as a fallback. Have the draft vetted by a practising Company Secretary before filing.</p>
+  </div>
+
+  <!-- ============ PREVIEW PANEL ============ -->
+  <div class="panel panel-preview">
+    <div class="preview-head">
+      <div>
+        <span class="lbl">Live preview</span>
+        <span class="fmt">&middot; A4</span>
+      </div>
+      <div class="preview-tools">
+        <div class="doc-toggle">
+          <button type="button" class="active" id="docBtnMoa" onclick="setDocView('moa')">MOA</button>
+          <button type="button" id="docBtnAoa" onclick="setDocView('aoa')">AOA</button>
+        </div>
+      </div>
+    </div>
+    <div class="preview-scroll">
+      <div class="cert-copy" id="previewContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="guide-wrap" id="appGuide">
+  <div class="guide-nav" id="guideNav">
+    <a href="#g1">1. MOA &amp; AOA in a nutshell</a>
+    <a href="#g2">2. Contents of the MOA</a>
+    <a href="#g3">3. Contents of the AOA</a>
+    <a href="#g4">4. Altering the Name clause</a>
+    <a href="#g5">5. Altering the Registered Office clause</a>
+    <a href="#g6">6. Altering the Objects clause</a>
+    <a href="#g7">7. Altering the Liability clause</a>
+    <a href="#g8">8. Altering the Capital clause</a>
+    <a href="#g9">9. Altering the Articles / conversion</a>
+    <a href="#g10">10. Entrenchment</a>
+    <a href="#g11">11. Doctrines: ultra vires, notice, indoor management</a>
+    <a href="#g12">12. Penalties ready-reckoner</a>
+    <a href="#g13">13. Forms ready-reckoner</a>
+  </div>
+
+  <div class="guide-card">
+    <p class="g-title">MOA &amp; AOA Compliance Guide</p>
+    <p class="g-sub">What Sections 4, 5, 6, 10 and 13–18 of the Companies Act, 2013 require of a Memorandum and Articles of Association, how each clause is altered, and what a default costs &mdash; read this before relying on the draft in the Generator tab.</p>
+
+    <div class="guide-note"><strong>Scope note:</strong> This guide summarises the standing law under Chapter II (Sections 3–22) of the Companies Act, 2013, the Companies (Incorporation) Rules, 2014, and related provisions cited against each item. Monetary penalties shown reflect the Companies (Amendment) Act, 2020 re-categorisation of most procedural defaults from "fine/imprisonment" to civil "penalty", effective 21 December 2020. Always verify the current position on <strong>mca.gov.in</strong> before relying on any figure below.</div>
+
+    <h2 id="g1">1. MOA &amp; AOA in a nutshell</h2>
+    <p>The <strong>Memorandum of Association (MOA)</strong> is the company's charter — it defines the company's name, home State, the objects it may pursue, the extent of members' liability, its capital structure and the subscribers who bring it into existence (Section 4). The <strong>Articles of Association (AOA)</strong> are the company's internal rule-book — they regulate how the company is actually run: share transfers, general meetings, the Board, dividends, accounts and winding up (Section 5). The relationship between the two is hierarchical: the AOA is always subordinate to the MOA, and both are subordinate to the Act itself. Section 6 renders void any provision in the MOA or AOA that is inconsistent with the Act, and any AOA provision that conflicts with the MOA is equally ineffective to that extent.</p>
+    <div class="note-inline">Rule of thumb used throughout this guide: the MOA tells the world <em>what</em> the company can do and <em>how far</em> members are exposed; the AOA tells insiders <em>how</em> the company is actually managed day to day.</div>
+    <p>Section 10 gives both documents contractual force: once registered, the MOA and AOA bind the company and every member as if each member had separately signed and sealed them, agreeing to be bound by every provision. This creates three overlapping "contracts" recognised by company law — between the company and each member, between the members inter se (though enforced through the company), and between the company and its officers in their capacity as such (though this last strand is narrower and does not import every AOA right into an officer's individual service contract).</p>
+
+    <h2 id="g2">2. Contents of the Memorandum (Section 4)</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <tr><th style="width:16%">Clause</th><th>What it must state</th><th style="width:20%">Key sub-section</th></tr>
+      <tr><td class="b">I. Name</td><td>The company's name, ending in "Limited" (public) or "Private Limited" (private), with the OPC and Section 8 variations noted above. The proposed name must not be identical or too similar to an existing company/LLP/registered trademark, and must not fall foul of the Emblems and Names (Prevention of Improper Use) Act, 1950 or Rule 8/8A/8B undesirable-name criteria.</td><td>Sec. 4(1)(a), (2)–(3)</td></tr>
+      <tr><td class="b">II. Registered office</td><td>Only the <em>State</em> (and Union Territory, where relevant) in which the registered office is situated — the full address is intimated separately to the Registrar within 30 days of incorporation (Section 12), not stated in the MOA itself.</td><td>Sec. 4(1)(b)</td></tr>
+      <tr><td class="b">III. Objects</td><td>The objects for which the company is incorporated, and matters considered necessary in furtherance of them. Since the Companies (Amendment) Act, 2015 removed the mandatory "objects clause" split into main/ancillary/other objects, a single unified objects statement is legally sufficient, though many drafters still separate the two for clarity.</td><td>Sec. 4(1)(c)</td></tr>
+      <tr><td class="b">IV. Liability</td><td>Whether members' liability is limited by shares, limited by guarantee (with the guaranteed amount), or unlimited.</td><td>Sec. 4(1)(d)</td></tr>
+      <tr><td class="b">V. Capital</td><td>For a company having share capital: the authorised share capital, its division into shares of a fixed amount, and the number of shares each subscriber takes (at least one share each).</td><td>Sec. 4(1)(e)</td></tr>
+      <tr><td class="b">VI. Association / Subscription</td><td>A declaration that the subscribers wish to form a company and agree to take the shares opposite their names, followed by each subscriber's name, address, description, occupation and signature, attested by one witness.</td><td>Sec. 4(1)(e)(iii), Sec. 7</td></tr>
+    </table></div>
+    <p>A private company's MOA/AOA must additionally restrict the right to transfer shares, cap membership at 200 (excluding present/former employee-members), and prohibit any invitation to the public to subscribe for securities — these are the three defining marks of "private company" under Section 2(68), and dropping any one of them (by altering the Articles) converts the company into a public company by operation of Section 14(1) even without a name change.</p>
+
+    <h2 id="g3">3. Contents of the Articles (Section 5)</h2>
+    <p>Section 5(6) prescribes model-article forms in Schedule I: <strong>Table F</strong> (company limited by shares), <strong>Table G</strong> (guarantee company having share capital, which imports Table F), <strong>Table H</strong> (guarantee company without share capital), <strong>Table I</strong> (unlimited company having share capital, which imports Table F) and <strong>Table J</strong> (unlimited company without share capital). A company may adopt all, some, or none of the applicable Table's regulations (Section 5(7)); for a company registered after the Act commenced, any regulation it has not expressly excluded or modified continues to apply automatically by default (Section 5(8)). Table F itself runs to a full set of numbered regulations covering share capital and variation of class rights, share certificates, lien, calls, transfer and transmission, forfeiture, alteration of capital, capitalisation of profits, buy-back, general meetings and proceedings, voting rights and proxies, the Board of Directors and its proceedings, borrowing powers, dividends and reserves, accounts and audit, the common seal (now optional — Section 22 was amended in 2015 to make a seal non-mandatory), winding up, and officer indemnity.</p>
+    <p>Articles may also contain an <strong>entrenchment provision</strong> under Section 5(3)–(4): specified provisions may be made alterable only by a more restrictive procedure or condition than an ordinary special resolution (e.g. unanimity, or a higher voting threshold) — provided the entrenching provision is itself only inserted by all members' agreement (private company) or by a special resolution (public company). See Section 10 of this guide.</p>
+
+    <h2 id="g4">4. Altering the Name clause</h2>
+    <p>A name change follows Section 13(2)–(3) read with Section 4(2)–(3): the company reserves the new name (via the RUN service or as part of another integrated form), then passes a <strong>special resolution</strong>, and the change takes effect only when the Central Government (delegated to the Registrar) approves it and issues a <strong>fresh Certificate of Incorporation</strong> bearing the new name. No such approval is required where the only change is adding or deleting the word "Private" upon conversion between company classes (Section 13(2) proviso) — a simple special resolution and MGT-14 suffice there.</p>
+    <div class="gtable-wrap"><table class="gtable">
+      <tr><th>Step</th><th>Trigger &amp; timeline</th><th>Form</th></tr>
+      <tr><td class="b">Name reservation</td><td>Valid for 20 days from approval for a new incorporation; for an existing company's name change, the reserved name is valid for 60 days from approval.</td><td>RUN / SPICe+ Part A</td></tr>
+      <tr><td class="b">File the special resolution</td><td>Within 30 days of passing (Section 117)</td><td>MGT-14</td></tr>
+      <tr><td class="b">Central Government approval</td><td>On the Registrar's satisfaction; on approval a fresh COI issues and the change is effective only from that date (Section 13(3))</td><td>INC-24 (application for approval of change of name)</td></tr>
+    </table></div>
+    <p>Separately, Section 16 lets the Central Government <em>direct</em> a company to change a name that too closely resembles an existing name or registered trademark; the company must comply within a specified time (ordinarily up to three months) by special resolution.</p>
+
+    <h2 id="g5">5. Altering the Registered Office clause</h2>
+    <p>Because Clause II states only the <em>State</em>, only a move that crosses a State (or a Registrar's local jurisdiction) counts as altering the Memorandum under Section 13; a move within the same city/town/village is a Board-level, non-MOA change under Section 12(4)–(5) alone. There are four distinct compliance tracks:</p>
+    <div class="gtable-wrap"><table class="gtable">
+      <tr><th style="width:24%">Scenario</th><th>Approvals needed</th><th>Filings &amp; timelines</th></tr>
+      <tr><td class="b">Within the same city/town/village</td><td>Board resolution only</td><td>INC-22 within 30 days of the change (Section 12(4))</td></tr>
+      <tr><td class="b">Same State, different ROC jurisdiction (e.g. Mumbai ↔ Pune)</td><td>Special resolution + Regional Director confirmation</td><td>MGT-14 (SR) within 30 days; RD ordinarily confirms within 30 days of a complete application (Form INC-23 / RD-1); company files the confirmation with the Registrar in INC-28 within 60 days of confirmation; INC-22 for the new address within 30 days of approval</td></tr>
+      <tr><td class="b">Same State, same ROC jurisdiction, different address (no jurisdiction change)</td><td>Special resolution (no RD approval needed)</td><td>MGT-14 within 30 days; INC-22 within 30 days of the change</td></tr>
+      <tr><td class="b">Change of State (interstate shift)</td><td>Special resolution + advance public/creditor notice + Central Government (Regional Director) confirmation under Section 13(4)–(7)</td><td>MGT-14 within 30 days of the SR; advertisement (INC-26) and individual notice to creditors/debenture-holders/regulators not more than 30 days before filing INC-23/RD-1; RD order ordinarily within 60 days of the application (or within 15 days if no objection is received); INC-28 within 30 days of receiving the RD's certified order, filed with the Registrar of <em>both</em> States; INC-22 for the new address within 30 days of confirmation, after which a fresh COI issues reflecting the new State (Section 13(7))</td></tr>
+    </table></div>
+    <p>Section 13(5) bars an interstate shift while any inquiry, inspection, investigation or prosecution is pending against the company, subject to limited exceptions under approved insolvency resolution plans.</p>
+
+    <h2 id="g6">6. Altering the Objects clause</h2>
+    <p>Objects are altered like any other Memorandum clause — special resolution, MGT-14 within 30 days — but Section 13(9) additionally obliges the Registrar to register the alteration and issue a certificate within 30 days of the special resolution being filed. Where the company has raised money from the public through a prospectus and any part remains unutilised, Section 13(8) imposes extra conditions before the special resolution can even be passed: the resolution must be preceded by a published advertisement and individual communication to shareholders disclosing the justification for the change, the notice must be filed with SEBI (for listed companies) and other prescribed particulars, and dissenting shareholders must be given an exit opportunity by promoters/controlling shareholders in the manner prescribed by SEBI regulations.</p>
+    <div class="note-inline">Rule 32 of the Companies (Incorporation) Rules, 2014 sets out the detailed advertisement and dissent-exit mechanics for a Section 13(8) objects change.</div>
+
+    <h2 id="g7">7. Altering the Liability clause</h2>
+    <p>Section 13(11) voids any alteration of a guarantee company's memorandum that purports to give a person a right to participate in divisible profits otherwise than as a member. More fundamentally, Section 18 lets an existing company convert from one class to another (e.g. unlimited company re-registering as limited, or a private company converting to a Section 8-style structure) by altering both the Memorandum and Articles in accordance with Chapter II, but such a conversion cannot affect debts, liabilities, obligations or contracts incurred before conversion — those survive unchanged (Section 18(3)). Increasing a member's liability, or requiring a member to subscribe for more shares, is only binding on that member with their prior written consent (Section 13(11)/Section 38 general principle) — a company cannot force greater exposure onto an existing member by ordinary majority alteration alone.</p>
+
+    <h2 id="g8">8. Altering the Capital clause</h2>
+    <p>Section 61 lists the ways a limited company having share capital may alter it if its Articles authorise doing so: increasing authorised capital, consolidating and dividing shares into larger-denomination shares, converting fully paid shares into stock (and reconverting), sub-dividing shares into smaller-denomination shares, and cancelling unissued shares (not a reduction of capital). None of these needs Tribunal approval — an ordinary resolution in a general meeting is generally sufficient unless the Articles require more — but the company must still notify the Registrar.</p>
+    <div class="gtable-wrap"><table class="gtable">
+      <tr><th style="width:26%">Alteration</th><th>Approval</th><th>Filing &amp; timeline</th></tr>
+      <tr><td class="b">Any Section 61 alteration (increase, consolidation, conversion to stock, sub-division, cancellation) or redemption of redeemable preference shares</td><td>Ordinary resolution (per Articles)</td><td>Notice in <strong>Form SH-7</strong> within 30 days of the alteration, with the altered Memorandum (Section 64(1))</td></tr>
+      <tr><td class="b">Reduction of share capital</td><td>Special resolution <em>and</em> Tribunal (NCLT) confirmation (Section 66)</td><td>MGT-14 within 30 days of the SR; on the Tribunal's order, <strong>Form INC-28</strong> (certified order + approved minute) within 30 days of receiving the certified copy (Section 66(5)); Registrar then issues a certificate</td></tr>
+      <tr><td class="b">Buy-back of securities</td><td>Board/special resolution per Section 68 thresholds</td><td>Separate Section 68 timelines (outside MOA/AOA scope) — noted for completeness</td></tr>
+    </table></div>
+
+    <h2 id="g9">9. Altering the Articles &amp; converting company class (Section 14)</h2>
+    <p>A company may alter its Articles by special resolution, including alterations that have the effect of converting a private company into a public company or vice versa. Two asymmetric safeguards apply:</p>
+    <ul>
+      <li><strong>Private → Public:</strong> once the altered Articles drop the Section 2(68) private-company restrictions, the company becomes a public company from the date of alteration — no Central Government or Tribunal approval is required for the conversion itself. File MGT-14 within 30 days; if the name also drops "Private" consequentially, no separate CG approval is needed for that name change either (Section 13(2) proviso), though a fresh COI is still issued.</li>
+      <li><strong>Public → Private:</strong> the conversion is not valid unless approved by an order of the <strong>Tribunal (NCLT)</strong>, which may impose conditions. Once the order is obtained, file <strong>Form INC-27</strong> with the Registrar, together with a printed copy of the altered Articles, within <strong>15 days</strong> of receiving the Tribunal's order (Rule 33, Companies (Incorporation) Rules, 2014).</li>
+    </ul>
+    <p>An Article cannot lawfully contain anything that conflicts with the Memorandum or the Act (Section 6); such a provision is void to the extent of the inconsistency even if registered without objection.</p>
+
+    <h2 id="g10">10. Entrenchment provisions</h2>
+    <p>Section 5(3) allows the Articles to entrench specified provisions so that they can only be altered by a procedure or condition more restrictive than a special resolution — commonly unanimity, or a supermajority higher than 75%. Entrenchment may be inserted only at incorporation, or later by a resolution agreed to by <em>all</em> members (private company) or by special resolution (public company) — Section 5(4). Notice must reach the Registrar: at incorporation, via Form INC-2 (OPC) or INC-7; for an existing company, via <strong>Form MGT-14 within 30 days</strong> of the date the entrenchment takes effect. Entrenchment is a useful minority-protection device in joint-venture and investor-shareholder agreements, since it prevents a bare special-resolution majority from later stripping out negotiated protections.</p>
+
+    <h2 id="g11">11. Underlying doctrines</h2>
+    <h4>Doctrine of ultra vires</h4>
+    <p>An act outside the objects stated in the Memorandum is <em>ultra vires</em> the company — void from the outset, incapable of ratification even by a unanimous vote of every member, though the company itself cannot always escape restitution obligations that flow from an ultra vires transaction. In practice, the 2015 shift to a unified objects clause and the routine inclusion of broad "matters necessary in furtherance" language has narrowed the doctrine's bite, but it has not been abolished — a transaction with no rational connection to any stated object remains exposed.</p>
+    <h4>Doctrine of constructive notice</h4>
+    <p>Because the MOA and AOA are public documents on the MCA registry once filed, every person dealing with the company is deemed to have notice of their contents — a third party cannot later claim ignorance of a restriction that was there to be found (e.g. a cap on a director's borrowing authority stated in the Articles).</p>
+    <h4>Doctrine of indoor management (the "Turquand rule")</h4>
+    <p>As a counterweight, an outsider dealing with the company in good faith is entitled to assume that the company's own internal procedural requirements (board approvals, quorum, internal authorisations) have been properly complied with, even if they in fact were not — the outsider is not expected to audit the company's internal minute-books. This protection has recognised limits: it does not help an outsider who had actual notice of the irregularity, who behaved with suspicion or negligence, who relied on a forged document, or where the act was ultra vires the company altogether (as opposed to merely an internal procedural lapse) or ultra vires the officer's authority in a way apparent on the face of the public documents.</p>
+
+    <h2 id="g12">12. Penalties ready-reckoner</h2>
+    <p>Most MOA/AOA procedural defaults were re-cast by the Companies (Amendment) Act, 2020 as civil "penalties" imposed departmentally (via adjudicating officers) rather than court-prosecuted fines — faster to levy, but still enforceable as arrears. Section 446B gives a 50% reduction (subject to the stated caps) to One Person Companies, small companies, start-ups, producer companies and Section 8 companies for most such penalties.</p>
+    <div class="gtable-wrap"><table class="gtable">
+      <tr><th style="width:13%">Section</th><th style="width:27%">Default</th><th>Penalty — Company</th><th>Penalty — Officer in default</th></tr>
+      <tr><td class="b">12(8)</td><td>Non-compliance with registered-office requirements (no verified office, notice of change not filed, name/CIN not displayed, etc.)</td><td>₹1,000 per day of default, up to ₹1,00,000</td><td>₹1,000 per day of default, up to ₹1,00,000</td></tr>
+      <tr><td class="b">15(2)</td><td>Issuing a copy of the MOA or AOA that does not reflect an alteration already in force</td><td>₹1,000 for every copy so issued</td><td>₹1,000 for every copy so issued</td></tr>
+      <tr><td class="b">16(3)</td><td>Failing to comply with a Central Government direction to rectify a name too similar to an existing name/trademark</td><td>₹1,000 for every day of continuing default</td><td>Not less than ₹5,000, extendable to ₹1,00,000</td></tr>
+      <tr><td class="b">64(2)</td><td>Failing to file notice of alteration of share capital (Form SH-7) within 30 days</td><td>₹1,000 per day of default, up to ₹5,00,000</td><td>₹1,000 per day of default, up to ₹1,00,000</td></tr>
+      <tr><td class="b">117(2)</td><td>Failing to file a resolution/agreement (incl. a special resolution altering the MOA/AOA) in MGT-14 within 30 days</td><td>₹10,000 + ₹100 per day of continuing default, up to ₹2,00,000</td><td>₹10,000 + ₹100 per day of continuing default, up to ₹50,000</td></tr>
+      <tr><td class="b">450 (residual)</td><td>Any other contravention of Chapter II (e.g. a procedural lapse under Section 13 or 14 with no dedicated penalty) — the Act's catch-all default clause</td><td>₹10,000 + ₹1,000 per day of continuing contravention, up to ₹2,00,000</td><td>Same structure, up to ₹50,000</td></tr>
+      <tr><td class="b">447</td><td>Fraud committed through or in connection with an MOA/AOA alteration (e.g. a sham objects change to defraud creditors)</td><td colspan="2">Imprisonment of 6 months to 10 years <em>and</em> a fine of not less than the amount involved, up to three times that amount — applies to any person, not just the company</td></tr>
+    </table></div>
+    <div class="note-inline"><strong>446B relief:</strong> a One Person Company, small company, start-up company, producer company or Section 8 company that defaults under most of the above sections pays only half the penalty stated, subject to a cap of ₹2,00,000 for the company and ₹1,00,000 for an officer/other defaulting person.</div>
+
+    <h2 id="g13">13. Forms ready-reckoner</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <tr><th style="width:14%">Form</th><th>Purpose</th><th style="width:22%">Governing provision</th></tr>
+      <tr><td class="b">RUN / SPICe+ Part A</td><td>Reservation of a proposed or changed company name</td><td>Sec. 4(4)–(5)</td></tr>
+      <tr><td class="b">INC-33 / INC-34</td><td>Electronic MOA / electronic AOA linked to SPICe+ at incorporation (subscribers ≤ 7, DSC-capable)</td><td>Rule 13, Companies (Incorporation) Rules, 2014</td></tr>
+      <tr><td class="b">INC-13 / INC-31</td><td>MOA / AOA for a Section 8 company (filed as attachments, not eMOA/eAOA)</td><td>Sec. 8; Rule 19–20</td></tr>
+      <tr><td class="b">INC-2 / INC-7</td><td>Notice of an entrenchment provision at the time of incorporation</td><td>Sec. 5(3)</td></tr>
+      <tr><td class="b">MGT-14</td><td>Filing any special resolution — including one altering the MOA or AOA, or introducing entrenchment — within 30 days of passing</td><td>Sec. 117</td></tr>
+      <tr><td class="b">INC-24</td><td>Application for Central Government (Registrar) approval of a change of name</td><td>Sec. 13(2)</td></tr>
+      <tr><td class="b">INC-22</td><td>Notice / verification of the registered office or a change of its situation</td><td>Sec. 12(2), (4)</td></tr>
+      <tr><td class="b">INC-23 / RD-1</td><td>Application to the Regional Director for approval to shift the registered office (same-State different jurisdiction, or interstate)</td><td>Sec. 12(5), 13(4); Rule 28, 30</td></tr>
+      <tr><td class="b">INC-26</td><td>Public advertisement of an interstate registered-office shift</td><td>Rule 30(5)</td></tr>
+      <tr><td class="b">INC-28</td><td>Filing a Regional Director / Tribunal / Central Government order with the Registrar (registered-office shift confirmation, capital-reduction order, etc.)</td><td>Sec. 13(7), 66(5)</td></tr>
+      <tr><td class="b">SH-7</td><td>Notice of alteration of share capital under Section 61 (increase, sub-division, consolidation, conversion to stock, cancellation) or redemption of redeemable preference shares</td><td>Sec. 64</td></tr>
+      <tr><td class="b">RSC-1 to RSC-7</td><td>NCLT capital-reduction procedural forms (petition, notices, affidavit, order, certificate)</td><td>Sec. 66; NCLT (Procedure for Reduction of Share Capital) Rules, 2016</td></tr>
+      <tr><td class="b">INC-27</td><td>Conversion of a private company into a public company or vice versa (public→private needs the Tribunal's order first)</td><td>Sec. 14; Rule 33</td></tr>
+    </table></div>
+
+    <div class="guide-foot">This guide is drafted for general awareness of Chapter II of the Companies Act, 2013 as amended up to the Companies (Amendment) Act, 2020, and is not legal advice. Thresholds, forms and fees are revised by the Ministry of Corporate Affairs from time to time — cross-check the current position on mca.gov.in before filing.</div>
+  </div>
+</div>
+
+<div class="nav-wrap" id="appNav">
+
+  <div class="calc-card">
+    <h2>Event-based due-date calculator</h2>
+    <p class="g-sub">Pick the alteration you're carrying out, enter the relevant date(s), and get every downstream filing deadline it triggers — colour-coded against today's date.</p>
+    <div class="calc-fields">
+      <div class="fitem full">
+        <label>Which MOA/AOA alteration are you carrying out?</label>
+        <select id="eventType" onchange="renderCalcFields()">
+          <option value="name">Change of name</option>
+          <option value="ro_local">Registered office — within the same city/town</option>
+          <option value="ro_sameroc">Registered office — same State, different ROC jurisdiction</option>
+          <option value="ro_samejuris">Registered office — same State &amp; same ROC, different address</option>
+          <option value="ro_interstate">Registered office — change of State</option>
+          <option value="objects">Alteration of objects clause</option>
+          <option value="liability">Alteration of liability clause / conversion (Sec. 18)</option>
+          <option value="capital_sh7">Capital clause — Section 61 alteration (SH-7)</option>
+          <option value="capital_reduction">Capital clause — reduction of capital (Sec. 66, NCLT)</option>
+          <option value="aoa_general">General alteration of Articles (no conversion)</option>
+          <option value="conv_priv_pub">Conversion: Private → Public</option>
+          <option value="conv_pub_priv">Conversion: Public → Private (Tribunal)</option>
+          <option value="entrenchment">Entrenchment provision (existing company)</option>
+        </select>
+      </div>
+    </div>
+    <div class="calc-dynamic" id="calcDynamicFields"></div>
+    <button type="button" class="btn btn-primary" onclick="computeTimeline()">Calculate deadlines</button>
+    <div class="timeline" id="calcTimeline"></div>
+  </div>
+
+  <div class="calc-card">
+    <h2>Quick-reference compliance calendar</h2>
+    <p class="g-sub">Every MOA/AOA-linked filing, sorted by how many days you get from the trigger event. Filter by event type.</p>
+    <div class="ref-toolbar" id="refToolbar"></div>
+    <div class="timeline" id="refList"></div>
+  </div>
+
+</div>
+
+<footer class="app-footer">
+  <div class="foot-wrap">MOA &amp; AOA Advanced Toolkit &middot; General-purpose drafting &amp; compliance aid under the Companies Act, 2013 &middot; Not a substitute for advice from a practising Company Secretary / lawyer &middot; Verify current thresholds and forms on mca.gov.in</div>
+</footer>
+
+<script>
+/* ============================================================= DATA ============================================================= */
+var STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu","Delhi (NCT)","Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry"];
+
+var TYPE_MAP = {
+  private_shares:  {moaTable:"Table A", aoaTable:"Table F", suffix:"Private Limited", liability:"Limited by shares", hasCapital:true,  guarantee:false, s8:false, private:true},
+  public_shares:   {moaTable:"Table A", aoaTable:"Table F", suffix:"Limited",         liability:"Limited by shares", hasCapital:true,  guarantee:false, s8:false, private:false},
+  opc:             {moaTable:"Table A", aoaTable:"Table F", suffix:"(OPC) Private Limited", liability:"Limited by shares", hasCapital:true, guarantee:false, s8:false, private:true},
+  guarantee_noshare:{moaTable:"Table B", aoaTable:"Table H", suffix:"Limited",         liability:"Limited by guarantee (no share capital)", hasCapital:false, guarantee:true, s8:false, private:true},
+  guarantee_share: {moaTable:"Table C", aoaTable:"Table G", suffix:"Limited",         liability:"Limited by guarantee, having share capital", hasCapital:true, guarantee:true, s8:false, private:true},
+  unlimited_share: {moaTable:"Table E", aoaTable:"Table I", suffix:"[no mandatory suffix]", liability:"Unlimited, having share capital", hasCapital:true, guarantee:false, s8:false, private:true},
+  unlimited_noshare:{moaTable:"Table D", aoaTable:"Table J", suffix:"[no mandatory suffix]", liability:"Unlimited, no share capital", hasCapital:false, guarantee:false, s8:false, private:true},
+  section8:        {moaTable:"Table A/B (per structure)", aoaTable:"Table F/H (per structure)", suffix:"[\"Limited\"/\"Private Limited\" waived under Sec. 8 licence]", liability:"Limited (by shares or guarantee, per structure)", hasCapital:true, guarantee:false, s8:true, private:true}
+};
+
+var REGS = [
+  {id:"share_capital", grp:"Share capital", title:"Share capital & variation of class rights", text:function(f){return "Subject to the provisions of the Act and the Memorandum, shares in the capital of the Company shall be under the control of the Board, which may allot or otherwise dispose of them to such persons, on such terms and conditions, and at such times as the Board thinks fit. Where the capital is divided into different classes of shares, the rights attached to any class may be varied only with the written consent of holders of not less than three-fourths of the issued shares of that class, or by a special resolution passed at a separate meeting of the holders of that class, in accordance with Section 48.";}},
+  {id:"share_certs", grp:"Share capital", title:"Share certificates", text:function(f){return "Every person whose name is entered as a member in the Register of Members shall be entitled, without payment, to one certificate for all the shares of each class registered in his name, or several certificates for one or more of such shares, issued within the period prescribed under Section 56 and specifying the shares to which it relates and the amount paid up thereon, and shall be issued under the common seal, if any, or signed in the manner prescribed by the Companies (Share Capital and Debentures) Rules, 2014.";}},
+  {id:"lien", grp:"Share capital", title:"Company's lien on shares", text:function(f){return "The Company shall have a first and paramount lien on every share (not being a fully paid share) for all monies, whether presently payable or not, called or payable at a fixed time in respect of that share, and the Board may, subject to giving the prescribed notice, sell any share on which the lien exists in enforcement of that lien in the manner the Board thinks fit.";}},
+  {id:"calls", grp:"Share capital", title:"Calls on shares", text:function(f){return "The Board may, from time to time, subject to the terms on which any shares have been issued and to the provisions of the Memorandum, make calls upon members in respect of any monies unpaid on their shares, provided no call shall exceed one-fourth of the nominal amount of the share or be payable within one month of the last preceding call, and at least fourteen days' notice shall be given specifying the time(s) and place of payment.";}},
+  {id:"transfer", grp:"Share capital", title:"Transfer & transmission of shares", text:function(f){return "A member may transfer shares in the manner permitted by the Act, on execution of a proper instrument of transfer together with the share certificate; the Board may decline to register a transfer only for reasons recorded in accordance with Section 58 and 59, and the legal representative of a deceased member shall be recognised as having title to the shares by transmission on production of the prescribed evidence, without being required to become a member unless the representative elects to do so.";}},
+  {id:"forfeiture", grp:"Share capital", title:"Forfeiture of shares", text:function(f){return "If a member fails to pay any call or instalment on the due date, the Board may, after giving not less than fourteen days' notice requiring payment together with any accrued interest, resolve that any share for which the sum remains unpaid be forfeited; a forfeited share becomes the Company's property and may be re-issued or otherwise disposed of on such terms as the Board thinks fit, and the member forfeited remains liable to pay all monies owed at the date of forfeiture.";}},
+  {id:"alt_capital", grp:"Share capital", title:"Alteration of capital (Section 61)", text:function(f){return "The Company may, by ordinary resolution in a general meeting, alter its share capital by increasing its authorised share capital, consolidating and dividing all or any of its share capital into shares of larger denomination, converting fully paid-up shares into stock and reconverting stock into fully paid-up shares, sub-dividing its shares into shares of smaller denomination, or cancelling shares not taken up, in each case in accordance with Section 61 of the Act and subject to notice being given to the Registrar under Section 64.";}},
+  {id:"capitalise", grp:"Share capital", title:"Capitalisation of profits & bonus shares", text:function(f){return "The Company in general meeting may, upon the Board's recommendation, resolve to capitalise any part of the amount standing to the credit of its reserves or securities premium/capital redemption reserve account and to apply that sum in paying up unissued shares to be allotted as fully paid bonus shares to members, in accordance with Section 63 and any applicable SEBI regulations.";}},
+  {id:"buyback", grp:"Share capital", title:"Buy-back of securities", text:function(f){return "The Company may purchase its own shares or other specified securities out of its free reserves, securities premium account, or proceeds of a fresh issue, subject to the conditions, limits, disclosures and time-frames prescribed under Section 68 of the Act and the rules made thereunder, and the Articles authorise the Board or the members, as the case may require, to approve such a buy-back."; }},
+  {id:"agm_egm", grp:"Meetings", title:"General meetings — AGM & EGM", text:function(f){return "The Company shall in each year hold an annual general meeting in addition to any other meetings, within the period prescribed by Section 96, and the Board may, whenever it thinks fit, and shall on a valid member requisition under Section 100, call an extraordinary general meeting; notice of every general meeting shall be given in the manner and for the period required by Sections 101–102, together with an explanatory statement for any special business."; }},
+  {id:"quorum_proceedings", grp:"Meetings", title:"Quorum & proceedings at general meetings", text:function(f){return "No business shall be transacted at any general meeting unless the quorum prescribed by Section 103 is present at the time the meeting proceeds to business; the Chairperson of the Board, or in his absence a director elected by the members present, shall preside, and if no quorum is present within half an hour, the meeting stands adjourned to the same day in the next week at the same time and place, or to such other day, time and place as the Board determines."; }},
+  {id:"voting_proxy", grp:"Meetings", title:"Voting rights, proxy & poll", text:function(f){return "Every member holding equity shares carries voting rights in proportion to his share of the paid-up capital in accordance with Section 47; a member entitled to attend and vote may appoint another person as proxy in the manner prescribed by Section 105, and voting shall ordinarily be by show of hands unless a poll is demanded in accordance with Sections 107–109, or the resolution is required to be, or the company elects to conduct it, by postal ballot under Section 110."; }},
+  {id:"board_directors", grp:"Board & management", title:"Number, appointment & rotation of directors", text:function(f){return "The number of Directors shall not be less than "+ (v(f.minDirectors) || "[minimum]") +" nor more than "+ (v(f.maxDirectors) || "[maximum]") +" unless the Company in general meeting otherwise determines by special resolution and files the necessary intimation with the Registrar, and, save to the extent the Company is exempt, not less than two-thirds of the total number of Directors of a public company shall be liable to retire by rotation in accordance with Section 152."; }},
+  {id:"first_directors", grp:"Board & management", title:"First directors", text:function(f){return firstDirectorsText(f);}},
+  {id:"board_powers", grp:"Board & management", title:"Powers & proceedings of the Board", text:function(f){return "The business of the Company shall be managed by the Board, which may exercise all such powers of the Company as are not required by the Act or the Memorandum/Articles to be exercised by the Company in general meeting, subject always to the restrictions in Sections 179 and 180; the Board may meet for the despatch of business, adjourn and otherwise regulate its meetings and proceedings as it thinks fit, subject to the minimum-meeting and quorum requirements of Sections 173–174, and may delegate specified powers to a committee of directors."; }},
+  {id:"md_wtd", grp:"Board & management", title:"Managing Director / Whole-time Director / Manager", text:function(f){return "Subject to the provisions of the Act, the Board may from time to time appoint one or more of its Directors to the office of Managing Director or Whole-time Director, or appoint a Manager, on such terms, remuneration and duration as the Board (and, where required, the members and the Central Government) may approve in accordance with Sections 196–197 and Schedule V, and may vest in such person the powers of general conduct and management of the Company's business."; }},
+  {id:"borrowing", grp:"Board & management", title:"Borrowing powers", text:function(f){return "The Board may, on behalf of the Company, borrow money and secure repayment in such manner, upon such terms and with such security as it thinks fit, provided that the Board shall not, except with the consent of the Company by special resolution, borrow money which, together with monies already borrowed (other than temporary loans from bankers in the ordinary course of business), exceeds the aggregate of the paid-up share capital, free reserves and securities premium, in accordance with Section 180(1)(c)."; }},
+  {id:"seal", grp:"Governance", title:"Common seal", text:function(f){return "The Company may, but need not, have a common seal (the requirement of a common seal having been made optional by the Companies (Amendment) Act, 2015); if the Company adopts a common seal, its custody shall rest with the Board, and it shall be affixed only pursuant to a Board resolution or the authority of a person(s) so authorised by the Board, and every document to which the seal is affixed shall be signed by at least one Director and countersigned by the Company Secretary or another authorised person."; }},
+  {id:"dividends", grp:"Financials", title:"Dividends & reserves", text:function(f){return "The Company in general meeting may declare dividends, but no dividend shall exceed the amount recommended by the Board; the Board may declare interim dividends and may, before recommending any dividend, set aside out of profits such sums as it thinks fit as a reserve, all in accordance with Section 123, and no dividend shall be paid otherwise than out of profits of the year, profits of previous years remaining undistributed, or money provided by the Central/State Government, and every dividend shall be paid within the period prescribed under Section 127."; }},
+  {id:"accounts", grp:"Financials", title:"Accounts, audit & books", text:function(f){return "The Company shall keep proper books of account at its registered office (or such other place as the Board decides, on notice to the Registrar) in accordance with Section 128, shall have its accounts audited by an auditor appointed in the manner and for the term prescribed under Section 139, and the Board shall lay financial statements before every annual general meeting in accordance with Sections 129 and 137."; }},
+  {id:"winding_up", grp:"Winding up & indemnity", title:"Winding up", text:function(f){return "If the Company is wound up, the liquidator may, with the sanction of a special resolution and any other sanction required by law, divide among the members in kind the whole or part of the Company's assets, and may vest any part of the assets in trustees for the benefit of members, in accordance with the applicable provisions of the Act relating to winding up."; }},
+  {id:"indemnity", grp:"Winding up & indemnity", title:"Indemnity of officers", text:function(f){return "Every Director, Manager, Company Secretary and other officer of the Company shall, subject to the provisions of Section 197 and other applicable provisions of the Act, be indemnified out of the Company's assets against any liability incurred by him in defending any proceedings, whether civil or criminal, in which judgment is given in his favour, or in which he is acquitted, or in which relief is granted to him by a court or the Tribunal."; }}
+];
+var REG_DEFAULTS = {share_capital:1, share_certs:1, transfer:1, alt_capital:1, agm_egm:1, quorum_proceedings:1, voting_proxy:1, board_directors:1, board_powers:1, dividends:1, accounts:1, indemnity:1, seal:1};
+
+/* Due-date calculator config */
+var EVENTS = {
+  name:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution (name change)",req:1},{id:"runDate",label:"Date name was reserved/approved (RUN, optional)"}],
+    compute:function(v){
+      var out=[tl("MGT-14","File the special resolution",addDays(v.srDate,30))];
+      if(v.runDate) out.push(tl("Name-change window","Reserved name lapses unless the change is completed within this window (60 days for an existing company's name change)",addDays(v.runDate,60)));
+      return out;
+    }
+  },
+  ro_local:{
+    fields:[{id:"brDate",label:"Date of the Board Resolution approving the move",req:1}],
+    compute:function(v){ return [tl("INC-22","Notice of change of registered office (same city/town)",addDays(v.brDate,30))]; }
+  },
+  ro_sameroc:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1},{id:"rdAppDate",label:"Date the RD application (INC-23/RD-1) was filed"},{id:"rdConfirmDate",label:"Date of Regional Director confirmation"}],
+    compute:function(v){
+      var out=[tl("MGT-14","File the special resolution",addDays(v.srDate,30))];
+      if(v.rdAppDate) out.push(tl("RD confirmation","Regional Director's own indicative timeline — ordinarily within 30 days of a complete application",addDays(v.rdAppDate,30),"info"));
+      if(v.rdConfirmDate){ out.push(tl("INC-28","File the RD's confirmation with the Registrar",addDays(v.rdConfirmDate,60))); out.push(tl("INC-22","Notice of the new address",addDays(v.rdConfirmDate,30))); }
+      return out;
+    }
+  },
+  ro_samejuris:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1}],
+    compute:function(v){ return [tl("MGT-14","File the special resolution",addDays(v.srDate,30)), tl("INC-22","Notice of the new address",addDays(v.srDate,30))]; }
+  },
+  ro_interstate:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1},{id:"rdAppDate",label:"Date INC-23/RD-1 was filed with the Regional Director"},{id:"rdOrderDate",label:"Date of the RD's certified order"}],
+    compute:function(v){
+      var out=[tl("MGT-14","File the special resolution",addDays(v.srDate,30))];
+      if(v.rdAppDate) out.push(tl("RD order","Regional Director's own indicative timeline — up to 60 days of the application (15 days if unopposed)",addDays(v.rdAppDate,60),"info"));
+      if(v.rdOrderDate){ out.push(tl("INC-28","File the RD's order with the Registrar of BOTH States",addDays(v.rdOrderDate,30))); out.push(tl("INC-22","Notice of the new address (fresh COI follows)",addDays(v.rdOrderDate,30))); }
+      return out;
+    }
+  },
+  objects:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1}],
+    compute:function(v){ return [tl("MGT-14","File the special resolution",addDays(v.srDate,30)), tl("Registrar's certification","Registrar's own indicative timeline to register & certify the objects alteration — within 30 days of the special resolution being filed (Sec. 13(9))",addDays(v.srDate,60),"info")]; }
+  },
+  liability:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1}],
+    compute:function(v){ return [tl("MGT-14","File the special resolution",addDays(v.srDate,30))]; }
+  },
+  capital_sh7:{
+    fields:[{id:"altDate",label:"Date of the resolution effecting the Section 61 alteration",req:1}],
+    compute:function(v){ return [tl("SH-7","Notice of alteration of share capital",addDays(v.altDate,30))]; }
+  },
+  capital_reduction:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1},{id:"orderDate",label:"Date certified copy of the NCLT order was received"}],
+    compute:function(v){
+      var out=[tl("MGT-14","File the special resolution",addDays(v.srDate,30))];
+      if(v.orderDate) out.push(tl("INC-28","File the Tribunal's order & approved minute",addDays(v.orderDate,30)));
+      return out;
+    }
+  },
+  aoa_general:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1}],
+    compute:function(v){ return [tl("MGT-14","File the special resolution",addDays(v.srDate,30))]; }
+  },
+  conv_priv_pub:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1}],
+    compute:function(v){ return [tl("MGT-14","File the special resolution",addDays(v.srDate,30)), tl("No CG/Tribunal approval","This direction of conversion needs no Central Government or Tribunal approval — informational only",addDays(v.srDate,30),"info")]; }
+  },
+  conv_pub_priv:{
+    fields:[{id:"srDate",label:"Date of the Special Resolution",req:1},{id:"orderDate",label:"Date the Tribunal's (NCLT) order was received"}],
+    compute:function(v){
+      var out=[tl("MGT-14","File the special resolution",addDays(v.srDate,30))];
+      if(v.orderDate) out.push(tl("INC-27","File the Tribunal's order with the altered Articles",addDays(v.orderDate,15)));
+      return out;
+    }
+  },
+  entrenchment:{
+    fields:[{id:"entrenchDate",label:"Date the entrenchment provision took effect",req:1}],
+    compute:function(v){ return [tl("MGT-14","Notice of the entrenchment provision",addDays(v.entrenchDate,30))]; }
+  }
+};
+
+var REFDATA = [
+  {grp:"Name", form:"MGT-14", days:30, desc:"Filing a special resolution altering the Name clause, from the date it is passed."},
+  {grp:"Name", form:"Name reservation (RUN)", days:20, desc:"Validity of a freshly reserved name for a new incorporation, from approval."},
+  {grp:"Name", form:"Name reservation (existing co.)", days:60, desc:"Validity of an approved name change for an existing company, from approval."},
+  {grp:"Registered office", form:"INC-22", days:30, desc:"Notice/verification of the registered office or any change of its situation."},
+  {grp:"Registered office", form:"RD confirmation (same State)", days:30, desc:"Regional Director's indicative timeline to confirm a same-State jurisdiction change, from a complete application."},
+  {grp:"Registered office", form:"INC-28 (same State)", days:60, desc:"Filing the RD's confirmation with the Registrar, from the date of confirmation."},
+  {grp:"Registered office", form:"Advertisement / notice (interstate)", days:30, desc:"Public advertisement & creditor notice must be issued not more than 30 days before filing INC-23/RD-1."},
+  {grp:"Registered office", form:"RD order (interstate)", days:60, desc:"Regional Director's indicative outer timeline to decide an interstate shift (15 days if unopposed)."},
+  {grp:"Registered office", form:"INC-28 (interstate)", days:30, desc:"Filing the RD's certified order with the Registrar of both States, from receipt."},
+  {grp:"Objects", form:"MGT-14", days:30, desc:"Filing the special resolution altering the Objects clause."},
+  {grp:"Objects", form:"Registrar certification", days:30, desc:"Registrar's own indicative timeline to register & certify the alteration, from the date the SR is filed."},
+  {grp:"Capital", form:"SH-7", days:30, desc:"Notice of any Section 61 alteration of share capital (increase, sub-division, consolidation, conversion to stock, cancellation) or redemption of redeemable preference shares."},
+  {grp:"Capital", form:"MGT-14 (reduction)", days:30, desc:"Filing the special resolution approving a Section 66 capital reduction."},
+  {grp:"Capital", form:"INC-28 (reduction)", days:30, desc:"Filing the NCLT's confirming order & approved minute, from receipt of the certified copy."},
+  {grp:"Articles / conversion", form:"MGT-14", days:30, desc:"Filing any special resolution altering the Articles, including a conversion of company class."},
+  {grp:"Articles / conversion", form:"INC-27 (public→private)", days:15, desc:"Filing the Tribunal's order with the altered Articles, from receipt of the order."},
+  {grp:"Entrenchment", form:"MGT-14", days:30, desc:"Notice of an entrenchment provision taking effect in an existing company's Articles."}
+];
+
+/* ============================================================= HELPERS ============================================================= */
+function v(id){ var el=(typeof id==="string")?document.getElementById(id):id; if(!el) return ""; return (el.value||"").trim(); }
+function ph(txt,fallback){ txt=(txt||"").trim(); return txt? esc(txt) : '<span class="ph">'+esc(fallback)+'</span>'; }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function nl2li(txt){
+  var lines=(txt||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
+  return lines;
+}
+function currentType(){ return TYPE_MAP[v("companyType")] || TYPE_MAP.private_shares; }
+function companyFullName(){
+  var t=currentType();
+  var nm=v("companyName") || "[Company Name]";
+  var suf=t.suffix.indexOf("[")===0 ? "" : (" "+t.suffix);
+  return nm+suf;
+}
+
+/* ============================================================= TYPE-DRIVEN FORM LOGIC ============================================================= */
+function onTypeChange(){
+  var t=currentType();
+  document.getElementById("moaTable").value=t.moaTable;
+  document.getElementById("aoaTable").value=t.aoaTable;
+  document.getElementById("nameSuffix").value=t.suffix;
+  document.getElementById("liabilityType").value=t.liability;
+  document.getElementById("guaranteeAmtRow").classList.toggle("show", t.guarantee);
+  document.getElementById("capitalRow").classList.toggle("show", t.hasCapital);
+  document.getElementById("prefRow").classList.toggle("show", t.hasCapital);
+  document.getElementById("s8ObjectsRow").classList.toggle("show", t.s8);
+  document.getElementById("pvtRestrictRow").classList.toggle("show", t.private);
+  renderPreview();
+}
+
+function renderRegChecklist(){
+  var groups={};
+  REGS.forEach(function(r){ (groups[r.grp]=groups[r.grp]||[]).push(r); });
+  var html="";
+  Object.keys(groups).forEach(function(g){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--focus);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;">'+esc(g)+'</div>';
+    groups[g].forEach(function(r){
+      var checked=REG_DEFAULTS[r.id]?"checked":"";
+      html+='<label class="agenda-check"><input type="checkbox" class="reg-check" data-reg="'+r.id+'" '+checked+' onchange="renderPreview()"><span>'+esc(r.title)+'</span></label>';
+    });
+  });
+  document.getElementById("regChecklist").innerHTML=html;
+}
+function selectedRegs(){
+  var out=[];
+  document.querySelectorAll(".reg-check").forEach(function(cb){ if(cb.checked) out.push(cb.getAttribute("data-reg")); });
+  return out;
+}
+
+function populateStates(){
+  var sel=document.getElementById("regState");
+  STATES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; sel.appendChild(o); });
+}
+
+/* ============================================================= SUBSCRIBER TABLE ============================================================= */
+var subCounter=0;
+function addSubscriberRow(name,addr,din,shares){
+  subCounter++;
+  var tr=document.createElement("tr");
+  tr.innerHTML =
+    '<td><input type="text" class="sub-name" value="'+esc(name||"")+'" placeholder="A.B., s/o C.D."></td>'+
+    '<td><input type="text" class="sub-addr" value="'+esc(addr||"")+'" placeholder="12 MG Road, Bengaluru, Karnataka – 560001, Company Director"></td>'+
+    '<td><input type="text" class="sub-din" value="'+esc(din||"")+'" placeholder="08123456"></td>'+
+    '<td><input type="text" class="sub-shares" value="'+esc(shares||"")+'" placeholder="5,000"></td>'+
+    '<td style="text-align:center;"><button type="button" class="subs-remove" onclick="this.closest(\'tr\').remove();renderPreview();">&times;</button></td>';
+  document.getElementById("subsBody").appendChild(tr);
+  tr.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("input", renderPreview); });
+  renderPreview();
+}
+function getSubscribers(){
+  var rows=document.querySelectorAll("#subsBody tr");
+  var out=[];
+  rows.forEach(function(r){
+    var name=v(r.querySelector(".sub-name"));
+    var addr=v(r.querySelector(".sub-addr"));
+    var din=v(r.querySelector(".sub-din"));
+    var shares=v(r.querySelector(".sub-shares"));
+    if(name||addr||din||shares) out.push({name:name,addr:addr,din:din,shares:shares});
+  });
+  return out;
+}
+
+/* ============================================================= DOCUMENT BUILDERS ============================================================= */
+function buildMOA(){
+  var t=currentType();
+  var name=companyFullName();
+  var state=v("regState")||"[State]";
+  var main=nl2li(v("mainObjects"));
+  var anc=nl2li(v("ancillaryObjects"));
+  var s8=nl2li(v("s8Objects"));
+  var subs=getSubscribers();
+
+  var html="";
+  html+='<p class="cert-title">THE COMPANIES ACT, 2013</p>';
+  html+='<p class="cert-title">('+esc(t.moaTable.toUpperCase())+' — MEMORANDUM OF ASSOCIATION OF A '+esc(t.liability.toUpperCase())+' COMPANY)</p>';
+  html+='<p class="co-name">MEMORANDUM OF ASSOCIATION</p>';
+  html+='<p class="co-meta">of</p>';
+  html+='<p class="co-name">'+esc(name).toUpperCase()+'</p>';
+  html+='<hr class="rule">';
+
+  html+='<div class="item-title"><span class="item-tag">Clause I</span>Name</div>';
+  html+='<p class="res-body"><p>The name of the Company is <strong>'+esc(name)+'</strong>.</p></p>';
+
+  html+='<div class="item-title"><span class="item-tag">Clause II</span>Registered office</div>';
+  html+='<p class="res-body"><p>The registered office of the Company will be situate in the State of '+ph(state,"[State]")+'.</p></p>';
+
+  html+='<div class="item-title"><span class="item-tag">Clause III</span>Objects</div>';
+  if(t.s8 && s8.length){
+    html+='<p class="res-body"><p>The Company is established for promoting the following charitable objects, and intends to apply its profits, if any, or other income in promoting these objects, and to prohibit the payment of any dividend to its members:</p></p>';
+    html+='<ol class="clauses">'+s8.map(function(o){return "<li>"+esc(o)+"</li>";}).join("")+'</ol>';
+  } else if(main.length || anc.length){
+    if(main.length){
+      html+='<p class="res-body"><p>The objects for which the Company is incorporated are:</p></p>';
+      html+='<ol class="clauses">'+main.map(function(o){return "<li>"+esc(o)+"</li>";}).join("")+'</ol>';
+    }
+    if(anc.length){
+      html+='<p class="res-body"><p>Matters considered necessary in furtherance of the objects specified above:</p></p>';
+      html+='<ol class="clauses">'+anc.map(function(o){return "<li>"+esc(o)+"</li>";}).join("")+'</ol>';
+    }
+  } else {
+    html+='<p class="res-body"><p><span class="ph">[List the objects the Company is incorporated to pursue.]</span></p></p>';
+  }
+
+  html+='<div class="item-title"><span class="item-tag">Clause IV</span>Liability</div>';
+  if(t.guarantee){
+    var amt=ph(v("guaranteeAmt"),"[amount]");
+    html+='<p class="res-body"><p>The liability of the members is limited. Every member undertakes to contribute to the assets of the Company, in the event of its being wound up while he is a member or within one year after he ceases to be a member, for payment of the debts and liabilities of the Company (or of such debts and liabilities as may have been contracted before he ceased to be a member) and of the costs, charges and expenses of winding up, and for adjustment of the rights of the contributories among themselves, such amount as may be required, not exceeding \u20b9'+amt+'.</p></p>';
+  } else if(t.liability.indexOf("Unlimited")===0){
+    html+='<p class="res-body"><p>The liability of the members of the Company is unlimited.</p></p>';
+  } else {
+    html+='<p class="res-body"><p>The liability of the members is limited, and is limited to the amount, if any, unpaid on the shares respectively held by them.</p></p>';
+  }
+
+  if(t.hasCapital){
+    html+='<div class="item-title"><span class="item-tag">Clause V</span>Capital</div>';
+    var auth=ph(v("authCapital"),"[amount]");
+    var eq=ph(v("equityShares"),"[number]");
+    var fv=ph(v("faceValue"),"[FV]");
+    var capText='<p>The Authorised Share Capital of the Company is \u20b9'+auth+' divided into '+eq+' Equity Shares of \u20b9'+fv+' each';
+    if(document.getElementById("hasPref") && document.getElementById("hasPref").checked){
+      var pc=ph(v("prefShares"),"[number]"), pf=ph(v("prefFace"),"[FV]");
+      capText+=' and '+pc+' Preference Shares of \u20b9'+pf+' each';
+    }
+    capText+=', with power to increase, reduce, sub-divide, consolidate or otherwise reorganise the share capital and to attach thereto any preferential, deferred, qualified or other special rights, privileges or conditions, in accordance with the Act and the Articles of Association.</p>';
+    html+='<p class="res-body">'+capText+'</p>';
+  }
+
+  html+='<div class="item-title"><span class="item-tag">Clause VI</span>Association / Subscription</div>';
+  html+='<p class="res-body"><p>We, the several persons whose names and addresses are subscribed below, are desirous of being formed into a Company in pursuance of this Memorandum of Association, and we respectively agree to take the number of shares in the capital of the Company set opposite our respective names.</p></p>';
+
+  html+='<table class="subs"><thead><tr><th>Name, address, description &amp; occupation of subscriber</th><th>DIN / ID</th><th>No. of shares taken</th><th>Signature</th></tr></thead><tbody>';
+  if(subs.length){
+    subs.forEach(function(s){
+      html+='<tr><td>'+ph(s.name+(s.addr?(", "+s.addr):""),"[Subscriber name & address]")+'</td><td>'+ph(s.din,"—")+'</td><td>'+ph(s.shares,"[•]")+'</td><td>Sd/-</td></tr>';
+    });
+  } else {
+    html+='<tr><td><span class="ph">[Add subscribers in the form panel]</span></td><td>—</td><td>—</td><td>—</td></tr>';
+  }
+  html+='</tbody></table>';
+  html+='<p class="res-body" style="font-size:12.4px;color:#4a5158;"><p>Witness to the above signatures: <span class="ph">[Name, address, description &amp; occupation of witness]</span>, who has witnessed the signature(s) of the above subscriber(s), who are personally known to me.</p></p>';
+  html+='<p class="res-body" style="font-size:12.4px;color:#4a5158;"><p>Dated this <span class="ph">[•]</span> day of <span class="ph">[month, year]</span>, at <span class="ph">'+ph(state,"[Place]")+'</span>.</p></p>';
+
+  return html;
+}
+
+function buildAOA(){
+  var t=currentType();
+  var name=companyFullName();
+  var mode=v("aoaMode");
+  var selected=selectedRegs();
+  var byId={}; REGS.forEach(function(r){byId[r.id]=r;});
+
+  var html="";
+  html+='<p class="cert-title">THE COMPANIES ACT, 2013</p>';
+  html+='<p class="cert-title">('+esc(t.aoaTable.toUpperCase())+' — ARTICLES OF ASSOCIATION)</p>';
+  html+='<p class="co-name">ARTICLES OF ASSOCIATION</p>';
+  html+='<p class="co-meta">of</p>';
+  html+='<p class="co-name">'+esc(name).toUpperCase()+'</p>';
+  html+='<hr class="rule">';
+
+  if(mode==="table"){
+    html+='<p class="res-body"><p>Pursuant to Section 5(7) of the Companies Act, 2013, the Company hereby adopts, in full and without modification, all the regulations contained in '+esc(t.aoaTable)+' of Schedule I to the Act (as applicable to a company of this class) as its Articles of Association, save and except any regulation that is inconsistent with the Memorandum of Association of the Company, which shall not apply to that extent (Section 6).</p></p>';
+  } else {
+    html+='<p class="res-body"><p>Pursuant to Section 5(7) of the Companies Act, 2013, the Company adopts '+esc(t.aoaTable)+' of Schedule I to the Act as modified, excluded and supplemented by the regulations set out below; any regulation of '+esc(t.aoaTable)+' not expressly excluded or modified below continues to apply to the Company by virtue of Section 5(8).</p></p>';
+  }
+
+  if(t.private){
+    html+='<div class="reg-heading">Private company restrictions (Section 2(68))</div>';
+    var restrictions=[];
+    if(!document.getElementById("cap200") || document.getElementById("cap200").checked) restrictions.push("The number of members of the Company (other than persons who are in the employment of the Company, and persons who having been formerly in the employment of the Company were members while in that employment and have continued to be members after the employment ceased) shall be limited to two hundred; provided that where two or more persons hold one or more shares jointly, they shall, for this purpose, be treated as a single member.");
+    if(!document.getElementById("restrictInvite") || document.getElementById("restrictInvite").checked) restrictions.push("Any invitation to the public to subscribe for any securities of the Company is prohibited.");
+    if(!document.getElementById("rofr") || document.getElementById("rofr").checked) restrictions.push("The right to transfer shares of the Company is restricted: a member proposing to transfer shares shall first offer them to the existing members in proportion to their existing holdings, at a fair value determined in the manner the Articles or a separate agreement prescribe, and may transfer to an outsider only if the existing members decline the offer, in whole or in part, within the time so prescribed.");
+    html+='<ol class="regs">'+restrictions.map(function(r){return "<li>"+r+"</li>";}).join("")+'</ol>';
+  }
+
+  var byGroup={};
+  selected.forEach(function(id){ var r=byId[id]; if(!r) return; (byGroup[r.grp]=byGroup[r.grp]||[]).push(r); });
+  Object.keys(byGroup).forEach(function(g){
+    html+='<div class="reg-heading">'+esc(g)+'</div>';
+    html+='<ol class="regs">'+byGroup[g].map(function(r){return "<li><strong>"+esc(r.title)+".</strong> "+r.text({minDirectors:document.getElementById("minDirectors"),maxDirectors:document.getElementById("maxDirectors")})+"</li>";}).join("")+'</ol>';
+  });
+  if(!selected.length){
+    html+='<p class="res-body"><p><span class="ph">[No individual regulations selected — tick regulations in the form panel to draft them in full, or leave the Table adopted as-is above.]</span></p></p>';
+  }
+
+  if(document.getElementById("entrench") && document.getElementById("entrench").checked){
+    html+='<div class="reg-heading">Entrenchment (Section 5(3)–(4))</div>';
+    html+='<ol class="regs"><li>'+ph(v("entrenchDetail"),"[Specify the entrenched Article(s) and the higher threshold required to alter them.]")+'</li></ol>';
+  }
+
+  html+='<p class="res-body" style="margin-top:26px;font-size:12.4px;color:#4a5158;"><p>Subscribed by the same subscribers whose names appear in the Memorandum of Association of the Company, in the presence of the same witness, on the same date and at the same place as stated therein.</p></p>';
+
+  return html;
+}
+function firstDirectorsText(f){
+  var lines=nl2li(v("firstDirectors"));
+  if(!lines.length) return "The first Directors of the Company are those named as such in the incorporation documents filed with the Registrar, until Directors are duly appointed in accordance with the Act.";
+  return "The first Directors of the Company shall be: "+lines.join("; ")+".";
+}
+
+/* ============================================================= PREVIEW & EXPORT ============================================================= */
+var DOC_VIEW="moa";
+function setDocView(which){
+  DOC_VIEW=which;
+  document.getElementById("docBtnMoa").classList.toggle("active", which==="moa");
+  document.getElementById("docBtnAoa").classList.toggle("active", which==="aoa");
+  renderPreview();
+}
+function renderPreview(){
+  var html = (DOC_VIEW==="moa") ? buildMOA() : buildAOA();
+  document.getElementById("previewContent").innerHTML = html;
+}
+function setFormSection(sec){
+  document.getElementById("moaSection").classList.toggle("show", sec==="moa");
+  document.getElementById("aoaSection").classList.toggle("show", sec==="aoa");
+  document.querySelectorAll(".section-tab").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-sec")===sec); });
+  setDocView(sec);
+}
+
+function buildWordHtml(){
+  var content = buildMOA() + '<div style="page-break-before:always;"></div>' + buildAOA();
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"><title>MOA and AOA</title>'+
+    '<style>body{font-family:Georgia,\'Times New Roman\',serif;font-size:12pt;color:#20272c;} .co-name{font-size:15pt;font-weight:bold;text-align:center;} .co-meta{text-align:center;font-size:10.5pt;} .cert-title{text-align:center;font-size:10.5pt;} .item-title{font-weight:bold;margin:18px 0 8px;} .res-body p{text-align:justify;margin-bottom:10px;} table.subs{border-collapse:collapse;width:100%;} table.subs td,table.subs th{border:1px solid #ccc;padding:4px 8px;} ol.clauses li,ol.regs li{margin-bottom:8px;text-align:justify;} .reg-heading{margin-top:20px;font-weight:bold;text-transform:uppercase;font-size:10.5pt;} .ph{color:#999;font-style:italic;} hr{border:none;border-top:2px solid #9c7a34;}</style>'+
+    '</head><body>'+content+'</body></html>';
+}
+function triggerDownload(blobOrUrl, filename, isDataUrl){
+  var a=document.createElement("a"); a.href=blobOrUrl; a.download=filename; a.rel="noopener"; a.style.display="none";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  if(!isDataUrl){ setTimeout(function(){ URL.revokeObjectURL(blobOrUrl); },4000); }
+}
+function downloadWord(){
+  var docHtml=buildWordHtml();
+  var filename=(v("companyName")||"Company").replace(/[^a-z0-9]+/gi,"_")+"_MOA_AOA.doc";
+  try{
+    if(window.Blob && window.URL && window.URL.createObjectURL){
+      var blob=new Blob(['\ufeff', docHtml], {type:"application/msword"});
+      if(window.navigator && window.navigator.msSaveOrOpenBlob){ window.navigator.msSaveOrOpenBlob(blob, filename); return; }
+      var url=URL.createObjectURL(blob);
+      triggerDownload(url, filename, false);
+      return;
+    }
+  }catch(e){}
+  try{
+    var dataUrl="data:application/msword;charset=utf-8,"+encodeURIComponent(docHtml);
+    triggerDownload(dataUrl, filename, true);
+    return;
+  }catch(e){}
+  try{
+    var win=window.open("", "_blank");
+    if(win){ win.document.open(); win.document.write(docHtml); win.document.close(); return; }
+  }catch(e){}
+  alert("Downloads are blocked in this embedded preview. Please open the saved HTML file directly in a browser tab and try again, or use \"Copy Text\" instead.");
+}
+function safePrint(){
+  var target=document.getElementById("previewContent");
+  var saved=target.innerHTML;
+  target.innerHTML = buildMOA() + '<div style="page-break-before:always;"></div>' + buildAOA();
+  var restore=function(){ target.innerHTML=saved; window.removeEventListener("afterprint",restore); };
+  window.addEventListener("afterprint", restore);
+  try{ window.print(); }
+  catch(e){
+    try{
+      var win=window.open("", "_blank");
+      win.document.open();
+      win.document.write('<html><head><title>MOA and AOA</title></head><body>'+target.innerHTML+'</body></html>');
+      win.document.close(); win.focus(); win.print();
+    }catch(e2){ alert("Printing is blocked in this view. Please open the saved HTML file directly in a browser tab and try again."); }
+    restore();
+  }
+  setTimeout(restore, 1500);
+}
+function copyDocText(){
+  var tmp=document.createElement("div");
+  tmp.style.position="fixed"; tmp.style.left="-9999px";
+  tmp.innerHTML = buildMOA() + "\n\n" + buildAOA();
+  document.body.appendChild(tmp);
+  var text=tmp.innerText;
+  document.body.removeChild(tmp);
+  var done=function(ok){ /* no-op status */ };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){done(true);}, function(){fallbackCopy(text,done);});
+  } else { fallbackCopy(text,done); }
+}
+function fallbackCopy(text,cb){
+  try{
+    var ta=document.createElement("textarea");
+    ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+    cb(ok);
+  }catch(e){ cb(false); }
+}
+
+/* ============================================================= SAMPLE / CLEAR ============================================================= */
+function loadSample(){
+  document.getElementById("companyName").value="Bluecrest Technologies";
+  document.getElementById("companyType").value="private_shares";
+  document.getElementById("cin").value="";
+  document.getElementById("regState").value="Maharashtra";
+  document.getElementById("rocJuris").value="Registrar of Companies, Mumbai";
+  document.getElementById("regAddress").value="4th Floor, Crest Business Park, Andheri East, Mumbai, Maharashtra – 400069";
+  document.getElementById("mainObjects").value="To carry on the business of designing, developing, licensing and providing software products and technology consulting services in India and abroad.\nTo provide data processing, cloud hosting and information-technology-enabled services to clients in India and abroad.";
+  document.getElementById("ancillaryObjects").value="To acquire, hold, deal in and dispose of any intellectual property, patents, trademarks and copyrights connected with the Company's business.\nTo open bank accounts, borrow or raise money and secure the same by mortgage, charge or otherwise.";
+  document.getElementById("authCapital").value="1,00,00,000";
+  document.getElementById("equityShares").value="10,00,000";
+  document.getElementById("faceValue").value="10";
+  document.getElementById("minDirectors").value="2";
+  document.getElementById("maxDirectors").value="12";
+  document.getElementById("firstDirectors").value="Mr. Arjun Mehta, DIN 08123456\nMs. Kavita Rao, DIN 08234567";
+  document.getElementById("subsBody").innerHTML="";
+  addSubscriberRow("Arjun Mehta, s/o Rajesh Mehta","4th Floor, Crest Business Park, Andheri East, Mumbai, Maharashtra – 400069, Company Director","08123456","5,00,000");
+  addSubscriberRow("Kavita Rao, d/o Suresh Rao","201, Lake View Apartments, Powai, Mumbai, Maharashtra – 400076, Company Director","08234567","5,00,000");
+  onTypeChange();
+  renderRegChecklist();
+  setDocView("moa");
+}
+function clearForm(){
+  document.querySelectorAll("#formPanel input[type=text], #formPanel textarea").forEach(function(el){ el.value=""; });
+  document.querySelectorAll("#formPanel select").forEach(function(el){ el.selectedIndex=0; });
+  document.getElementById("subsBody").innerHTML="";
+  addSubscriberRow(); addSubscriberRow();
+  onTypeChange();
+  renderRegChecklist();
+  setDocView("moa");
+}
+
+/* ============================================================= TAB SWITCHING ============================================================= */
+function showTopTab(which){
+  document.getElementById("appGenerator").classList.toggle("hide", which!=="generator");
+  document.getElementById("appGuide").classList.toggle("show", which==="guide");
+  document.getElementById("appNav").classList.toggle("show", which==="navigator");
+  document.getElementById("tabBtnGenerator").classList.toggle("active", which==="generator");
+  document.getElementById("tabBtnGuide").classList.toggle("active", which==="guide");
+  document.getElementById("tabBtnNav").classList.toggle("active", which==="navigator");
+}
+
+/* ============================================================= DUE-DATE CALCULATOR ============================================================= */
+function addDays(dateStr,n){
+  if(!dateStr) return null;
+  var d=new Date(dateStr+"T00:00:00");
+  if(isNaN(d.getTime())) return null;
+  d.setDate(d.getDate()+n);
+  return d;
+}
+function tl(form,desc,due,forceStatus){
+  return {form:form,desc:desc,due:due,forceStatus:forceStatus||null};
+}
+function fmtDate(d){
+  if(!d) return {big:"—",sub:""};
+  var months=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  return {big:d.getDate(), sub:months[d.getMonth()]+" "+d.getFullYear()};
+}
+function statusFor(due){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var d=new Date(due); d.setHours(0,0,0,0);
+  var diff=Math.round((d-today)/86400000);
+  if(diff<0) return {cls:"late", text:"Overdue by "+(-diff)+" day"+(-diff===1?"":"s")};
+  if(diff===0) return {cls:"soon", text:"Due today"};
+  if(diff<=7) return {cls:"soon", text:diff+" day"+(diff===1?"":"s")+" left"};
+  return {cls:"ok", text:diff+" day"+(diff===1?"":"s")+" left"};
+}
+function renderCalcFields(){
+  var type=v("eventType");
+  var ev=EVENTS[type];
+  var wrap=document.getElementById("calcDynamicFields");
+  wrap.innerHTML="";
+  ev.fields.forEach(function(f){
+    var div=document.createElement("div"); div.className="fitem";
+    div.innerHTML='<label>'+esc(f.label)+(f.req?" *":"")+'</label><input type="date" id="calc_'+f.id+'">';
+    wrap.appendChild(div);
+  });
+  document.getElementById("calcTimeline").innerHTML="";
+}
+function computeTimeline(){
+  var type=v("eventType");
+  var ev=EVENTS[type];
+  var vals={};
+  var missingReq=false;
+  ev.fields.forEach(function(f){
+    var val=v("calc_"+f.id);
+    vals[f.id]=val;
+    if(f.req && !val) missingReq=true;
+  });
+  var out=document.getElementById("calcTimeline");
+  if(missingReq){
+    out.innerHTML='<div class="note-inline">Please fill in the required date(s) marked with * above.</div>';
+    return;
+  }
+  var items=ev.compute(vals).filter(function(i){ return i.due; });
+  items.sort(function(a,b){ return a.due-b.due; });
+  if(!items.length){ out.innerHTML='<div class="note-inline">No downstream dates to show yet — add an optional date above for a fuller timeline.</div>'; return; }
+  out.innerHTML = items.map(function(i){
+    var st = i.forceStatus==="info" ? {cls:"info", text:"Indicative"} : statusFor(i.due);
+    var d=fmtDate(i.due);
+    return '<div class="tl-item '+st.cls+'"><div class="tl-date"><div class="dnum">'+d.big+'</div><div class="dsub">'+d.sub+'</div></div><div class="tl-body"><div class="tl-form">'+esc(i.form)+'</div><div class="tl-desc">'+esc(i.desc)+'</div></div><div class="tl-status '+st.cls+'">'+esc(st.text)+'</div></div>';
+  }).join("");
+}
+
+function renderRefToolbar(){
+  var groups=["All"]; REFDATA.forEach(function(r){ if(groups.indexOf(r.grp)===-1) groups.push(r.grp); });
+  var bar=document.getElementById("refToolbar");
+  bar.innerHTML=groups.map(function(g,i){ return '<button type="button" class="ref-chip'+(i===0?" active":"")+'" data-g="'+esc(g)+'" onclick="filterRef(this)">'+esc(g)+'</button>'; }).join("");
+  filterRef(bar.querySelector(".ref-chip"));
+}
+function filterRef(btn){
+  document.querySelectorAll(".ref-chip").forEach(function(b){ b.classList.toggle("active", b===btn); });
+  var g=btn.getAttribute("data-g");
+  var rows = g==="All" ? REFDATA : REFDATA.filter(function(r){ return r.grp===g; });
+  document.getElementById("refList").innerHTML = rows.map(function(r){
+    return '<div class="tl-item info"><div class="tl-date"><div class="dnum">'+r.days+'</div><div class="dsub">DAYS</div></div><div class="tl-body"><div class="tl-form">'+esc(r.form)+' <span class="pill" style="margin-left:6px;">'+esc(r.grp)+'</span></div><div class="tl-desc">'+esc(r.desc)+'</div></div></div>';
+  }).join("");
+}
+
+/* ============================================================= INIT ============================================================= */
+function init(){
+  populateStates();
+  renderRegChecklist();
+  addSubscriberRow(); addSubscriberRow();
+  onTypeChange();
+  setFormSection("moa");
+  renderCalcFields();
+  renderRefToolbar();
+  document.getElementById("formPanel").addEventListener("input", renderPreview);
+  document.getElementById("formPanel").addEventListener("change", renderPreview);
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

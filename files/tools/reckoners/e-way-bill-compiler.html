@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Way Bill Compiler — Rule 138, CGST Rules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#F1F3F7;
+    --ink:#000000;
+    --ink-2:#000000;
+    --ink-3:#4A4A4A;
+    --navy:#132449;
+    --navy-2:#1C3566;
+    --gold:#C0952F;
+    --gold-light:#DCAF4C;
+    --gold-soft:#FBF2DC;
+    --border:#E6E8EF;
+    --border-strong:#D6DAE4;
+    --add:#2E9C57;
+    --add-soft:#E7F6EC;
+    --less:#D14B4B;
+    --less-soft:#FBEAEA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:'Public Sans', sans-serif;
+    -webkit-font-smoothing:antialiased; padding:0 0 80px 0;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 0;}
+
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding-bottom:22px; margin-bottom:22px;}
+  .header-main{display:flex; align-items:flex-start; gap:14px;}
+  .app-mark{
+    flex:none; width:44px;height:44px; border-radius:12px;
+    background:linear-gradient(155deg, var(--navy-2), var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px -4px rgba(19,36,73,0.45);
+  }
+  .app-mark span{font-family:'Fraunces',serif; font-weight:700; font-size:13px; color:var(--gold-light);}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); display:flex; align-items:center; gap:6px;
+    margin-bottom:6px; font-weight:600;
+  }
+  h1{font-family:'Fraunces', serif; font-weight:600; font-size:clamp(24px,5vw,31px); line-height:1.12; margin:0 0 6px 0; letter-spacing:-.01em; color:var(--ink);}
+  header p{font-size:13.5px; color:var(--ink-2); max-width:560px; margin:0; line-height:1.55;}
+  .reg-no{
+    flex:none; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-3);
+    background:var(--surface-2); border:1px solid var(--border); padding:6px 10px;
+    border-radius:8px; text-align:right; line-height:1.6; white-space:nowrap;
+  }
+
+  .tabs{display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; background:var(--surface-2); padding:5px; border-radius:12px; border:1px solid var(--border);}
+  .tab{
+    font-family:'Public Sans', sans-serif; font-size:12.5px; font-weight:600; padding:9px 13px;
+    background:transparent; color:var(--ink-2); border:none; cursor:pointer; border-radius:8px;
+    display:flex; align-items:baseline; gap:6px; transition:background .15s, color .15s;
+  }
+  .tab .num{color:var(--ink-3); font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:10px;}
+  .tab.active{background:var(--navy); color:#fff; box-shadow:0 2px 8px -2px rgba(19,36,73,0.35);}
+  .tab.active .num{color:var(--gold-light);}
+  .tab:not(.active):hover{background:#EBEDF3; color:var(--ink);}
+
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:26px 24px 28px; box-shadow:0 1px 2px rgba(16,24,40,0.03), 0 12px 32px -16px rgba(16,24,40,0.10);
+  }
+  .view{display:none;} .view.active{display:block;}
+
+  h2{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 4px; color:var(--ink);}
+  .sub{font-size:12px; color:var(--ink-3); margin:0 0 20px; font-family:'IBM Plex Mono', monospace;}
+  h3{font-family:'Fraunces', serif; font-size:15px; font-weight:600; margin:24px 0 10px; color:var(--ink);}
+  p, li{font-size:13.5px; line-height:1.65; color:var(--ink-2);}
+  .note{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--gold-light); padding:10px 13px; background:var(--gold-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+  .warn{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--less); padding:10px 13px; background:var(--less-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+
+  /* KPI strip */
+  .kpi-strip{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:22px;}
+  @media(max-width:720px){.kpi-strip{grid-template-columns:repeat(2,1fr);}}
+  .kpi{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:11px 13px;}
+  .kpi .label{font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3);}
+  .kpi .val{font-family:'Fraunces',serif; font-size:16px; font-weight:600; color:var(--navy); margin-top:3px;}
+
+  .profile-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;}
+  .profile-field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:150px;}
+  .profile-field label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3);}
+  .profile-field input, .profile-field select{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--ink);
+  }
+  .profile-field input:focus, .profile-field select:focus{outline:2px solid var(--gold-light); border-color:var(--gold);}
+  .toggle-group{display:flex; gap:6px; flex-wrap:wrap;}
+  .toggle-btn{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600; padding:8px 16px;
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-2);
+    cursor:pointer; border-radius:8px;
+  }
+  .toggle-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .checkbox-row{display:flex; align-items:flex-start; gap:9px; margin-top:10px; font-size:12.5px; color:var(--ink-2);}
+  .checkbox-row input{margin-top:2px; accent-color:var(--gold); width:15px; height:15px; flex:none;}
+
+  table.thresh{width:100%; border-collapse:collapse; margin-top:8px; font-size:12.5px;}
+  table.thresh th, table.thresh td{border:1px solid var(--border); padding:9px 10px; vertical-align:middle;}
+  table.thresh th{background:var(--navy); color:#fff; font-family:'Public Sans',sans-serif; font-size:10.5px; font-weight:600; text-align:center;}
+  table.thresh td{background:var(--surface);}
+  table.thresh td.tname{font-weight:600; color:var(--ink); font-size:12.5px;}
+  table.thresh td.tval{text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--navy); background:var(--surface-2);}
+  .pill{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.02em;}
+  .pill.ok{background:var(--add-soft); color:var(--add);}
+  .pill.req{background:var(--less-soft); color:var(--less);}
+  .pill.warn2{background:var(--gold-soft); color:var(--gold);}
+  .pill.na{background:var(--surface-2); color:var(--ink-3);}
+
+  .verdict-card{margin-top:16px; border-radius:12px; padding:16px 18px; background:linear-gradient(135deg, var(--navy), var(--navy-2));}
+  .verdict-card .vk{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.05em;}
+  .verdict-card .vv{font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:#fff; margin-top:4px;}
+  .verdict-card .vv small{font-size:12px; font-weight:500; color:#9FACC9;}
+  .verdict-card .status-line{margin-top:10px; font-size:13px; font-weight:600;}
+  .verdict-card .status-line.ok{color:#8BE0A8;}
+  .verdict-card .status-line.req{color:#F0A6A6;}
+  .verdict-card .status-line.warn2{color:#F3D28A;}
+  .verdict-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+  .verdict-chip{flex:1; min-width:150px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:9px 11px;}
+  .verdict-chip .vck{font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.04em;}
+  .verdict-chip .vcv{font-size:13px; font-weight:700; margin-top:3px;}
+  .verdict-chip .vcv.ok{color:#8BE0A8;} .verdict-chip .vcv.req{color:#F0A6A6;} .verdict-chip .vcv.na{color:#B9C4DE;}
+
+  .mat-slabs{display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px;}
+  .mat-slab{display:flex; justify-content:space-between; gap:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 13px; font-size:12px;}
+  .mat-slab b{color:var(--ink); font-weight:600;}
+  .mat-slab .formula{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:700;}
+
+  .def-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.def-grid{grid-template-columns:1fr;}}
+  .def-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .def-card .clno{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700;}
+  .def-card b{font-size:13px; color:var(--ink); display:block; margin:2px 0 3px;}
+  .def-card p{margin:0; font-size:12px; line-height:1.5;}
+
+  .guide-list{counter-reset:guide; margin-top:14px;}
+  .guide-item{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);}
+  .guide-item:last-child{border-bottom:none;}
+  .guide-num{
+    counter-increment:guide; flex:none; width:28px; height:28px; border-radius:50%;
+    background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700;
+  }
+  .guide-num::before{content:counter(guide);}
+  .guide-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:3px;}
+  .guide-body p{margin:0; font-size:12px;}
+  .guide-body .when{font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--gold); text-transform:uppercase; letter-spacing:.04em; margin-left:8px;}
+
+  .role-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.role-grid{grid-template-columns:1fr;}}
+  .role-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 15px;}
+  .role-card .rc-head{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--gold); font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;}
+  .role-card ul{margin:0; padding-left:18px;}
+  .role-card li{font-size:12px; margin-bottom:6px;}
+  .role-card p{font-size:12px; margin:0;}
+
+  table.simple{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+  table.simple th, table.simple td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); color:var(--ink-2);}
+  table.simple th{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); font-weight:600;}
+  table.simple td b{color:var(--ink);}
+
+  .exclude-list{margin-top:10px; padding-left:0; list-style:none;}
+  .exclude-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .exclude-list li::before{content:"✕"; position:absolute; left:0; top:1px; color:var(--less); font-size:11px; font-weight:700;}
+  .check-list{margin-top:10px; padding-left:0; list-style:none;}
+  .check-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .check-list li::before{content:"✓"; position:absolute; left:0; top:1px; color:var(--add); font-size:11px; font-weight:700;}
+
+  .exempt-box{margin-top:16px; background:var(--gold-soft); border:1px solid #EEDCA6; border-radius:10px; padding:14px 16px;}
+  .exempt-box b{color:var(--gold); font-size:12.5px; display:block; margin-bottom:6px;}
+
+  .state-cols{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+  @media(max-width:600px){.state-cols{grid-template-columns:1fr;}}
+  .state-col{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:13px 15px;}
+  .state-col .sc-head{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;}
+  .state-col p{margin:0; font-size:12px; line-height:1.6;}
+
+  /* Calculator specific */
+  .range-row{margin-bottom:16px;}
+  .range-head{display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-2); margin-bottom:8px;}
+  .range-head b{font-family:'IBM Plex Mono',monospace; color:var(--navy); font-size:14px;}
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:6px; border-radius:4px;
+    background:var(--border-strong); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--gold); cursor:pointer; border:3px solid var(--navy);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:var(--gold); cursor:pointer; border:3px solid var(--navy);
+  }
+
+  /* Risk cards */
+  .risk-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.risk-grid{grid-template-columns:1fr;}}
+  .risk-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:13px 15px;}
+  .risk-card .rk-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px;}
+  .risk-card .rk-head b{font-size:13px; color:var(--ink); line-height:1.4;}
+  .risk-card .rate{
+    flex:none; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;
+    padding:4px 9px; border-radius:20px; white-space:nowrap;
+  }
+  .risk-card p{margin:0; font-size:12px;}
+
+  /* Timeline */
+  .timeline{border-left:2px solid var(--border-strong); margin:18px 0 0 6px; padding-left:22px;}
+  .tl-item{position:relative; margin-bottom:20px;}
+  .tl-item:last-child{margin-bottom:0;}
+  .tl-item::before{
+    content:""; position:absolute; left:-27.5px; top:3px; width:11px;height:11px;
+    background:var(--surface); border:2px solid var(--gold); border-radius:50%;
+  }
+  .tl-item .when{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--gold); text-transform:uppercase; letter-spacing:.04em; font-weight:700;}
+  .tl-item b{font-size:13px;color:var(--ink); display:block; margin:3px 0 3px;}
+  .tl-item p{margin:0;}
+
+  /* FAQ accordion */
+  .faq-item{border-bottom:1px solid var(--border);}
+  .faq-item:last-child{border-bottom:none;}
+  .faq-q{
+    width:100%; text-align:left; background:none; border:none; cursor:pointer;
+    padding:14px 0; font-family:'Public Sans',sans-serif; font-size:13.5px; font-weight:600; color:var(--ink);
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+  }
+  .faq-q .plus{font-family:'IBM Plex Mono',monospace; font-size:16px; color:var(--gold); flex:none; transition:transform .2s;}
+  .faq-item.open .faq-q .plus{transform:rotate(45deg);}
+  .faq-a{max-height:0; overflow:hidden; transition:max-height .25s ease;}
+  .faq-a p{padding:0 0 14px; margin:0; font-size:12.5px;}
+
+  .disclaimer{margin-top:30px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--ink-3); line-height:1.6; font-family:'IBM Plex Mono',monospace;}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-main">
+      <div class="app-mark"><span>EWB</span></div>
+      <div>
+        <div class="eyebrow">CGST Act, 2017 · Rule 138</div>
+        <h1>E-Way Bill Compiler</h1>
+        <p>Section 68 &amp; Rule 138, CGST Rules, 2017 — applicability, exemptions, state thresholds, a validity calculator, and the full lifecycle from generation to penalty exposure.</p>
+      </div>
+    </div>
+    <div class="reg-no">v1.0<br>Aug 2026</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview"><span class="num">01</span> Overview</div>
+    <div class="tab" data-tab="applicability"><span class="num">02</span> Applicability</div>
+    <div class="tab" data-tab="exemptions"><span class="num">03</span> Exemptions</div>
+    <div class="tab" data-tab="states"><span class="num">04</span> State Thresholds</div>
+    <div class="tab" data-tab="calculator"><span class="num">05</span> Validity Calculator</div>
+    <div class="tab" data-tab="lifecycle"><span class="num">06</span> Extend / Cancel / Reject</div>
+    <div class="tab" data-tab="penalty"><span class="num">07</span> Penalties</div>
+    <div class="tab" data-tab="updates"><span class="num">08</span> 2025–26 Updates</div>
+    <div class="tab" data-tab="faq"><span class="num">09</span> FAQ</div>
+  </div>
+
+  <div class="panel">
+
+    <div class="kpi-strip">
+      <div class="kpi"><div class="label">Inter-state threshold</div><div class="val">₹50,000</div></div>
+      <div class="kpi"><div class="label">Regular cargo validity</div><div class="val">200 km/day</div></div>
+      <div class="kpi"><div class="label">ODC validity</div><div class="val">20 km/day</div></div>
+      <div class="kpi"><div class="label">Max document age</div><div class="val">180 days</div></div>
+      <div class="kpi"><div class="label">Max total validity</div><div class="val">360 days</div></div>
+    </div>
+
+    <!-- ============ TAB 1: OVERVIEW ============ -->
+    <div class="view active" id="view-overview">
+      <h2>What the E-Way Bill is</h2>
+      <p class="sub">Who's responsible, and how Form EWB-01 is structured</p>
+      <p>An E-Way Bill (EWB) is an electronic document that must exist <b>before</b> a vehicle carrying goods above a value threshold begins moving. It's generated on the government e-Way Bill portal under <b>Section 68 of the CGST Act</b> and <b>Rule 138 of the CGST Rules, 2017</b>. On generation, the system issues a unique 12-digit <b>E-Way Bill Number (EBN)</b> — the reference used by supplier, recipient, and transporter alike.</p>
+
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="rc-head">Form EWB-01 · Part A <span class="pill na">Consignment</span></div>
+          <ul>
+            <li><b>Parties</b> — GSTIN of supplier and recipient</li>
+            <li><b>Route</b> — place of dispatch and delivery (PIN codes)</li>
+            <li><b>Document</b> — invoice/challan number, date, HSN code, value</li>
+            <li><b>Purpose</b> — reason for transport: supply, return, job work, etc.</li>
+          </ul>
+          <p style="margin-top:8px;">Filed by whoever causes the movement — typically the supplier or recipient — before goods leave.</p>
+        </div>
+        <div class="role-card">
+          <div class="rc-head">Form EWB-01 · Part B <span class="pill na">Transport</span></div>
+          <ul>
+            <li><b>Vehicle</b> — registration number for road transport</li>
+            <li><b>Transporter ID</b> — for rail, air, or ship movement</li>
+            <li><b>Mode</b> — road / rail / air / ship</li>
+          </ul>
+          <p style="margin-top:8px;">Filed by the transporter (or self, if self-transporting). <b>The validity clock starts only once this is complete.</b></p>
+        </div>
+      </div>
+
+      <h3>Who's responsible</h3>
+      <div class="check-list">
+        <li><b>Registered consignor/consignee</b> — whoever causes the movement generates the EWB.</li>
+        <li><b>Unregistered supplier → registered recipient</b> — the recipient is responsible, as if they were the supplier.</li>
+        <li><b>Transporter</b> — generates it if neither party has, once goods are handed over.</li>
+      </div>
+      <p class="note"><b>Generation channels:</b> web portal (ewaybillgst.gov.in), SMS, Android app, API/site-to-site integration, and GSPs. Turnover above ₹5 crore requires 6-digit HSN codes; below that, 4-digit codes are acceptable.</p>
+    </div>
+
+    <!-- ============ TAB 2: APPLICABILITY ============ -->
+    <div class="view" id="view-applicability">
+      <h2>Applicability checker</h2>
+      <p class="sub">Run your scenario through the core Rule 138 test</p>
+
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Movement type</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="move-inter">Inter-state</button>
+            <button class="toggle-btn" id="move-intra">Intra-state</button>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label for="chk-value">Consignment value (₹)</label>
+          <input type="number" id="chk-value" value="65000" min="0" step="1000">
+        </div>
+      </div>
+      <div class="checkbox-row"><input type="checkbox" id="chk-exempt-goods"><label for="chk-exempt-goods">Goods are on the Rule 138(14) exemption list (fresh produce, jewellery, LPG for household, etc.)</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="chk-nonmotor"><label for="chk-nonmotor">Transport is by non-motorised conveyance (handcart, cycle, rickshaw)</label></div>
+
+      <div class="verdict-card">
+        <div class="vk">Result</div>
+        <div class="status-line" id="chk-result-text" style="margin-top:6px; font-size:14px;">Loading…</div>
+      </div>
+      <p class="note">Core Rule 138 test only — doesn't reflect state overrides for job work, e-commerce, or specified goods. See State Thresholds and Exemptions.</p>
+
+      <h3>Trigger conditions beyond the plain value test</h3>
+      <div class="check-list">
+        <li><b>Any supply crossing the threshold</b> — sale, transfer, or barter above the applicable limit.</li>
+        <li><b>Inward supply from an unregistered person</b> — registered recipient is responsible for generation.</li>
+        <li><b>Inter-state job work movement</b> — required even if value is under ₹50,000.</li>
+      </div>
+      <div class="check-list">
+        <li><b>Stock transfers between branches</b> — applies once value crosses the applicable threshold, including across states.</li>
+        <li><b>Sales returns / goods on approval</b> — above the relevant threshold.</li>
+        <li><b>Exhibition / fair consignments</b> — treated as a taxable movement above threshold.</li>
+        <li><b>Principal ↔ job-worker movement</b> — for goods sent for further processing.</li>
+        <li><b>E-commerce consignments</b> — dispatched by/through an operator, above threshold.</li>
+      </div>
+    </div>
+
+    <!-- ============ TAB 3: EXEMPTIONS ============ -->
+    <div class="view" id="view-exemptions">
+      <h2>Exemptions</h2>
+      <p class="sub">Rule 138(14) exempts roughly 150 goods and several transport scenarios, irrespective of value</p>
+
+      <div class="def-grid">
+        <div class="def-card"><b>By nature of goods</b><p>Fresh fruit, vegetables, milk, unprocessed meat and fish, eggs, live animals, currency, used personal/household effects, LPG for domestic supply, kerosene under the PDS, postal baggage, and coral.</p></div>
+        <div class="def-card"><b>Precious goods (Chapter 71)</b><p>Pearls, precious/semi-precious stones, precious metals, and jewellery — except imitation jewellery. Several states still enable a state-specific EWB for intra-state gold movement.</p></div>
+        <div class="def-card"><b>Non-GST / specified fuels</b><p>Alcoholic liquor for human consumption, petroleum crude, high-speed diesel, petrol, natural gas, and aviation turbine fuel.</p></div>
+        <div class="def-card"><b>By mode of transport</b><p>Non-motorised conveyances (handcarts, cycles, cycle-rickshaws) regardless of value, and empty cargo containers being repositioned.</p></div>
+        <div class="def-card"><b>Short / supervised / in-transit movement</b><p>Weighbridge round trips within 20 km with a delivery challan on return; movement under customs supervision or bond between port/airport/ICD/CFS/land customs station; transit cargo to Nepal or Bhutan.</p></div>
+        <div class="def-card"><b>Government &amp; defence movement</b><p>Rail movement where Central/State Government or a local authority is consignor, and notified defence-related consignments.</p></div>
+      </div>
+      <p class="note"><b>Value-independent:</b> exemption for listed goods depends on what's moving, not its value — ₹10 lakh of fresh vegetables still needs no EWB. States can still narrow this for intra-state movement of sensitive goods.</p>
+    </div>
+
+    <!-- ============ TAB 4: STATE THRESHOLDS ============ -->
+    <div class="view" id="view-states">
+      <h2>State-wise intra-state thresholds</h2>
+      <p class="sub">The ₹50,000 inter-state threshold is uniform. Intra-state limits are set state-by-state — illustrative, not exhaustive</p>
+      <table class="simple">
+        <tr><th>State / UT</th><th>Intra-state pattern</th><th>Notable local variation</th></tr>
+        <tr><td><b>Delhi, Maharashtra, Tamil Nadu, Punjab, Jharkhand</b></td><td>Raised (commonly ₹1,00,000)</td><td>Lower compliance burden for local trade</td></tr>
+        <tr><td><b>Madhya Pradesh</b></td><td>Raised generally</td><td>Tobacco, pan masala, medicines &amp; surgical goods need EWB regardless of value</td></tr>
+        <tr><td><b>West Bengal</b></td><td>₹50,000</td><td>Cut from ₹1,00,000 in December 2023</td></tr>
+        <tr><td><b>Kerala</b></td><td>₹50,000 generally</td><td>₹10,00,000 threshold for intra-state gold/precious stones</td></tr>
+        <tr><td><b>Gujarat</b></td><td>₹50,000 generally</td><td>Intra-city hank yarn, fabric &amp; garments exempted</td></tr>
+        <tr><td><b>Jammu &amp; Kashmir</b></td><td>₹50,000</td><td>Follows the central threshold both ways</td></tr>
+        <tr><td><b>Bihar and others</b></td><td>Up to ₹2,00,000</td><td>Varies by good — confirm current notification</td></tr>
+      </table>
+      <p class="note">State notifications are amended without much notice. Confirm the current notification for the origin state on the official portal before dispatching high-value or state-sensitive goods.</p>
+    </div>
+
+    <!-- ============ TAB 5: VALIDITY CALCULATOR ============ -->
+    <div class="view" id="view-calculator">
+      <h2>Validity calculator</h2>
+      <p class="sub">Validity is measured in distance, not clock time, and starts only once Part B is filled</p>
+
+      <div class="range-row">
+        <div class="range-head"><span>Distance to travel</span> <b id="dist-out">500 km</b></div>
+        <input type="range" id="dist-slider" min="1" max="4000" value="500">
+      </div>
+
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Cargo type</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="cargo-regular">Regular cargo</button>
+            <button class="toggle-btn" id="cargo-odc">Over-dimensional / multimodal</button>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label for="gen-time">Part B completed on</label>
+          <input type="datetime-local" id="gen-time">
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="vk">Validity granted</div>
+        <div class="vv" id="stub-days">3 <small>days</small></div>
+        <div class="verdict-row">
+          <div class="verdict-chip"><div class="vck">Rate</div><div class="vcv na" id="stub-rate">200 km/day</div></div>
+          <div class="verdict-chip"><div class="vck">Distance</div><div class="vcv na" id="stub-dist">500 km</div></div>
+          <div class="verdict-chip"><div class="vck">Expires</div><div class="vcv na" id="stub-expiry">— set a start time —</div></div>
+        </div>
+      </div>
+      <p class="warn">One extension window: 8 hours before to 8 hours after expiry. Total validity (original + extensions) is capped at 360 days from original generation.</p>
+      <p class="note"><b>Counting rule:</b> regular cargo gets 1 day per 200 km or part thereof (500 km = 3 days). ODC/multimodal-with-ship gets 1 day per 20 km. Each day runs until midnight of its due date. Delay from natural calamity, law-and-order issues, or transhipment can justify an extension beyond distance-based validity — assessed by the officer, not this calculator.</p>
+    </div>
+
+    <!-- ============ TAB 6: LIFECYCLE ============ -->
+    <div class="view" id="view-lifecycle">
+      <h2>Extend, cancel, reject</h2>
+      <p class="sub">The three post-generation actions, their windows, and the generation steps</p>
+
+      <div class="role-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="role-card"><div class="rc-head">Extend <span class="pill warn2">Time-bound</span></div><p>Requestable 8 hours before to 8 hours after expiry. Update current location and delay reason. Total validity capped at 360 days from original generation.</p></div>
+        <div class="role-card"><div class="rc-head">Cancel <span class="pill req">24 hrs</span></div><p>Within 24 hours of generation, if goods weren't transported or details were wrong. Not possible once verified in transit.</p></div>
+        <div class="role-card"><div class="rc-head">Reject <span class="pill na">72 hrs</span></div><p>Named recipient can reject an EWB that isn't theirs, within 72 hours of generation or before delivery — whichever is earlier.</p></div>
+      </div>
+
+      <h3>Generation, step by step</h3>
+      <div class="guide-list">
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Log in to the portal</b><p>ewaybillgst.gov.in with GSTIN credentials and mandatory two-factor authentication.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Select "Generate New"</b><p>Choose sub-type: outward supply, inward supply, job work, SKD/CKD, recipient not known, etc.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Fill Part A</b><p>GSTINs, dispatch/delivery place, invoice/challan number and date, HSN code, taxable value.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Fill Part B</b><p>Vehicle number or transporter ID and transport document number — starts the validity clock.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Generate and carry the EBN</b><p>System issues the 12-digit E-Way Bill Number and printable/QR-coded EWB-01.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 7: PENALTIES ============ -->
+    <div class="view" id="view-penalty">
+      <h2>Penalties</h2>
+      <p class="sub">Risk exposure under Sections 129, 122, and 130 of the CGST Act</p>
+
+      <div class="risk-grid">
+        <div class="risk-card"><div class="rk-head"><b>Minor errors (vehicle number typo, pin code slip)</b><span class="rate pill warn2">₹1,000</span></div><p>Circular 64/38/2018-GST provides a flat reduced penalty for small clerical mistakes, when the rest of the documentation is in order.</p></div>
+        <div class="risk-card"><div class="rk-head"><b>No/expired EWB on taxable goods, owner comes forward</b><span class="rate pill req">200% of tax</span></div><p>Release conditional on tax plus a penalty equal to the tax amount, under Section 129 as amended by the Finance Act, 2021.</p></div>
+        <div class="risk-card"><div class="rk-head"><b>Exempt goods, no documentation</b><span class="rate pill warn2">2% of value or ₹25,000</span></div><p>Whichever is lower — reflecting that no tax revenue was at stake.</p></div>
+        <div class="risk-card"><div class="rk-head"><b>General contravention (Section 122)</b><span class="rate pill req">₹10,000 or tax evaded</span></div><p>Whichever is higher — a backstop that applies even outside a roadside interception.</p></div>
+      </div>
+      <p class="note"><b>Process:</b> an officer can detain goods and conveyance on the spot; a detention notice follows within 24 hours; the person in charge has 7 days to respond and pay before escalation to confiscation under Section 130. Courts have distinguished genuine evasion from harmless procedural slips (e.g. an EWB that expired due to traffic delay) — but that's argued case by case. Treat these figures as the framework, not a litigation guarantee — they're periodically revisited by the GST Council.</p>
+    </div>
+
+    <!-- ============ TAB 8: UPDATES ============ -->
+    <div class="view" id="view-updates">
+      <h2>2025–26 updates</h2>
+      <p class="sub">What changed in the current compliance cycle</p>
+      <div class="timeline">
+        <div class="tl-item"><div class="when">From 1 Jan 2025</div><b>180-day document age cap</b><p>No EWB can be generated against an invoice/challan older than 180 days from its own date.</p></div>
+        <div class="tl-item"><div class="when">From 1 Jan 2025</div><b>360-day validity ceiling</b><p>Extensions can't push total validity beyond 360 days from the original generation date.</p></div>
+        <div class="tl-item"><div class="when">Ongoing</div><b>Mandatory multi-factor authentication</b><p>2FA/MFA compulsory for all taxpayers and transporters on the e-Way Bill and e-Invoice systems.</p></div>
+        <div class="tl-item"><div class="when">From 1 Aug 2026</div><b>Ship-to GSTIN &amp; voluntary closure</b><p>Ship-to GSTIN becomes mandatory in IRN &amp; EWB APIs when ship-to details exist ("URP" if unregistered). B2B/SEZ ship-to details from the e-Invoice stage can't be silently overridden at EWB creation. A new voluntary closure facility lets suppliers, recipients, or transporters mark delivery complete.</p></div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 9: FAQ ============ -->
+    <div class="view" id="view-faq">
+      <h2>Frequently asked questions</h2>
+      <p class="sub">Questions that come up once the basics are clear</p>
+      <div id="faq-list">
+        <div class="faq-item"><button class="faq-q">Do I need a separate E-Way Bill for each invoice, even on the same truck?<span class="plus">+</span></button><div class="faq-a"><p>Yes — the threshold and the EWB are assessed per invoice/document, not per vehicle. A transporter carrying several consignments can consolidate them under one Consolidated E-Way Bill (Form EWB-02) for transit convenience, but each underlying consignment still needs its own EWB where required.</p></div></div>
+        <div class="faq-item"><button class="faq-q">If my goods are exempt, does that hold even for high-value shipments?<span class="plus">+</span></button><div class="faq-a"><p>Yes — Rule 138(14) exemption depends on the nature of the goods, not value. Just confirm your state hasn't layered on its own exception for that good.</p></div></div>
+        <div class="faq-item"><button class="faq-q">What happens if my E-Way Bill expires mid-transit?<span class="plus">+</span></button><div class="faq-a"><p>The goods become exposed to detention under Section 129. Request an extension as soon as you know you'll be late — the window opens 8 hours before expiry.</p></div></div>
+        <div class="faq-item"><button class="faq-q">Can one E-Way Bill cover a multi-leg journey with a transhipment?<span class="plus">+</span></button><div class="faq-a"><p>Yes. Part B can be updated with the new vehicle number at each transhipment point under the same EBN, before current validity lapses.</p></div></div>
+        <div class="faq-item"><button class="faq-q">Is an EWB needed for goods moving entirely within one city?<span class="plus">+</span></button><div class="faq-a"><p>Only if value crosses your state's intra-state threshold and goods aren't otherwise exempt. Assuming intra-city movement is automatically exempt is a common, penalised mistake.</p></div></div>
+        <div class="faq-item"><button class="faq-q">Who's liable if the transporter made the mistake, not the supplier?<span class="plus">+</span></button><div class="faq-a"><p>Roadside enforcement typically targets whoever is "in charge of the conveyance" — usually the transporter — but tax and penalty liability can still reach the registered supplier or recipient depending on the facts.</p></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    Working tool for illustrative computation and reference only — not legal or tax advice. E-way bill thresholds, validity rules and penalty figures are amended by CBIC and state notification — always verify the current figures on the e-Way Bill portal or with your tax consultant before relying on this for an actual shipment.
+  </div>
+</div>
+
+<script>
+  // ---- Tabs ----
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('.view');
+  tabs.forEach(t=>{
+    t.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      views.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('view-'+t.dataset.tab).classList.add('active');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+
+  // ---- Applicability checker ----
+  let movement = 'inter';
+  const moveInterBtn = document.getElementById('move-inter');
+  const moveIntraBtn = document.getElementById('move-intra');
+  function setMovement(v){
+    movement = v;
+    moveInterBtn.classList.toggle('active', v==='inter');
+    moveIntraBtn.classList.toggle('active', v==='intra');
+    runCheck();
+  }
+  moveInterBtn.addEventListener('click', ()=>setMovement('inter'));
+  moveIntraBtn.addEventListener('click', ()=>setMovement('intra'));
+
+  const valInput = document.getElementById('chk-value');
+  const exemptGoods = document.getElementById('chk-exempt-goods');
+  const nonMotor = document.getElementById('chk-nonmotor');
+  const resultText = document.getElementById('chk-result-text');
+
+  function runCheck(){
+    const value = parseFloat(valInput.value) || 0;
+    const threshold = 50000;
+    let required, reason;
+
+    if (nonMotor.checked){
+      required = false;
+      reason = 'Non-motorised conveyances are exempt regardless of consignment value.';
+    } else if (exemptGoods.checked){
+      required = false;
+      reason = 'Goods on the Rule 138(14) exemption list don\'t need an E-Way Bill, regardless of value.';
+    } else if (value <= threshold){
+      required = false;
+      reason = `Consignment value is at or below the ₹${threshold.toLocaleString('en-IN')} threshold.`;
+    } else {
+      required = true;
+      reason = movement === 'inter'
+        ? `Value exceeds the uniform ₹${threshold.toLocaleString('en-IN')} inter-state threshold.`
+        : `Value exceeds the ₹${threshold.toLocaleString('en-IN')} default — check if your state has raised its intra-state limit.`;
+    }
+
+    resultText.textContent = (required ? 'E-Way Bill required — ' : 'No E-Way Bill needed — ') + reason;
+    resultText.className = 'status-line ' + (required ? 'req' : 'ok');
+  }
+  valInput.addEventListener('input', runCheck);
+  exemptGoods.addEventListener('change', runCheck);
+  nonMotor.addEventListener('change', runCheck);
+  runCheck();
+
+  // ---- Validity calculator ----
+  let cargoType = 'regular';
+  const distSlider = document.getElementById('dist-slider');
+  const distOut = document.getElementById('dist-out');
+  const genTime = document.getElementById('gen-time');
+  const stubDays = document.getElementById('stub-days');
+  const stubRate = document.getElementById('stub-rate');
+  const stubDist = document.getElementById('stub-dist');
+  const stubExpiry = document.getElementById('stub-expiry');
+  const cargoRegularBtn = document.getElementById('cargo-regular');
+  const cargoOdcBtn = document.getElementById('cargo-odc');
+
+  function setCargo(v){
+    cargoType = v;
+    cargoRegularBtn.classList.toggle('active', v==='regular');
+    cargoOdcBtn.classList.toggle('active', v==='odc');
+    runCalc();
+  }
+  cargoRegularBtn.addEventListener('click', ()=>setCargo('regular'));
+  cargoOdcBtn.addEventListener('click', ()=>setCargo('odc'));
+
+  function runCalc(){
+    const dist = parseInt(distSlider.value, 10);
+    distOut.textContent = dist + ' km';
+    const rate = cargoType === 'regular' ? 200 : 20;
+    const days = Math.max(1, Math.ceil(dist / rate));
+    stubDays.innerHTML = days + ' <small>' + (days === 1 ? 'day' : 'days') + '</small>';
+    stubRate.textContent = rate + ' km/day';
+    stubDist.textContent = dist + ' km';
+
+    if (genTime.value){
+      const start = new Date(genTime.value);
+      const expiry = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+      stubExpiry.textContent = expiry.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    } else {
+      stubExpiry.textContent = '— set a start time —';
+    }
+  }
+  distSlider.addEventListener('input', runCalc);
+  genTime.addEventListener('input', runCalc);
+  runCalc();
+
+  // ---- FAQ accordion ----
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const q = item.querySelector('.faq-q');
+    const a = item.querySelector('.faq-a');
+    q.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => { i.classList.remove('open'); i.querySelector('.faq-a').style.maxHeight = null; });
+      if (!isOpen){
+        item.classList.add('open');
+        a.style.maxHeight = a.scrollHeight + 30 + 'px';
+      }
+    });
+  });
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

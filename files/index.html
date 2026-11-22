@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>
+/* TaxSphere live updates: boot. If an update has been downloaded, start the app from it instead of the built-in files.
+   A start that doesn't finish marks that update bad and the next start uses the built-in version. */
+window.SEMI_BUNDLED = window.SEMI_BUNDLED || 17; window.SEMI_APK = window.SEMI_APK || 17;
+window.SEMI_BUILD = 17; window.SEMI_NAME = "2.6";
+window.SEMI_URL = function (p) { return (window.__PATCH && window.__PATCH[p]) || p; };
+/* iframe attribute for a tool page: an updated page goes in srcdoc so it keeps the app's storage (a blob: page can't) */
+window.SEMI_FRAME = function (p) { var h = window.__PATCH_HTML && window.__PATCH_HTML[p];
+  return h ? 'srcdoc="' + h.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '"' : 'src="' + p + '"'; };
+(function () {
+  if (window.__SEMI_PATCHED) return;
+  var ls; try { ls = window.localStorage; ls.getItem("x"); } catch (e) { return; }
+  var pv = +ls.getItem("semi.upd.v") || 0;
+  if (pv <= window.SEMI_BUNDLED || !window.indexedDB) return;
+  try { if (sessionStorage.getItem("semi.upd.skip")) return; } catch (e) {}
+  if (ls.getItem("semi.upd.bad") === String(pv)) return;
+  if (ls.getItem("semi.upd.trial") === String(pv)) { ls.setItem("semi.upd.bad", String(pv)); ls.removeItem("semi.upd.trial"); return; }
+  document.write('<plaintext style="display:none">');
+  var done = false;
+  function fail() { if (done) return; done = true; try { sessionStorage.setItem("semi.upd.skip", "1"); } catch (e) {} location.reload(); }
+  var to = setTimeout(fail, 6000);
+  var rq = indexedDB.open("semi-upd", 1);
+  rq.onupgradeneeded = function () { rq.result.createObjectStore("files"); };
+  rq.onerror = fail;
+  rq.onsuccess = function () {
+    var g; try { g = rq.result.transaction("files").objectStore("files").get(pv); } catch (e) { return fail(); }
+    g.onerror = fail;
+    g.onsuccess = function () {
+      var P = g.result; if (!P || !P.files || !P.files["index.html"]) return fail();
+      try {
+        var dir = location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, ""), map = {}, html = {};
+        for (var k in P.files) {
+          if (k === "index.html") continue;
+          var t = P.files[k], ty = /\.html$/.test(k) ? "text/html" : /\.js$/.test(k) ? "text/javascript" : /\.svg$/.test(k) ? "image/svg+xml" : /\.json$/.test(k) ? "application/json" : "text/plain";
+          if (ty === "text/html") { html[k] = t.replace(/<head([^>]*)>/i, '<head$1><base href="' + dir + k.replace(/[^\/]*$/, "") + '">'); continue; }
+          map[k] = URL.createObjectURL(new Blob([t], {type: ty + ";charset=utf-8"}));
+        }
+        var h = P.files["index.html"].replace(/(<script\b[^>]*\bsrc=")([^"]+)(")/g, function (m, a, s, b) { return a + (map[s] || s) + b; })
+          .replace(/(<(?:link|img)\b[^>]*\b(?:href|src)=")([^"]+)(")/g, function (m, a, s, b) { return a + (map[s] || s) + b; });
+        clearTimeout(to); done = true;
+        /* if the update throws while starting, or hasn't finished starting in 10 s, go back to the built-in version now */
+        window.__updGuard = function () { try { if (ls.getItem("semi.upd.trial") !== String(pv)) return; ls.setItem("semi.upd.bad", String(pv)); ls.removeItem("semi.upd.trial"); sessionStorage.setItem("semi.upd.skip", "1"); } catch (e) {} location.reload(); };
+        setTimeout(window.__updGuard, 10000);
+        h = h.replace(/<head([^>]*)>/i, '<head$1><script>addEventListener("error", function () { window.__updGuard(); });<\/script>');
+        window.__PATCH = map; window.__PATCH_HTML = html; window.__SEMI_PATCHED = pv; ls.setItem("semi.upd.trial", String(pv));
+        document.open(); document.write(h); document.close();
+      } catch (e) { done = false; fail(); }
+    };
+  };
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TaxSphere</title>
+<meta name="description" content="Income tax, GST, accounting, costing and finance tools, concept notes and quizzes for CA, CMA and CS students.">
+<meta name="theme-color" content="#6d4aff">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f5fb;--surface:#ffffff;--surface2:#f0eef8;--ink:#16131f;--text:#3b3650;--soft:#6f6987;
+  --rule:#e3dff0;--accent:#6d4aff;--accent-ink:#ffffff;--accent-wash:#ece7ff;--lime:#c6f432;--lime-ink:#1c2400;
+  --good:#12855a;--good-wash:#e2f6ec;--bad:#c2334d;--bad-wash:#fbe6ea;--shadow:0 1px 2px rgba(22,19,31,.05),0 8px 24px rgba(22,19,31,.06);
+  --radius:16px;--sans:"Inter","Segoe UI",system-ui,sans-serif;--display:"Space Grotesk","Inter","Segoe UI",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0d16;--surface:#191624;--surface2:#221e31;--ink:#f3f0ff;--text:#d3cde6;--soft:#9b94b4;--rule:#2e2942;
+  --accent:#9b84ff;--accent-ink:#120a33;--accent-wash:#2a2250;--good:#45d39a;--good-wash:#123326;--bad:#ff7d93;--bad-wash:#3a1a22;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f0d16;--surface:#191624;--surface2:#221e31;--ink:#f3f0ff;--text:#d3cde6;--soft:#9b94b4;--rule:#2e2942;
+  --accent:#9b84ff;--accent-ink:#120a33;--accent-wash:#2a2250;--good:#45d39a;--good-wash:#123326;--bad:#ff7d93;--bad-wash:#3a1a22;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
+h1,h2,h3{font-family:var(--display);color:var(--ink);margin:0;letter-spacing:-.01em}
+h1{font-size:28px;line-height:1.15}h2{font-size:20px}h3{font-size:16px}
+p{margin:.4em 0}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+.num,td.n,.mono{font-variant-numeric:tabular-nums}
+
+/* shell */
+.side{position:fixed;inset:0 auto 0 0;width:240px;background:var(--surface);border-right:1px solid var(--rule);padding:20px 14px;display:flex;flex-direction:column;gap:4px;z-index:5}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 8px 18px}
+.brand img{width:38px;height:38px}
+.brand b{display:block;font-family:var(--display);color:var(--ink);font-size:15px;line-height:1.1}
+.brand small{color:var(--soft);font-size:11.5px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:600;font-size:14px}
+.nav a:hover{background:var(--surface2)}
+.nav a.on{background:var(--accent);color:var(--accent-ink)}
+.nav svg{width:20px;height:20px;flex:none}
+.side .grow{flex:1}
+.sidehd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:12px 10px 2px}
+.head-sm{margin-bottom:6px}.head-sm h1{font-size:22px}
+.side{overflow-y:auto}
+.themebtn{display:flex;align-items:center;gap:10px;border:1px solid var(--rule);background:var(--surface2);border-radius:12px;padding:9px 12px;cursor:pointer;font-weight:600;font-size:13px}
+main{margin-left:240px;padding:28px 32px 48px;max-width:1240px}
+.topbar{display:none}
+.bottom{display:none}
+
+@media (max-width:899px){
+  .side{display:none}
+  main{margin:0;padding:12px 16px calc(88px + env(safe-area-inset-bottom))}
+  .topbar{display:flex;position:sticky;top:0;z-index:5;align-items:center;gap:10px;padding:10px 16px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+  .topbar img{width:30px;height:30px}
+  .topbar b{font-family:var(--display);color:var(--ink);font-size:15px;flex:1}
+  .topbar button{border:1px solid var(--rule);background:var(--surface);border-radius:10px;width:38px;height:38px;cursor:pointer;display:grid;place-items:center}
+  .bottom{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--rule);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bottom a{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--soft);font-size:10.5px;font-weight:600;padding:4px 0;border-radius:10px}
+  .bottom a.on{color:var(--accent)}
+  .bottom svg{width:22px;height:22px}
+  h1{font-size:23px}
+  main .g3{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .g3 .tile{padding:14px}
+  .tile .ic{width:34px;height:34px;margin-bottom:8px}
+  .tile h3{font-size:14.5px}
+  .tile p{font-size:12px}
+}
+
+/* blocks */
+.head{margin:6px 0 18px}
+.head p{color:var(--soft);margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.hero{background:linear-gradient(135deg,var(--accent) 0%,#9b4dff 55%,#ff5fa2 100%);color:#fff;border:none;padding:22px}
+.hero h1{color:#fff}
+.hero p{color:rgba(255,255,255,.88)}
+.pill{display:inline-block;background:var(--lime);color:var(--lime-ink);font-weight:700;font-size:11.5px;letter-spacing:.04em;padding:3px 10px;border-radius:99px}
+.tile{display:block;text-decoration:none;color:inherit;transition:transform .12s,border-color .12s}
+.tile:hover{transform:translateY(-2px);border-color:var(--accent)}
+.tile .ic{width:40px;height:40px;border-radius:12px;background:var(--accent-wash);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.tile .ic svg{width:22px;height:22px}
+.tile h3{margin-bottom:2px}
+.tile p{color:var(--soft);font-size:13px;margin:0}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:22px 0 10px}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px;background:var(--surface2);border-radius:14px;margin-bottom:16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:none;background:transparent;padding:8px 14px;border-radius:10px;font-weight:600;font-size:13.5px;color:var(--soft);cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+.tool{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+@media (max-width:1000px){.tool{grid-template-columns:minmax(0,1fr)}}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form .full{grid-column:1/-1}
+@media (max-width:420px){.form{grid-template-columns:1fr}}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld span{font-size:12px;font-weight:600;color:var(--soft)}
+.fld input,.fld select{width:100%;border:1.5px solid var(--rule);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:15px;min-height:44px}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent)}
+.check{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.note{font-size:12.5px;color:var(--soft)}
+
+.big{font-family:var(--display);font-size:30px;font-weight:700;color:var(--ink);line-height:1.1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0}
+.kpi{background:var(--surface2);border-radius:12px;padding:12px}
+.kpi small{display:block;font-size:11.5px;color:var(--soft);font-weight:600}
+.kpi b{font-family:var(--display);font-size:19px;color:var(--ink)}
+.win{background:var(--good-wash);color:var(--good);border-radius:12px;padding:10px 14px;font-weight:600;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+th{font-size:11.5px;color:var(--soft);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.tot td{font-weight:700;color:var(--ink);border-top:2px solid var(--ink)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cmp th:not(:first-child),.cmp td:not(:first-child){text-align:right}
+.better{color:var(--good)}
+
+.btn{border:none;background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:12px;padding:11px 18px;cursor:pointer;min-height:44px}
+.btn.ghost{background:var(--surface2);color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* learn */
+details{border:1px solid var(--rule);border-radius:14px;background:var(--surface);margin-bottom:10px;overflow:hidden}
+summary{cursor:pointer;padding:14px 16px;font-weight:700;color:var(--ink);list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--accent);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details .body{padding:0 16px 14px}
+details ul{padding-left:20px;margin:.4em 0}
+details li{margin:.25em 0}
+.formula{font-family:var(--mono);background:var(--surface2);border-radius:8px;padding:2px 7px;font-size:13px;color:var(--ink)}
+
+/* quiz */
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--rule);background:var(--surface);border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer;font-weight:500}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.ok{border-color:var(--good);background:var(--good-wash);color:var(--good)}
+.opt.no{border-color:var(--bad);background:var(--bad-wash);color:var(--bad)}
+.bar{height:6px;background:var(--surface2);border-radius:9px;overflow:hidden;margin:6px 0 14px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:9px}
+.explain{background:var(--surface2);border-radius:12px;padding:10px 14px;font-size:14px;margin-top:6px}
+
+/* dates */
+.due{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule)}
+.due:last-child{border-bottom:none}
+.day{width:52px;text-align:center;flex:none}
+.day b{display:block;font-family:var(--display);font-size:22px;color:var(--ink);line-height:1}
+.day small{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
+.due .what{flex:1;min-width:0}
+.due .what b{color:var(--ink);display:block;font-size:14px}
+.due .what small{color:var(--soft);font-size:12px}
+.left{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--accent-wash);color:var(--accent);white-space:nowrap}
+.left.soon{background:var(--bad-wash);color:var(--bad)}
+.foot{margin-top:28px;font-size:12px;color:var(--soft)}
+
+/* syllabus */
+:root{--ca:#2f62e9;--ca-wash:#e6edff;--cma:#0b8f7c;--cma-wash:#ddf4ef;--cs:#c23462;--cs-wash:#fbe4ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ca:#7ea2ff;--ca-wash:#1c2747;--cma:#4fd1bb;--cma-wash:#123430;--cs:#ff7fa6;--cs-wash:#3b1a27}}
+:root[data-theme="dark"]{--ca:#7ea2ff;--ca-wash:#1c2747;--cma:#4fd1bb;--cma-wash:#123430;--cs:#ff7fa6;--cs-wash:#3b1a27}
+.c-ca{--c:var(--ca);--cw:var(--ca-wash)}.c-cma{--c:var(--cma);--cw:var(--cma-wash)}.c-cs{--c:var(--cs);--cw:var(--cs-wash)}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;margin:2px 0 14px;color:var(--soft)}
+.crumbs a{color:var(--soft);text-decoration:none;font-weight:600}.crumbs a:hover{color:var(--accent)}.crumbs b{color:var(--ink)}
+.courses{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.ccard{display:block;text-decoration:none;color:inherit;border-top:4px solid var(--c);transition:transform .12s,box-shadow .12s}
+.ccard:hover{transform:translateY(-2px)}
+.ccard h2{margin:12px 0 2px;font-size:19px}
+.cbadge{display:inline-grid;place-items:center;min-width:54px;height:54px;padding:0 10px;border-radius:14px;background:var(--cw);color:var(--c);font-family:var(--display);font-weight:700;font-size:20px;flex:none}
+.cscheme{margin-top:10px;font-weight:600;color:var(--c);font-size:13.5px}
+.cstats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cstats span,.chips span{background:var(--surface2);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--text)}
+.schemecard{display:flex;gap:16px;align-items:flex-start;border-left:4px solid var(--c);margin-bottom:6px}
+.schemecard h1{font-size:24px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:13.5px;margin:6px 0}
+.kv b{color:var(--ink)}
+@media (max-width:560px){.schemecard{flex-direction:column}.kv{grid-template-columns:1fr}.kv b{margin-top:4px}}
+.snote{background:var(--surface2);border-radius:10px;padding:9px 12px;font-size:13px;margin:8px 0}
+.refs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.refs a{font-size:12.5px;font-weight:600;text-decoration:none;background:var(--accent-wash);color:var(--accent);padding:5px 10px;border-radius:99px}
+.stile h3{margin-bottom:4px}
+.sbar{height:6px;background:var(--surface2);border-radius:9px;overflow:hidden;margin:10px 0 4px}
+.sbar i{display:block;height:100%;background:var(--good);border-radius:9px;transition:width .25s}
+.sbar.big{height:10px}
+.subj{display:flex;flex-direction:column}
+.subj.mine{outline:2px solid var(--accent)}
+.subjlink{text-decoration:none;color:inherit;flex:1}
+.subjlink:hover h3{color:var(--accent)}
+.scode{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--soft);text-transform:uppercase}
+.subj h3{margin:4px 0}
+.paperhead{border-top:4px solid var(--c);margin-bottom:14px}
+.paperhead h1{margin:6px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.obj{color:var(--text);font-size:14px;margin:10px 0}
+.secs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:10px 0}
+.secs div{display:flex;justify-content:space-between;gap:10px;background:var(--cw);border-radius:10px;padding:8px 12px;font-size:13px}
+.secs b{color:var(--ink);font-weight:600}.secs span{color:var(--c);font-weight:700;white-space:nowrap}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pbtns .btn{text-decoration:none;display:inline-flex;align-items:center;padding:9px 14px;min-height:40px;font-size:13.5px}
+.notes{margin-bottom:14px}
+.notes summary{padding:0;font-size:14px}
+.secth{display:flex;justify-content:space-between;gap:10px;font-size:15px;margin:20px 2px 8px;color:var(--ink)}
+.secth span{color:var(--soft);font-size:13px;font-family:var(--sans)}
+.chap{margin-bottom:8px}
+.chap summary{align-items:center;gap:10px;padding:12px 14px}
+.chap summary::after{order:5}
+.cno{flex:none;font-size:11.5px;font-weight:700;color:var(--soft);background:var(--surface2);border-radius:8px;padding:3px 8px}
+.ctitle{flex:1;min-width:0}
+.tag{flex:none;font-size:11.5px;font-weight:700;background:var(--accent-wash);color:var(--accent);border-radius:99px;padding:2px 8px}
+.cprog{flex:none;font-size:12px;color:var(--soft);font-weight:600}
+.cbox,.tick input{width:20px;height:20px;accent-color:var(--good);flex:none;cursor:pointer;margin:0}
+.cbody{padding:0 14px 12px}
+.tlist{list-style:none;margin:0;padding:0}
+.tlist li{border-top:1px solid var(--rule)}
+.tlist ul{list-style:none;margin:0 0 6px;padding:0 0 0 30px}
+.tlist ul li{border-top:none}
+.tick{display:flex;gap:10px;align-items:flex-start;padding:8px 0;cursor:pointer;font-size:14px}
+.tick input{margin-top:1px}
+.tick input:checked+span{color:var(--soft);text-decoration:line-through;text-decoration-color:var(--good)}
+.chap.deleted{background:var(--surface2);border:1px dashed var(--rule);border-radius:14px;padding:10px 14px}
+.chap.deleted .chead{display:flex;gap:10px;align-items:center}
+.chap.deleted .ctitle{color:var(--soft)}
+.chap.flash{animation:flash 1.6s ease}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:none}}
+.ssearch{margin-top:20px;position:relative}
+.ssearch .fld{max-width:560px}
+.sresults{margin-top:10px;max-height:60vh;overflow:auto;padding:12px}
+.sres{display:block;text-decoration:none;color:inherit;padding:9px 10px;border-radius:10px}
+.sres:hover{background:var(--surface2)}
+.sres b{display:block;color:var(--ink);font-weight:600;font-size:14px}
+.sres small{color:var(--soft);font-size:12px}
+.skind{float:right;font-size:11px;font-weight:700;color:var(--accent);margin-left:8px}
+mark{background:var(--lime);color:var(--lime-ink);border-radius:3px;padding:0 2px}
+.mysyl{display:flex;gap:14px;align-items:center;text-decoration:none;color:inherit}
+.mysyl .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-wash);color:var(--accent);display:grid;place-items:center;flex:none}
+.mysyl .ic svg{width:24px;height:24px}
+.mysyl h3{margin-bottom:2px}
+.refscard{margin-top:18px}
+.embedwrap{margin:0 -4px}
+.embed{display:block;width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--rule);border-radius:16px;background:#fff;box-shadow:var(--shadow)}
+@media (max-width:899px){.embed{height:calc(100vh - 250px);border-radius:12px}}
+.embed.flow{height:640px;min-height:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
+.embedwrap.flow{margin:0}
+.apptoast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,8px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:22px;font:600 13.5px var(--sans);opacity:0;transition:.22s;pointer-events:none;z-index:50;max-width:88%;text-align:center;box-shadow:var(--shadow)}
+.apptoast.on{opacity:1;transform:translate(-50%,0)}
+@media (min-width:900px){.apptoast{bottom:28px}}
+/* planner */
+.ph-learn{--pc:#2f62e9}.ph-revise{--pc:#0b8f7c}.ph-mock{--pc:#b8571f}.ph-exam{--pc:#c23462}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ph-learn{--pc:#7ea2ff}:root:not([data-theme="light"]) .ph-revise{--pc:#4fd1bb}:root:not([data-theme="light"]) .ph-mock{--pc:#f0a072}:root:not([data-theme="light"]) .ph-exam{--pc:#ff7fa6}}
+:root[data-theme="dark"] .ph-learn{--pc:#7ea2ff}:root[data-theme="dark"] .ph-revise{--pc:#4fd1bb}:root[data-theme="dark"] .ph-mock{--pc:#f0a072}:root[data-theme="dark"] .ph-exam{--pc:#ff7fa6}
+.today{border-top:4px solid var(--pc,var(--accent))}
+.phasebar{display:flex;gap:4px;border-radius:12px;overflow:hidden}
+.pseg{min-width:70px;background:color-mix(in srgb,var(--pc) 16%,var(--surface));border-top:4px solid var(--pc);padding:8px 10px}
+.pseg b{display:block;font-size:12.5px;color:var(--ink)}.pseg small{font-size:11.5px;color:var(--soft)}
+@media (max-width:560px){.phasebar{flex-direction:column}.pseg{flex:none!important}}
+.plist2{list-style:none;margin:6px 0 0;padding:0}
+.pitem{border-top:1px solid var(--rule)}
+.pitem:first-child{border-top:none}
+.prow{display:flex;align-items:center;gap:8px}
+.ptopics{margin:0 0 8px 28px;border:none;border-radius:10px;background:var(--surface2);box-shadow:none}
+.ptopics summary{padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--text)}
+.ptopics summary::after{font-size:16px}
+.tlist2{padding:0 10px 6px}
+.ttick{padding:5px 0;font-size:13px;border-top:1px solid var(--rule)}
+.ttick small,.rlist small{color:var(--soft)}
+.rlist{margin:0;padding:0 12px 8px 28px;font-size:13px}.rlist li{margin:.25em 0}
+.target{background:var(--accent-wash);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:13.5px;margin:8px 0}
+.dtarget{font-size:12px;font-weight:600;color:var(--soft);padding-top:6px}
+.pdaybody{flex:1;min-width:0}
+.pitem .tick{flex:1;min-width:0;padding:7px 0}
+.pitem.on .tick span{color:var(--soft);text-decoration:line-through}
+.pitem .ph{font-size:12px;color:var(--soft);white-space:nowrap}
+.pitem .go{font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.pitem.rest{color:var(--soft);font-size:13px;padding:7px 0}
+.pv{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:2px 6px;background:var(--surface2);color:var(--text)}
+.pv-learn{background:var(--ca-wash);color:var(--ca)}.pv-revise,.pv-practice{background:var(--cma-wash);color:var(--cma)}
+.pv-mock,.pv-final,.pv-eve{background:#fbe6d8;color:#b8571f}.pv-exam{background:var(--cs);color:#fff}
+.week{margin-bottom:8px;padding:0}.week summary{padding:12px 16px}
+.pday{display:flex;gap:12px;padding:8px 16px;border-top:1px solid var(--rule);border-left:4px solid var(--pc)}
+.pday.now{background:var(--accent-wash)}
+.pdate{width:48px;flex:none;text-align:center;padding-top:6px}.pdate b{display:block;font-size:13px;color:var(--ink)}.pdate small{font-size:11.5px;color:var(--soft)}
+.pday .plist2{flex:1;min-width:0;margin:0}
+.behind{background:var(--bad-wash);color:var(--bad);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13.5px}
+.behind .btn{margin-top:8px;display:block}
+.ontrack{background:var(--good-wash);color:var(--good);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13.5px;font-weight:600}
+.examday{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}.examday ul{padding-left:18px;margin:6px 0}
+.chkgrid{display:flex;flex-wrap:wrap;gap:6px 14px;padding-top:4px}.chkgrid .check{font-size:13.5px;font-weight:500}
+.qfill{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.qfill input{border:1.5px solid var(--rule);border-radius:10px;padding:8px;background:var(--surface);min-height:40px}
+.ptab input,.ptab select{border:1.5px solid var(--rule);border-radius:8px;padding:6px 8px;background:var(--surface);min-height:38px;max-width:150px}
+.tips .body ul{padding-left:20px}.tips .body li{margin:.4em 0}
+.pfilter{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.pfilter button{border:1px solid var(--rule);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text)}
+.pfilter button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.qcard{margin-bottom:14px}
+.qmeta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.qcard h3{margin:2px 0}
+.qbody p{margin:.5em 0}
+.qh{font-size:14px;margin:12px 0 4px;color:var(--ink)}
+.ql{margin:.4em 0;padding-left:20px}.ql li{margin:.3em 0}
+.qt{font-size:13px;margin:8px 0}.qt th{text-transform:none;letter-spacing:0;font-size:12px}
+.qt td.n{text-align:right;white-space:nowrap}
+.sol{margin-top:10px;border-color:var(--good)}
+.sol summary{color:var(--good)}
+.qbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.qbtns .btn{padding:8px 12px;min-height:38px;font-size:13px}
+.tag.lvl{background:var(--surface2);color:var(--text)}
+.tag.st-confident{background:var(--good-wash);color:var(--good)}
+.tag.st-revise{background:var(--bad-wash);color:var(--bad)}
+.tag.st-attempted{background:var(--accent-wash);color:var(--accent)}
+.material{margin-bottom:14px;border-left:4px solid var(--c)}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.mpart{font-size:15px;margin:14px 0 6px}
+.edtabs{margin:8px 0 10px}
+.edtabs button{white-space:normal;text-align:left;font-size:12.5px}
+.mgroup{margin-bottom:8px;box-shadow:none}
+.mgroup summary{padding:10px 14px;font-size:14px}
+.plist{padding:0 8px 8px}
+.pdf{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);padding:8px 8px;border-radius:10px;font-size:14px}
+.pdf:hover{background:var(--surface2)}
+.pdf .ptitle{flex:1;min-width:0}
+.pdf small{color:var(--soft);white-space:nowrap;font-size:12px}
+.pico{flex:none;font-size:10px;font-weight:800;letter-spacing:.04em;color:#fff;background:#d64545;border-radius:6px;padding:4px 6px}
+.updates{background:var(--surface2);border-radius:12px;padding:8px 10px;margin-bottom:10px}
+.updates b,.creads b{display:block;font-size:12.5px;color:var(--soft);margin:2px 8px 4px}
+.creads{margin-top:10px;border-top:1px solid var(--rule);padding-top:8px}
+.pdftag{background:#fde8e8;color:#c03535}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pdftag{background:#3a1c1c;color:#ff9b9b}}
+:root[data-theme="dark"] .pdftag{background:#3a1c1c;color:#ff9b9b}
+@media (max-width:899px){.chap summary{padding:11px 12px;gap:8px}.cprog{display:none}.paperhead h1{font-size:22px}}
+.gold{font-weight:800;letter-spacing:.01em;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="brand"><img src="icon.svg" alt=""><div><b>TaxSphere</b><small>CA · CMA · CS study &amp; professional tools</small></div></div>
+  <nav class="nav" id="sidenav"></nav>
+  <div class="grow"></div>
+  <button class="themebtn" onclick="toggleTheme()"><span id="themeIc"></span><span id="themeTxt">Theme</span></button>
+</aside>
+
+<header class="topbar">
+  <img src="icon.svg" alt=""><b>TaxSphere</b>
+  <button onclick="location.hash='#/account'" aria-label="Account" id="acctTop" style="display:none"></button>
+  <button onclick="toggleTheme()" aria-label="Switch theme" id="themeIc2"></button>
+</header>
+
+<main id="app"></main>
+<nav class="bottom" id="bottomnav"></nav>
+
+<script src="syllabus/ca.js"></script>
+<script src="syllabus/cma.js"></script>
+<script src="syllabus/cs.js"></script>
+<script src="syllabus/practice-cma-int.js"></script>
+<script src="syllabus/syllabus-ui.js"></script>
+<script src="syllabus/planner.js"></script>
+<script src="kinty/kinty.js"></script>
+<script src="concepts/concepts.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="account.js"></script>
+<script>
+// ---------------------------------------------------------------- helpers
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const inr = n => isFinite(n) ? (n < 0 ? "−" : "") + "₹" + Math.round(Math.abs(n)).toLocaleString("en-IN") : "—";
+const inr2 = n => isFinite(n) ? (n < 0 ? "−" : "") + "₹" + Math.abs(n).toLocaleString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "—";
+const fmt = (n, d = 2) => isFinite(n) ? n.toLocaleString("en-IN", {maximumFractionDigits: d}) : "—";
+const pct = (n, d = 2) => isFinite(n) ? fmt(n * 100, d) + "%" : "—";
+const num = id => { const el = document.getElementById(id); const v = parseFloat(String(el ? el.value : "").replace(/,/g, "")); return isFinite(v) ? v : 0; };
+const val = id => (document.getElementById(id) || {}).value;
+const chk = id => !!(document.getElementById(id) || {}).checked;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("semi." + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("semi." + k, JSON.stringify(v)); } catch {} }
+};
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const f = (id, label, v = "", cls = "") => `<label class="fld ${cls}"><span>${label}</span><input id="${id}" inputmode="decimal" value="${v}"></label>`;
+const sel = (id, label, opts, cls = "") => `<label class="fld ${cls}"><span>${label}</span><select id="${id}">${opts.map(o => Array.isArray(o) ? `<option value="${o[0]}">${o[1]}</option>` : `<option>${o}</option>`).join("")}</select></label>`;
+const cb = (id, label, cls = "full") => `<label class="check ${cls}"><input type="checkbox" id="${id}">${label}</label>`;
+const kpi = (label, v) => `<div class="kpi"><small>${label}</small><b>${v}</b></div>`;
+const rows = r => `<table>${r.map(([k, v, c]) => `<tr class="${c || ""}"><td>${k}</td><td class="n">${v}</td></tr>`).join("")}</table>`;
+
+// ---------------------------------------------------------------- icons
+const P = {
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  tax: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  acc: '<path d="M4 4h16v16H4z"/><path d="M4 9h16M12 9v11"/>',
+  cost: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  learn: '<path d="M2 6l10-4 10 4-10 4z"/><path d="M6 8v6c0 2 3 4 6 4s6-2 6-4V8"/>',
+  quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  calc: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h8"/>',
+  book: '<path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  play: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+  spark: '<path d="M12 3l1.7 5L19 9.7l-5.3 1.7L12 17l-1.7-5.6L5 9.7 10.3 8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'
+};
+const icon = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${P[k]}</svg>`;
+
+// ---------------------------------------------------------------- theme
+function applyTheme() {
+  const t = store.get("theme", null);
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  $("#themeIc").innerHTML = icon(dark ? "sun" : "moon");
+  $("#themeIc2").innerHTML = icon(dark ? "sun" : "moon");
+  $("#themeTxt").textContent = dark ? "Light mode" : "Dark mode";
+}
+function toggleTheme() {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  store.set("theme", cur === "dark" ? "light" : "dark");
+  applyTheme();
+}
+
+// ================================================================ TAX TOOLS
+// Slabs follow the Finance Act 2025 (FY 2025-26). Check later Budgets before relying on them.
+const NEW_SLABS = [[400000, 0], [800000, .05], [1200000, .10], [1600000, .15], [2000000, .20], [2400000, .25], [Infinity, .30]];
+const oldSlabs = age => { const ex = age === "80" ? 500000 : age === "60" ? 300000 : 250000;
+  return [[ex, 0], [500000, .05], [1000000, .20], [Infinity, .30]]; };
+function slabTax(income, slabs) {
+  let tax = 0, prev = 0;
+  for (const [lim, r] of slabs) { if (income > prev) tax += (Math.min(income, lim) - prev) * r; prev = Math.max(prev, lim); }
+  return tax;
+}
+const SURCH = [[5000000, .10], [10000000, .15], [20000000, .25], [50000000, .37]];
+function surcharge(income, tax, taxAt, cap) {
+  const tiers = SURCH.map(([t, r]) => [t, Math.min(r, cap)]);
+  let i = -1; tiers.forEach(([t], k) => { if (income > t) i = k; });
+  if (i < 0) return 0;
+  const [T, r] = tiers[i], prevR = i ? tiers[i - 1][1] : 0;
+  let sc = tax * r;
+  const limit = taxAt(T) * (1 + prevR) + (income - T);   // marginal relief
+  if (tax + sc > limit) sc = Math.max(0, limit - tax);
+  return sc;
+}
+function incomeTax(p, regime) {
+  const isNew = regime === "new";
+  const sd = p.salary > 0 ? Math.min(p.salary, isNew ? 75000 : 50000) : 0;
+  const salaryInc = Math.max(0, p.salary - (isNew ? 0 : p.hra) - sd);
+  const hp = isNew ? 0 : -Math.min(p.hl, 200000);
+  const gti = Math.max(0, salaryInc + hp + p.other);
+  const ded = isNew ? p.nps2 : Math.min(p.c80, 150000) + Math.min(p.d80, 100000) + Math.min(p.nps1, 50000) + p.nps2 + p.oth;
+  const ti = Math.round(Math.max(0, gti - ded) / 10) * 10;
+  const slabs = isNew ? NEW_SLABS : oldSlabs(p.age);
+  const after87A = x => {
+    const t = slabTax(x, slabs);
+    if (isNew) { if (x <= 1200000) return Math.max(0, t - 60000); return Math.min(t, x - 1200000 + slabTax(1200000, slabs) - Math.min(slabTax(1200000, slabs), 60000)); }
+    return x <= 500000 ? Math.max(0, t - 12500) : t;
+  };
+  const base = slabTax(ti, slabs), tax = after87A(ti), rebate = base - tax;
+  const sc = surcharge(ti, tax, after87A, isNew ? .25 : .37);
+  const cess = (tax + sc) * .04;
+  return {sd, gti, ded, ti, base, rebate, tax, sc, cess, total: Math.round(tax + sc + cess), hp};
+}
+const T_ITAX = {
+  id: "itax", name: "Income Tax", sub: "Old vs new regime, FY 2025-26",
+  form: () => sel("age", "Age group", [["0", "Below 60"], ["60", "60 to 79"], ["80", "80 and above"]]) +
+    f("salary", "Gross salary (₹)", 1500000) + f("other", "Other income (₹)", 0) +
+    f("nps2", "Employer NPS 80CCD(2) (₹)", 0) +
+    `<div class="full eyebrow" style="margin:6px 0 0">Old regime only</div>` +
+    f("hra", "HRA exempt (₹)", 0) + f("hl", "Home loan interest 24(b) (₹)", 0) +
+    f("c80", "80C (₹)", 150000) + f("d80", "80D (₹)", 25000) + f("nps1", "80CCD(1B) NPS (₹)", 0) + f("oth", "Other deductions (₹)", 0),
+  calc() {
+    const p = {age: val("age"), salary: num("salary"), other: num("other"), nps2: num("nps2"), hra: num("hra"), hl: num("hl"),
+      c80: num("c80"), d80: num("d80"), nps1: num("nps1"), oth: num("oth")};
+    const n = incomeTax(p, "new"), o = incomeTax(p, "old");
+    const best = n.total <= o.total ? "new" : "old", save = Math.abs(n.total - o.total);
+    const line = (k, a, b) => `<tr><td>${k}</td><td class="n">${a}</td><td class="n">${b}</td></tr>`;
+    return `<div class="win">${save === 0 ? "Both regimes give the same tax." : `The ${best} regime saves you ${inr(save)}.`}</div>
+      <div class="kpis">${kpi("New regime tax", inr(n.total))}${kpi("Old regime tax", inr(o.total))}${kpi("Monthly (best)", inr(Math.min(n.total, o.total) / 12))}</div>
+      <div class="scroll"><table class="cmp"><tr><th>Item</th><th>New</th><th>Old</th></tr>
+      ${line("Standard deduction", inr(n.sd), inr(o.sd))}${line("Loss from house property", inr(n.hp), inr(o.hp))}
+      ${line("Gross total income", inr(n.gti), inr(o.gti))}${line("Chapter VI-A deductions", inr(n.ded), inr(o.ded))}
+      ${line("Total income (rounded)", inr(n.ti), inr(o.ti))}${line("Tax on slabs", inr(n.base), inr(o.base))}
+      ${line("Rebate u/s 87A", inr(n.rebate), inr(o.rebate))}${line("Surcharge", inr(n.sc), inr(o.sc))}
+      ${line("Health & education cess 4%", inr(n.cess), inr(o.cess))}
+      <tr class="tot"><td>Total tax</td><td class="n ${best === "new" ? "better" : ""}">${inr(n.total)}</td><td class="n ${best === "old" ? "better" : ""}">${inr(o.total)}</td></tr></table></div>
+      <p class="note">Resident individual, normal-rate income only (no special-rate capital gains). New-regime rebate with marginal relief above ₹12 lakh; surcharge with marginal relief. Slabs per Finance Act 2025, so check later Budget changes.</p>`;
+  }
+};
+const T_GST = {
+  id: "gst", name: "GST", sub: "Add or remove GST, CGST/SGST or IGST",
+  form: () => f("amt", "Amount (₹)", 10000) + sel("rate", "GST rate", [["18", "18% (standard)"], ["5", "5% (merit goods)"], ["40", "40% (demerit / luxury)"], ["3", "3% (gold, silver)"], ["0.25", "0.25% (rough stones)"], ["0", "0% (exempt / nil)"]]) +
+    sel("mode", "Amount is", [["ex", "Before GST (add GST)"], ["in", "Including GST (remove GST)"]]) + sel("place", "Supply", [["intra", "Within the state (CGST + SGST)"], ["inter", "Between states (IGST)"]]),
+  calc() {
+    const a = num("amt"), r = parseFloat(val("rate")), inc = val("mode") === "in";
+    const base = inc ? a * 100 / (100 + r) : a, g = inc ? a - base : a * r / 100;
+    const split = val("place") === "intra" ? [[`CGST @ ${r / 2}%`, inr2(g / 2)], [`SGST @ ${r / 2}%`, inr2(g / 2)]] : [[`IGST @ ${r}%`, inr2(g)]];
+    return `<div class="big">${inr2(base + g)}</div><p class="note">Invoice total</p>` +
+      rows([["Taxable value", inr2(base)], ...split, ["Total GST", inr2(g)], ["Invoice total", inr2(base + g), "tot"]]) +
+      `<p class="note">Rates follow GST 2.0 (effective 22 Sep 2025). Check the rate for your HSN/SAC code.</p>`;
+  }
+};
+const T_HRA = {
+  id: "hra", name: "HRA Exemption", sub: "Section 10(13A), Rule 2A",
+  form: () => f("bs", "Basic + DA, yearly (₹)", 600000) + f("hrar", "HRA received, yearly (₹)", 240000) + f("rent", "Rent paid, yearly (₹)", 240000) +
+    sel("metro", "City", [["1", "Metro (Delhi, Mumbai, Kolkata, Chennai): 50%"], ["0", "Non-metro: 40%"]]),
+  calc() {
+    const s = num("bs"), h = num("hrar"), r = num("rent"), m = val("metro") === "1" ? .5 : .4;
+    const a = h, b = Math.max(0, r - .1 * s), c = m * s, ex = Math.min(a, b, c);
+    return `<div class="big">${inr(ex)}</div><p class="note">Exempt HRA (least of the three below)</p>` +
+      rows([["(a) Actual HRA received", inr(a)], ["(b) Rent paid − 10% of salary", inr(b)], [`(c) ${m * 100}% of salary`, inr(c)], ["Taxable HRA", inr(h - ex), "tot"]]) +
+      `<p class="note">Available only under the old regime. Salary here means basic + DA (if it counts for retirement benefits) + commission at a fixed % of turnover.</p>`;
+  }
+};
+const T_ADV = {
+  id: "adv", name: "Advance Tax", sub: "Instalments, Section 211",
+  form: () => f("est", "Estimated tax for the year (₹)", 200000) + f("tds", "TDS / TCS expected (₹)", 50000) + cb("pres", "Presumptive income (44AD / 44ADA): pay everything by 15 March"),
+  calc() {
+    const net = Math.max(0, num("est") - num("tds"));
+    if (net < 10000) return `<div class="win">Net tax is below ₹10,000, so advance tax is not required (Section 208).</div>`;
+    const sched = chk("pres") ? [["15 March", 1]] : [["15 June", .15], ["15 September", .45], ["15 December", .75], ["15 March", 1]];
+    let prev = 0;
+    return `<div class="big">${inr(net)}</div><p class="note">Advance tax payable</p><table><tr><th>Due by</th><th class="n">Cumulative</th><th class="n">Pay now</th></tr>` +
+      sched.map(([d, c]) => { const cum = net * c, pay = cum - prev; prev = cum; return `<tr><td>${d}</td><td class="n">${inr(cum)} (${c * 100}%)</td><td class="n">${inr(pay)}</td></tr>`; }).join("") +
+      `</table><p class="note">A shortfall attracts interest under Sections 234B and 234C.</p>`;
+  }
+};
+
+// Stand-alone tools kept as their own pages in tools/ and shown inside the app.
+const embedTool = (src, title) => `<div class="embedwrap"><iframe class="embed" ${SEMI_FRAME(src)} title="${title}"></iframe></div>`;
+const T_GSTFR = {id: "gstforms", name: "GST Forms Reckoner", sub: "GST returns and forms by taxpayer profile", noForm: true,
+  render: () => embedTool("tools/gst-forms-reckoner.html", "GST Forms Reckoner")};
+const T_THIN = {id: "thinline", name: "The Thin Line", sub: "Tax planning vs avoidance vs evasion (GAAR)", noForm: true,
+  render: () => embedTool("tools/the-thin-line.html", "The Thin Line")};
+const embedTall = (src, title) => `<div class="embedwrap"><iframe class="embed" style="height:calc(100vh - 150px);min-height:620px" ${SEMI_FRAME(src)} title="${title}"></iframe></div>`;
+const CO_GROUPS = {calc: "Calculators", comp: "Compliance", draft: "Drafting & automation"};
+const CO_TOOLS = [
+  {id: "mcalate", name: "MCA Late Filing Fee", sub: "Additional fee for delayed ROC e-forms", group: "calc", noForm: true, render: () => embedTall("tools/company/mca-late-filing-fee-calculator.html", "MCA Late Filing Fee")},
+  {id: "aoc4", name: "AOC-4 Late Filing Penalty", sub: "Financial statements filing delay", group: "calc", noForm: true, render: () => embedTall("tools/company/aoc-4-late-filing-penalty-calculator.html", "AOC-4 Late Filing Penalty")},
+  {id: "mgt7", name: "MGT-7 / MGT-7A Penalty", sub: "Annual return filing delay", group: "calc", noForm: true, render: () => embedTall("tools/company/mgt-7-penalty-calculator.html", "MGT-7 / MGT-7A Penalty")},
+  {id: "pas3", name: "PAS-3 Filing Fee", sub: "Return of allotment fee by capital slab", group: "calc", noForm: true, render: () => embedTall("tools/company/pas-3-filing-fee-calculator.html", "PAS-3 Filing Fee")},
+  {id: "run", name: "RUN Name Reservation Fee", sub: "Reserve Unique Name service fee", group: "calc", noForm: true, render: () => embedTall("tools/company/run-name-reservation-fee-calculator.html", "RUN Name Reservation Fee")},
+  {id: "stampduty", name: "Share Transfer Stamp Duty", sub: "0.015% stamp duty on share transfers", group: "calc", noForm: true, render: () => embedTall("tools/company/share-transfer-stamp-duty-calculator.html", "Share Transfer Stamp Duty")},
+  {id: "remun", name: "Managerial Remuneration", sub: "Sec 197 & Schedule V limits", group: "calc", noForm: true, render: () => embedTall("tools/company/managerial-remuneration-calculator.html", "Managerial Remuneration")},
+  {id: "networth", name: "Net Worth & Free Reserves", sub: "Sec 2(57) net worth, free reserves", group: "calc", noForm: true, render: () => embedTall("tools/company/net-worth-free-reserves-calculator.html", "Net Worth & Free Reserves")},
+  {id: "remunsuite", name: "Managerial Remuneration Suite", sub: "Sec 196–205: appointment, limits, KMP, clawback, penalties", group: "comp", noForm: true, render: () => embedTall("tools/company/managerial-remuneration-suite.html", "Managerial Remuneration Suite")},
+  {id: "rpt", name: "RPT Compliance Suite", sub: "Sec 188 & SEBI LODR Reg 23 thresholds and approvals", group: "comp", noForm: true, render: () => embedTall("tools/company/RPT_Compliance_Suite.html", "RPT Compliance Suite")},
+  {id: "mcacal", name: "MCA Compliance Calendar", sub: "Due dates for your company's ROC filings", group: "comp", noForm: true, render: () => embedTall("tools/company/mca-compliance-calendar.html", "MCA Compliance Calendar")},
+  {id: "spice", name: "SPICe+ Incorporation Checklist", sub: "Documents and steps for INC-32", group: "comp", noForm: true, render: () => embedTall("tools/company/spice-incorporation-checklist-generator.html", "SPICe+ Incorporation Checklist")},
+  {id: "boardres", name: "Board Resolution Automation", sub: "Director, auditor, bank and other resolutions", group: "draft", noForm: true, render: () => embedTall("tools/company/Board_Resolution_Automation.html", "Board Resolution Automation")},
+  {id: "minutes", name: "Minutes Automation", sub: "Board and general meeting minutes", group: "draft", noForm: true, render: () => embedTall("tools/company/Minutes_Automation.html", "Minutes Automation")},
+  {id: "dirreport", name: "Directors' Report Automation", sub: "Sec 134 report with annexures", group: "draft", noForm: true, render: () => embedTall("tools/company/Directors_Report_Automation.html", "Directors' Report Automation")},
+  {id: "moaaoa", name: "MOA & AOA Toolkit", sub: "Draft and alter memorandum and articles", group: "draft", noForm: true, render: () => embedTall("tools/company/MOA_AOA_Advanced_Toolkit.html", "MOA & AOA Toolkit")},
+  {id: "sharecert", name: "Share Certificate & Transfer", sub: "SH-1, SH-4 and SH-5 drafts", group: "draft", noForm: true, render: () => embedTall("tools/company/Share_Certificate_Generator.html", "Share Certificate & Transfer")},
+  {id: "annualreport", name: "Annual Report Compiler", sub: "Directors' and auditor's report clause checklist and Word export", group: "draft", noForm: true, render: () => embedTall("tools/company/annual-report-compiler.html", "Annual Report Compiler")},
+  {id: "legalnotice", name: "Legal Notice Generator", sub: "Draft legal notices under company and other laws", group: "draft", noForm: true, render: () => embedTall("tools/company/AI_Legal_Notice_Generator.html", "Legal Notice Generator")}
+];
+const RK_GROUPS = {gst: ["GST & E-Way Bill", "tax"], it: ["Income tax", "calc"]};
+const RF_GROUPS = {file: ["Prepare & file returns", "tax"], ref: ["Guides & annual return", "book"]};
+const rk = (id, file, name, sub, group) => ({id, name, sub, group, noForm: true, render: () => embedTall("tools/reckoners/" + file, name)});
+const RK_TOOLS = [
+  rk("ewaybill", "e-way-bill-compiler.html", "E-Way Bill Compiler", "Rule 138: applicability, exemptions, state limits, validity", "gst"),
+  rk("houseprop", "house-property-reckoner.html", "House Property Reckoner", "Income from house property: computation, co-owners, set-off", "it"),
+  rk("othersrc", "other-sources-reckoner.html", "Income from Other Sources", "IT Act 2025 Sec 92–100: gifts, clubbing, rates, TDS", "it"),
+  rk("senior", "senior-citizen-tax-reckoner.html", "Senior Citizen Tax Reckoner", "Age-based exemptions, deductions and TDS limits", "it"),
+  rk("npo", "npo-reckoner.html", "NPO Reckoner", "Trusts, societies & Sec 8: registration, exemption, FCRA, GST", "it")
+];
+const CREDIT_HTML = window.CREDIT_HTML = `<p class="credit" style="text-align:center;margin:18px 0 6px;font-size:13px;color:var(--soft)">Developed &amp; Managed By <b class="gold">Sachin Sanwal</b> · <a href="#/feedback" style="font-weight:600;text-decoration:none">Feedback</a></p>`;
+const T_GSTRET = {id: "gstreturn", name: "GST Return Studio", sub: "Prepare GSTR-1 & GSTR-3B, validate, create JSON for the GST portal", noForm: true,
+  render: () => embedTall("tools/gst-returns.html", "GST Return Studio")};
+function sendTheme(f) { try { f.contentWindow.postMessage({semiTheme: document.documentElement.dataset.theme || ""}, "*"); } catch (e) {} }
+new MutationObserver(() => document.querySelectorAll("iframe.embed.flow").forEach(sendTheme)).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+// Seamless tool: no frame box, grows to its content and scrolls with the app page.
+const embedFlow = (src, title) => `<div class="embedwrap flow"><iframe class="embed flow" scrolling="no" ${SEMI_FRAME(src)} title="${title}"></iframe></div>`;
+window.appToast = function (m) { let t = document.getElementById("apptoast");
+  if (!t) { t = document.createElement("div"); t.id = "apptoast"; t.className = "apptoast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+  t.textContent = m; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2400); };
+window.addEventListener("message", e => {
+  const d = e.data; if (!d || typeof d !== "object" || !d.semi) return;
+  const f = [...document.querySelectorAll("iframe.embed")].find(x => x.contentWindow === e.source); if (!f) return;
+  if (d.semi === "hello") sendTheme(f);
+  else if (d.semi === "height" && f.classList.contains("flow")) f.style.height = Math.max(200, Math.min(+d.h || 0, 60000)) + "px";
+  else if (d.semi === "toast") appToast(String(d.text || "").slice(0, 160));
+  else if (d.semi === "top") { const tb = document.querySelector(".topbar"), off = tb && tb.offsetHeight ? tb.offsetHeight + 8 : 12;
+    const y = f.getBoundingClientRect().top + window.scrollY - off; if (window.scrollY > y) window.scrollTo({top: y, behavior: "smooth"}); }
+});
+const T_MEESHO = {id: "meeshogst", name: "Meesho GST Filing", sub: "GSTR-1 & GSTR-3B working from the Meesho GST report", noForm: true,
+  render: () => embedFlow("tools/meesho-gst.html", "Meesho GST Filing")};
+const RF_TOOLS = [
+  {...T_GSTRET, group: "file"},
+  {...T_MEESHO, group: "file"},
+  {...rk("gstsuite", "gst-filing-suite.html", "GST Filing Suite", "Which returns, due dates, late fee, ITC, RCM, QRMP, refunds, e-invoice", "ref"), group: "ref"},
+  {...rk("gstr9", "gstr-9-9c-reckoner.html", "GSTR-9 & GSTR-9C", "Annual return and reconciliation, FY 2025-26", "ref"), group: "ref"}
+];
+
+// ================================================================ ACCOUNTS TOOLS
+const T_DEP = {
+  id: "dep", name: "Depreciation", sub: "SLM / WDV schedule",
+  form: () => f("cost", "Cost of asset (₹)", 500000) + f("salv", "Residual value (₹)", 50000) + f("life", "Useful life (years)", 5) +
+    sel("meth", "Method", [["slm", "Straight line (SLM)"], ["wdv", "Written down value (WDV)"]]) + f("wrate", "WDV rate % (blank = compute from life)", "") + cb("half", "Used under 180 days in year 1 (half rate, IT Act)"),
+  calc() {
+    const C = num("cost"), S = num("salv"), L = Math.min(40, Math.max(1, Math.round(num("life")))), wdv = val("meth") === "wdv";
+    let r = num("wrate") / 100;
+    if (wdv && !r) r = C > 0 && S > 0 ? 1 - Math.pow(S / C, 1 / L) : 0;
+    let open = C, t = "", sum = 0;
+    for (let y = 1; y <= L; y++) {
+      let d = wdv ? open * r : (C - S) / L;
+      if (y === 1 && chk("half")) d /= 2;
+      if (!wdv) d = Math.min(d, Math.max(0, open - S));
+      sum += d;
+      t += `<tr><td>${y}</td><td class="n">${inr(open)}</td><td class="n">${inr(d)}</td><td class="n">${inr(open - d)}</td></tr>`;
+      open -= d;
+    }
+    return `<div class="kpis">${kpi(wdv ? "WDV rate" : "Yearly depreciation", wdv ? pct(r) : inr((C - S) / L))}${kpi("Total depreciation", inr(sum))}${kpi("Closing value", inr(open))}</div>
+      <div class="scroll"><table><tr><th>Year</th><th class="n">Opening</th><th class="n">Depreciation</th><th class="n">Closing</th></tr>${t}</table></div>
+      <p class="note">${wdv ? "WDV rate formula: 1 − (residual ÷ cost)^(1/n)." : "SLM: (cost − residual) ÷ useful life."}</p>`;
+  }
+};
+const RATIO_F = [["ca", "Current assets"], ["cl", "Current liabilities"], ["inv", "Inventory"], ["pre", "Prepaid expenses"], ["sales", "Net sales"], ["cogs", "Cost of goods sold"],
+  ["np", "Net profit (after tax)"], ["ebit", "EBIT"], ["int", "Interest"], ["debt", "Long-term debt"], ["eq", "Shareholders' funds"], ["ta", "Total assets"], ["avginv", "Average inventory"], ["avgdr", "Average receivables"]];
+const RATIO_D = {ca: 500000, cl: 250000, inv: 150000, pre: 10000, sales: 2000000, cogs: 1400000, np: 180000, ebit: 300000, int: 50000, debt: 600000, eq: 1000000, ta: 1850000, avginv: 140000, avgdr: 250000};
+const T_RATIO = {
+  id: "ratio", name: "Ratio Analysis", sub: "Liquidity, solvency, profitability, turnover",
+  form: () => RATIO_F.map(([k, l]) => f(k, l + " (₹)", RATIO_D[k])).join(""),
+  calc() {
+    const v = Object.fromEntries(RATIO_F.map(([k]) => [k, num(k)]));
+    const d = (a, b) => b ? a / b : NaN;
+    const R = [
+      ["Liquidity", "Current ratio", "CA ÷ CL", fmt(d(v.ca, v.cl)) + " : 1"],
+      ["Liquidity", "Quick ratio", "(CA − Inventory − Prepaid) ÷ CL", fmt(d(v.ca - v.inv - v.pre, v.cl)) + " : 1"],
+      ["Solvency", "Debt-equity", "Long-term debt ÷ Equity", fmt(d(v.debt, v.eq)) + " : 1"],
+      ["Solvency", "Interest coverage", "EBIT ÷ Interest", fmt(d(v.ebit, v.int)) + " times"],
+      ["Profitability", "Gross profit ratio", "(Sales − COGS) ÷ Sales", pct(d(v.sales - v.cogs, v.sales))],
+      ["Profitability", "Net profit ratio", "Net profit ÷ Sales", pct(d(v.np, v.sales))],
+      ["Profitability", "Return on equity", "Net profit ÷ Equity", pct(d(v.np, v.eq))],
+      ["Profitability", "Return on capital employed", "EBIT ÷ (Equity + LT debt)", pct(d(v.ebit, v.eq + v.debt))],
+      ["Turnover", "Inventory turnover", "COGS ÷ Avg inventory", fmt(d(v.cogs, v.avginv)) + " times"],
+      ["Turnover", "Debtors turnover", "Sales ÷ Avg receivables", fmt(d(v.sales, v.avgdr)) + " times"],
+      ["Turnover", "Debt collection period", "365 ÷ Debtors turnover", fmt(d(365, d(v.sales, v.avgdr)), 0) + " days"],
+      ["Turnover", "Asset turnover", "Sales ÷ Total assets", fmt(d(v.sales, v.ta)) + " times"]];
+    return `<div class="scroll"><table><tr><th>Ratio</th><th>Formula</th><th class="n">Result</th></tr>` +
+      R.map(([g, n, fo, r]) => `<tr><td><b style="color:var(--ink)">${n}</b><br><small class="note">${g}</small></td><td><span class="formula">${fo}</span></td><td class="n">${r}</td></tr>`).join("") +
+      `</table></div><p class="note">Common benchmarks: current ratio 2:1, quick ratio 1:1. Credit sales are taken as total sales for debtors turnover.</p>`;
+  }
+};
+// Journal trainer: [transaction, debit, credit, why]
+const JOURNAL = [
+  ["Started business with cash ₹5,00,000", "Cash A/c", "Capital A/c", "Cash (real) comes in: debit. Capital is the owner (personal), the giver: credit."],
+  ["Purchased goods for cash ₹40,000", "Purchases A/c", "Cash A/c", "Goods come in: debit Purchases. Cash goes out: credit."],
+  ["Sold goods on credit to Ravi ₹25,000", "Ravi A/c", "Sales A/c", "Ravi is the receiver (personal): debit. Goods go out: credit Sales."],
+  ["Paid rent ₹12,000 in cash", "Rent A/c", "Cash A/c", "Rent is an expense (nominal): debit. Cash goes out: credit."],
+  ["Received ₹20,000 from Ravi", "Cash A/c", "Ravi A/c", "Cash comes in: debit. Ravi is the giver: credit."],
+  ["Bought furniture on credit from Modern Furnitures ₹30,000", "Furniture A/c", "Modern Furnitures A/c", "Furniture comes in: debit. The supplier is the giver: credit."],
+  ["Withdrew cash ₹8,000 for personal use", "Drawings A/c", "Cash A/c", "Drawings reduce capital (personal): debit. Cash goes out: credit."],
+  ["Received commission ₹5,000 in cash", "Cash A/c", "Commission Received A/c", "Cash comes in: debit. Commission is income (nominal): credit."],
+  ["Deposited cash into bank ₹50,000", "Bank A/c", "Cash A/c", "Bank is the receiver: debit. Cash goes out: credit. This is a contra entry."],
+  ["Goods worth ₹3,000 taken by the owner for personal use", "Drawings A/c", "Purchases A/c", "Owner's drawings: debit. Goods leave the business, so credit Purchases."],
+  ["Depreciation charged on machinery ₹10,000", "Depreciation A/c", "Machinery A/c", "Depreciation is a loss (nominal): debit. The asset's value goes down: credit Machinery."],
+  ["Goods worth ₹15,000 destroyed by fire (uninsured)", "Loss by Fire A/c", "Purchases A/c", "Loss (nominal): debit. Goods go out: credit Purchases."],
+  ["Paid salary ₹45,000 by cheque", "Salary A/c", "Bank A/c", "Salary is an expense: debit. Money leaves the bank: credit."],
+  ["Purchased goods from Mohan on credit ₹60,000", "Purchases A/c", "Mohan A/c", "Goods come in: debit. Mohan is the giver: credit."],
+  ["Paid Mohan ₹59,000 in full settlement of ₹60,000", "Mohan A/c", "Cash A/c + Discount Received A/c", "Mohan is the receiver: debit ₹60,000. Credit Cash ₹59,000 and Discount Received ₹1,000 (income)."],
+  ["Interest on capital allowed ₹6,000", "Interest on Capital A/c", "Capital A/c", "Interest on capital is an expense to the business: debit. The owner's capital grows: credit."]
+];
+const ACCOUNTS = [...new Set(JOURNAL.flatMap(j => [j[1], j[2]]))];
+let jIdx = store.get("jidx", 0), jScore = {right: 0, done: 0};
+const T_JOURNAL = {
+  id: "journal", name: "Journal Practice", sub: "Pick the debit and credit", noForm: true,
+  render() {
+    const j = JOURNAL[jIdx % JOURNAL.length];
+    const opts = a => shuffle([...new Set([j[1], j[2], ...shuffle(ACCOUNTS).slice(0, 5)])]).map(x => `<option>${x}</option>`).join("");
+    return `<div class="card" style="max-width:640px"><div class="eyebrow" style="margin-top:0">Transaction ${jIdx % JOURNAL.length + 1} of ${JOURNAL.length} · score ${jScore.right}/${jScore.done}</div>
+      <h2 style="margin-bottom:14px">${j[0]}</h2>
+      <div class="form"><label class="fld"><span>Debit (Dr)</span><select id="jdr"><option value="">Choose…</option>${opts()}</select></label>
+      <label class="fld"><span>Credit (Cr)</span><select id="jcr"><option value="">Choose…</option>${opts()}</select></label></div>
+      <div id="jres"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap"><button class="btn" onclick="checkJournal()">Check</button><button class="btn ghost" onclick="nextJournal()">Next transaction</button></div></div>
+      <div class="card" style="max-width:640px;margin-top:14px"><h3>Golden rules</h3>${GOLDEN}</div>`;
+  }
+};
+function checkJournal() {
+  const j = JOURNAL[jIdx % JOURNAL.length], dr = val("jdr"), cr = val("jcr");
+  if (!dr || !cr) { $("#jres").innerHTML = `<p class="note">Pick both accounts first.</p>`; return; }
+  const ok = dr === j[1] && cr === j[2];
+  if (!$("#jres").dataset.done) { jScore.done++; if (ok) jScore.right++; $("#jres").dataset.done = 1; }
+  $("#jres").innerHTML = `<div class="explain" style="margin-top:14px;${ok ? "color:var(--good)" : ""}"><b>${ok ? "Correct!" : "Not quite."}</b> ${j[1]} Dr <br>&nbsp;&nbsp;&nbsp;To ${j[2]}<br><span style="color:var(--text)">${j[3]}</span></div>`;
+}
+function nextJournal() { jIdx++; store.set("jidx", jIdx); renderTool(); }
+const GOLDEN = `<table><tr><th>Account type</th><th>Debit</th><th>Credit</th></tr>
+  <tr><td>Personal</td><td>The receiver</td><td>The giver</td></tr>
+  <tr><td>Real</td><td>What comes in</td><td>What goes out</td></tr>
+  <tr><td>Nominal</td><td>All expenses and losses</td><td>All incomes and gains</td></tr></table>`;
+
+// ================================================================ COSTING & FM TOOLS
+const T_CVP = {
+  id: "cvp", name: "Break-even (CVP)", sub: "Contribution, P/V ratio, BEP, margin of safety",
+  form: () => f("fc", "Fixed costs (₹)", 300000) + f("sp", "Selling price per unit (₹)", 100) + f("vc", "Variable cost per unit (₹)", 60) +
+    f("units", "Actual / budgeted sales (units)", 12000) + f("tp", "Target profit (₹)", 100000),
+  calc() {
+    const F = num("fc"), sp = num("sp"), vc = num("vc"), u = num("units"), tp = num("tp");
+    const c = sp - vc, pv = sp ? c / sp : NaN, beu = c > 0 ? F / c : NaN, bes = beu * sp, profit = u * c - F, mos = u - beu;
+    if (c <= 0) return `<div class="explain" style="color:var(--bad)">Selling price must be above variable cost, otherwise there is no contribution and no break-even point.</div>`;
+    return `<div class="kpis">${kpi("BEP (units)", fmt(beu, 0))}${kpi("BEP (sales)", inr(bes))}${kpi("P/V ratio", pct(pv))}${kpi("Profit", inr(profit))}</div>` +
+      rows([["Contribution per unit (SP − VC)", inr2(c)], ["Total contribution", inr(u * c)], ["Margin of safety (units)", fmt(mos, 0)],
+        ["Margin of safety (₹)", inr(mos * sp)], ["Margin of safety %", pct(u ? mos / u : NaN)], ["Units for target profit", fmt((F + tp) / c, 0)], ["Sales for target profit", inr((F + tp) / pv)]]) +
+      `<p class="note"><span class="formula">BEP = F ÷ contribution per unit</span> · <span class="formula">Profit = MOS × P/V</span></p>`;
+  }
+};
+const T_EOQ = {
+  id: "eoq", name: "EOQ & Stock Levels", sub: "Economic order quantity, re-order, min and max levels",
+  form: () => f("A", "Annual demand (units)", 24000) + f("O", "Cost per order (₹)", 150) + f("Cc", "Carrying cost per unit per year (₹)", 2) +
+    `<div class="full eyebrow" style="margin:6px 0 0">Stock levels (usage per day, lead time in days)</div>` +
+    f("umax", "Maximum usage", 120) + f("umin", "Minimum usage", 60) + f("unor", "Normal usage", 90) +
+    f("lmax", "Maximum lead time", 15) + f("lmin", "Minimum lead time", 5) + f("lnor", "Normal lead time", 10),
+  calc() {
+    const A = num("A"), O = num("O"), C = num("Cc");
+    const q = C > 0 ? Math.sqrt(2 * A * O / C) : NaN, n = A / q;
+    const rol = num("umax") * num("lmax"), min = rol - num("unor") * num("lnor"), max = rol + q - num("umin") * num("lmin");
+    return `<div class="kpis">${kpi("EOQ (units)", fmt(q, 0))}${kpi("Orders a year", fmt(n, 1))}${kpi("Total cost at EOQ", inr(Math.sqrt(2 * A * O * C)))}</div>` +
+      rows([["Ordering cost (A ÷ Q × O)", inr(n * O)], ["Carrying cost (Q ÷ 2 × C)", inr(q / 2 * C)], ["Re-order level (max usage × max lead time)", fmt(rol, 0) + " units"],
+        ["Minimum level (ROL − normal usage × normal lead time)", fmt(min, 0) + " units"], ["Maximum level (ROL + ROQ − min usage × min lead time)", fmt(max, 0) + " units"],
+        ["Average level (min + ½ ROQ)", fmt(min + q / 2, 0) + " units"]]) +
+      `<p class="note"><span class="formula">EOQ = √(2AO ÷ C)</span>. EOQ is used as the re-order quantity (ROQ).</p>`;
+  }
+};
+const T_EMI = {
+  id: "emi", name: "EMI / Loan", sub: "Monthly instalment and yearly split",
+  form: () => f("P", "Loan amount (₹)", 2500000) + f("R", "Interest rate (% a year)", 8.5) + f("Y", "Tenure (years)", 20),
+  calc() {
+    const Pr = num("P"), r = num("R") / 1200, n = Math.round(num("Y") * 12);
+    if (!(Pr > 0) || !(n > 0) || r < 0) return `<p class="note">Enter a loan amount, a tenure above zero and an interest rate of 0% or more.</p>`;
+    if (n > 600) return `<p class="note">Tenure can be at most 50 years.</p>`;
+    const emi = r ? Pr * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1) : Pr / n;
+    let bal = Pr, t = "", yi = 0, yp = 0;
+    for (let m = 1; m <= n; m++) {
+      const i = bal * r, p = emi - i; bal -= p; yi += i; yp += p;
+      if (m % 12 === 0 || m === n) { t += `<tr><td>${Math.ceil(m / 12)}</td><td class="n">${inr(yp)}</td><td class="n">${inr(yi)}</td><td class="n">${inr(Math.max(0, bal))}</td></tr>`; yi = yp = 0; }
+    }
+    return `<div class="kpis">${kpi("Monthly EMI", inr(emi))}${kpi("Total interest", inr(emi * n - Pr))}${kpi("Total payment", inr(emi * n))}</div>
+      <div class="scroll" style="max-height:340px;overflow-y:auto"><table><tr><th>Year</th><th class="n">Principal</th><th class="n">Interest</th><th class="n">Balance</th></tr>${t}</table></div>
+      <p class="note"><span class="formula">EMI = P·r·(1+r)ⁿ ÷ ((1+r)ⁿ − 1)</span></p>`;
+  }
+};
+const T_NPV = {
+  id: "npv", name: "NPV / IRR", sub: "Capital budgeting",
+  form: () => f("c0", "Initial investment (₹)", 500000) + f("k", "Cost of capital (%)", 10) +
+    `<label class="fld full"><span>Cash inflows, year 1 onwards (comma separated)</span><input id="cfs" value="150000, 180000, 200000, 160000, 120000"></label>`,
+  calc() {
+    const c0 = num("c0"), k = num("k") / 100;
+    const cf = String(val("cfs")).split(/[,\s]+/).map(Number).filter(isFinite).filter((x, i, a) => a.length);
+    const npvAt = r => cf.reduce((s, c, i) => s + c / Math.pow(1 + r, i + 1), -c0);
+    const pv = npvAt(k) + c0;
+    let lo = -0.99, hi = 10, irr = NaN;
+    if (npvAt(lo) * npvAt(hi) < 0) { for (let i = 0; i < 200; i++) { const m = (lo + hi) / 2; (npvAt(m) > 0 ? lo = m : hi = m); } irr = (lo + hi) / 2; }
+    let cum = 0, pb = NaN;
+    cf.some((c, i) => { if (cum + c >= c0) { pb = i + (c0 - cum) / c; return true; } cum += c; });
+    const t = cf.map((c, i) => { const df = 1 / Math.pow(1 + k, i + 1); return `<tr><td>${i + 1}</td><td class="n">${inr(c)}</td><td class="n">${df.toFixed(4)}</td><td class="n">${inr(c * df)}</td></tr>`; }).join("");
+    return `<div class="win" style="${npvAt(k) < 0 ? "background:var(--bad-wash);color:var(--bad)" : ""}">${npvAt(k) >= 0 ? "Accept: NPV is positive." : "Reject: NPV is negative."}</div>
+      <div class="kpis">${kpi("NPV", inr(npvAt(k)))}${kpi("IRR", pct(irr))}${kpi("Profitability index", fmt(c0 ? pv / c0 : NaN))}${kpi("Payback", isFinite(pb) ? fmt(pb) + " yrs" : "Not recovered")}</div>
+      <div class="scroll"><table><tr><th>Year</th><th class="n">Cash flow</th><th class="n">PV factor</th><th class="n">Present value</th></tr>${t}
+      <tr class="tot"><td colspan="3">PV of inflows − investment</td><td class="n">${inr(npvAt(k))}</td></tr></table></div>`;
+  }
+};
+
+// ================================================================ registry & routing
+const CALC_GROUPS = {it: ["Income tax", "tax"], gst: ["GST", "tax"], acc: ["Accounts", "acc"], cost: ["Cost & FM", "cost"]};
+const CALC_TOOLS = [
+  {...T_ITAX, group: "it"}, {...T_ADV, group: "it"}, {...T_HRA, group: "it"},
+  {...T_GST, group: "gst"},
+  {...T_DEP, group: "acc"}, {...T_RATIO, group: "acc"}, {...T_JOURNAL, group: "acc"},
+  {...T_CVP, group: "cost"}, {...T_EOQ, group: "cost"}, {...T_EMI, group: "cost"}, {...T_NPV, group: "cost"}
+];
+const RK_ALL = [{...T_GSTFR, group: "gst"}, ...RK_TOOLS.filter(t => t.group === "gst"), ...RK_TOOLS.filter(t => t.group === "it"), {...T_THIN, group: "it"}];
+const SECTIONS = [
+  {id: "home", name: "Home", icon: "home", nav: "main"},
+  {id: "kinty", name: "KINTY AI", icon: "spark", nav: "main"},
+  {id: "study", name: "Study", icon: "learn", nav: "study"},
+  {id: "syllabus", name: "Syllabus", icon: "book", nav: "study", hub: "study"},
+  {id: "planner", name: "Study planner", icon: "clock", nav: "study", hub: "study"},
+  {id: "learn", name: "Concept notes", icon: "learn", nav: "study", hub: "study"},
+  {id: "concepts", name: "Animated concepts", icon: "play", nav: "study", hub: "study"},
+  {id: "quiz", name: "Quiz", icon: "quiz", nav: "study", hub: "study"},
+  {id: "practice", name: "Practicals", icon: "calc", nav: "study", hub: "study"},
+  {id: "dates", name: "Due dates", icon: "cal", nav: "study", hub: "study"},
+  {id: "calc", name: "Calculators", icon: "calc", nav: "tools", landing: true, groups: CALC_GROUPS, title: "Calculators", lede: "Income tax, GST, accounts, costing and financial management calculators. Your inputs are saved on this phone.", tools: CALC_TOOLS},
+  {id: "returns", name: "Return Filings", icon: "tax", nav: "tools", landing: true, groups: RF_GROUPS, title: "Return Filings", lede: "Prepare GST returns, check them and create the JSON to upload on the GST portal. Every tool has a Load sample button so you can try it first.", tools: RF_TOOLS},
+  {id: "reckoners", name: "Reckoners", icon: "book", nav: "tools", landing: true, groups: RK_GROUPS, title: "Tax & GST Reckoners", lede: "Detailed reference tools with built-in calculators: GST forms, e-way bill, house property, other sources, senior citizens, NPOs and tax planning vs evasion.", tools: RK_ALL},
+  {id: "company", name: "Company Law", icon: "book", nav: "tools", landing: true, title: "Company Law & ROC toolkit", lede: "Companies Act 2013 calculators, compliance tools and document drafting: filing fees and penalties, managerial remuneration, RPT approvals, board resolutions, minutes, directors' and annual reports, MOA/AOA, share certificates and legal notices.", tools: CO_TOOLS},
+  {id: "account", name: "Account & backup", icon: "user", nav: "help"},
+  {id: "feedback", name: "Feedback", icon: "mail", nav: "help"}
+];
+const NAV_GROUPS = [["main", ""], ["study", "Study"], ["tools", "Tools"], ["help", "Help"]];
+const BOTTOM = [["home", "Home", "home"], ["study", "Study", "learn"], ["calc", "Calculators", "calc"], ["returns", "Filings", "tax"], ["kinty", "KINTY AI", "spark"]];
+/* old addresses keep working: #/tax/itax, #/accounts/dep … */
+const SEC_ALIAS = {tax: "calc", accounts: "calc", costing: "calc", ask: "kinty"};
+let route = {sec: "home", tool: null, rest: []};
+
+function nav() {
+  const cur = SECTIONS.find(s => s.id === route.sec) || {};
+  const link = s => `<a href="#/${s.id}" class="${route.sec === s.id ? "on" : ""}">${icon(s.icon)}<span>${s.name}</span></a>`;
+  $("#sidenav").innerHTML = NAV_GROUPS.map(([g, label]) => (label ? `<div class="sidehd">${label}</div>` : "") + SECTIONS.filter(s => s.nav === g && (s.id !== "account" || (window.ACCT && ACCT.on))).map(link).join("")).join("");
+  $("#bottomnav").innerHTML = BOTTOM.map(([id, name, ic]) => `<a href="#/${id}" class="${route.sec === id || cur.hub === id || (id === "calc" && ["reckoners", "company"].includes(route.sec)) ? "on" : ""}">${icon(ic)}<span>${name}</span></a>`).join("");
+}
+function go() {
+  let [sec, ...rest] = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
+  // old or moved addresses: send them to where the section or tool lives now
+  const owner = id => SECTIONS.find(s => s.tools && s.tools.some(t => t.id === id));
+  const here = SECTIONS.find(s => s.id === sec), o = rest[0] ? owner(rest[0]) : null;
+  if (SEC_ALIAS[sec] || (here && here.tools && o && o.id !== sec)) {
+    const to = o ? o.id : SEC_ALIAS[sec];
+    location.replace("#/" + [to, ...rest].map(encodeURIComponent).join("/")); return;
+  }
+  route = {sec: SECTIONS.some(s => s.id === sec) ? sec : "home", tool: rest[0] || null, rest: rest.filter(Boolean)};
+  nav();
+  const s = SECTIONS.find(x => x.id === route.sec);
+  if (s.tools) renderSection(s);
+  else if (s.id === "syllabus") renderSyllabus(route.rest);
+  else if (s.id === "practice") renderPractice(route.rest);
+  else if (s.id === "planner") renderPlanner(route.rest);
+  else if (s.id === "kinty") renderKinty();
+  else if (s.id === "study") renderStudy();
+  else if (s.id === "concepts") renderConcepts(route.rest);
+  else if (s.id === "feedback") renderFeedback();
+  else if (s.id === "account") window.renderAccount ? renderAccount() : renderHome();
+  else ({home: renderHome, learn: renderLearn, quiz: renderQuiz, dates: renderDates})[s.id]();
+  window.scrollTo(0, 0);
+  if (window.kintyFab) kintyFab(route.sec);
+}
+function renderSection(s) {
+  if (s.landing && !route.tool) {
+    $("#app").innerHTML = `<div class="head"><h1>${s.title}</h1><p>${s.lede}</p></div>` + Object.entries(s.groups || CO_GROUPS).map(([g, gl]) => `<div class="eyebrow" style="margin-top:14px">${Array.isArray(gl) ? gl[0] : gl}</div>
+      <div class="grid g3">${s.tools.filter(t => t.group === g).map(t => `<a class="card tile" href="#/${s.id}/${t.id}"><div class="ic">${icon(Array.isArray(gl) ? gl[1] : g === "calc" ? "calc" : g === "comp" ? "cal" : "book")}</div><h3>${t.name}</h3><p>${t.sub}</p>${window.ACCT ? ACCT.badge(t.id) : ""}</a>`).join("")}</div>`).join("") + CREDIT_HTML;
+    return;
+  }
+  const t = s.tools.find(x => x.id === route.tool) || s.tools[0];
+  route.tool = t.id;
+  const grp = s.groups || (s.landing ? CO_GROUPS : null), gl = grp && grp[t.group], sib = grp ? s.tools.filter(x => x.group === t.group) : s.tools;
+  $("#app").innerHTML = `<div class="head head-sm"><h1>${s.title}</h1></div>
+    ${s.landing ? `<div class="crumbs" style="margin-bottom:8px"><a href="#/${s.id}">← All ${s.tools.length} ${s.id === "calc" ? "calculators" : "tools"}</a>${gl ? ` <span style="color:var(--soft)">· ${Array.isArray(gl) ? gl[0] : gl}</span>` : ""}</div>` : ""}<div class="tabs">${sib.map(x => `<button class="${x.id === t.id ? "on" : ""}" onclick="location.hash='#/${s.id}/${x.id}'">${x.name}</button>`).join("")}</div>
+    <div id="toolwrap"></div>`;
+  renderTool();
+}
+function currentTool() { return SECTIONS.find(s => s.id === route.sec).tools.find(x => x.id === route.tool); }
+function renderTool() {
+  const t = currentTool(), w = $("#toolwrap");
+  if (window.ACCT && ACCT.lockedTool(t.id)) { w.innerHTML = ACCT.paywall(t); return; }
+  if (t.noForm) { w.innerHTML = t.render(); return; }
+  w.innerHTML = `<div class="tool"><form class="card form" id="tform" onsubmit="return false"><div class="full"><h2>${t.name}</h2><p class="note" style="margin:2px 0 0">${t.sub}</p></div>${t.form()}</form>
+    <div class="card" id="out" aria-live="polite"></div></div>${CREDIT_HTML}`;
+  const saved = store.get("f." + t.id, {});
+  $$("#tform input, #tform select").forEach(el => { if (el.id in saved) el.type === "checkbox" ? el.checked = saved[el.id] : el.value = saved[el.id]; });
+  const run = () => {
+    const s = {}; $$("#tform input, #tform select").forEach(el => s[el.id] = el.type === "checkbox" ? el.checked : el.value);
+    store.set("f." + t.id, s);
+    $("#out").innerHTML = t.calc();
+  };
+  $("#tform").addEventListener("input", run);
+  $("#tform").addEventListener("change", run);
+  run();
+}
+
+// ================================================================ due dates
+const MONTHLY = [[7, "TDS / TCS deposit", "Income tax · for previous month"], [10, "GSTR-7 / GSTR-8", "GST TDS & TCS deductors"],
+  [11, "GSTR-1", "Outward supplies · monthly filers"], [13, "IFF", "Invoice furnishing · QRMP"], [20, "GSTR-3B", "Summary return & GST payment"], [25, "PMT-06", "Monthly GST payment · QRMP"]];
+const YEARLY = [[5, 15, "Advance tax · 1st instalment", "15% of tax"], [8, 15, "Advance tax · 2nd instalment", "45% cumulative"], [11, 15, "Advance tax · 3rd instalment", "75% cumulative"],
+  [2, 15, "Advance tax · final instalment", "100% · also 44AD/44ADA"], [6, 31, "ITR (non-audit cases)", "Also TDS return Q1 (24Q/26Q)"], [8, 30, "Tax audit report", "Form 3CA/3CB-3CD"],
+  [9, 31, "ITR (audit cases)", "Also TDS return Q2"], [0, 31, "TDS return Q3", "Form 24Q / 26Q"], [4, 31, "TDS return Q4", "Form 24Q / 26Q"], [11, 31, "GSTR-9 / 9C", "GST annual return"]];
+function upcoming(days = 60) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const out = [];
+  for (let k = 0; k < 3; k++) {
+    const y = today.getFullYear(), m = today.getMonth() + k;
+    MONTHLY.forEach(([d, n, w]) => out.push([new Date(y, m, d), n, w]));
+  }
+  for (const yr of [today.getFullYear(), today.getFullYear() + 1]) YEARLY.forEach(([m, d, n, w]) => out.push([new Date(yr, m, d), n, w]));
+  return out.map(([d, n, w]) => [d, n, w, Math.round((d - today) / 864e5)]).filter(x => x[3] >= 0 && x[3] <= days).sort((a, b) => a[0] - b[0]);
+}
+const dueRow = ([d, n, w, left]) => `<div class="due"><div class="day"><b>${d.getDate()}</b><small>${d.toLocaleString("en-IN", {month: "short"}).toUpperCase()}</small></div>
+  <div class="what"><b>${n}</b><small>${w}</small></div><span class="left ${left <= 3 ? "soon" : ""}">${left === 0 ? "Today" : left + (left === 1 ? " day" : " days")}</span></div>`;
+function renderDates() {
+  $("#app").innerHTML = `<div class="head"><h1>Due dates</h1><p>Common income tax and GST deadlines for the next 60 days.</p></div>
+    <div class="card" style="max-width:720px">${upcoming(60).map(dueRow).join("") || "<p>No dates in this window.</p>"}</div>
+    <p class="foot">Dates are the usual statutory ones. The government often extends them by notification, so check incometax.gov.in and gst.gov.in.</p>`;
+}
+
+// ================================================================ feedback & suggestions
+const FEEDBACK_EMAIL = "SachinSanwal01@gmail.com";
+function renderFeedback() {
+  const d = store.get("fb.draft", {type: "Suggestion", msg: "", name: ""});
+  $("#app").innerHTML = `<div class="head"><h1>Feedback & suggestions</h1><p>Found a mistake, want a new tool, or have an idea? Send it straight to the developer.</p></div>
+    <div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div style="flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6d4aff,#e0459b)">${icon("mail")}</div>
+      <div style="flex:1;min-width:200px"><div class="eyebrow" style="margin:0">Email</div><div style="font-size:15.5px;font-weight:700;color:var(--ink);overflow-wrap:anywhere">${FEEDBACK_EMAIL}</div>
+        <p class="note" style="margin:2px 0 0">Developed &amp; Managed By <b class="gold">Sachin Sanwal</b></p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("TaxSphere feedback")}" style="text-decoration:none">Email now</a><button class="btn ghost" id="fbCopyMail">Copy email</button></div></div>
+    <div class="card"><h2 style="margin-bottom:10px">Write your feedback</h2>
+      <div class="grid g2"><label class="fld"><span>Type</span><select id="fbType">${["Suggestion", "New tool request", "Mistake in content", "App problem", "Other"].map(x => `<option ${x === d.type ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+        <label class="fld"><span>Your name (optional)</span><input id="fbName" value="${(d.name || "").replace(/"/g, "&quot;")}" placeholder="Name"></label></div>
+      <label class="fld" style="margin-top:10px"><span>Message</span><textarea id="fbMsg" rows="6" style="width:100%;border:1px solid var(--rule);border-radius:10px;padding:10px;background:var(--surface);color:var(--ink);font:inherit" placeholder="Tell us what to add or fix. Mention the tool or screen if it's about a specific one.">${(d.msg || "").replace(/</g, "&lt;")}</textarea></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" id="fbSend" style="text-decoration:none">Send by email</a><button class="btn ghost" id="fbCopy">Copy message</button></div>
+      <p class="note" style="margin-top:10px">“Send by email” opens your email app with the message filled in. If it doesn't open, tap “Copy message” and paste it into an email to ${FEEDBACK_EMAIL}.</p></div>`;
+  const body = () => `${$("#fbType").value}\n\n${$("#fbMsg").value}\n\n${$("#fbName").value ? "From: " + $("#fbName").value + "\n" : ""}— sent from TaxSphere`;
+  const sync = () => { store.set("fb.draft", {type: $("#fbType").value, msg: $("#fbMsg").value, name: $("#fbName").value});
+    $("#fbSend").href = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("TaxSphere: " + $("#fbType").value)}&body=${encodeURIComponent(body())}`; };
+  ["fbType", "fbMsg", "fbName"].forEach(id => $("#" + id).addEventListener("input", sync)); sync();
+  const copy = (t, btn) => { const ok = () => { const o = btn.textContent; btn.textContent = "✓ Copied"; setTimeout(() => btn.textContent = o, 1500); };
+    const old = () => { const a = document.createElement("textarea"); a.value = t; a.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); } catch (_) {} a.remove(); ok(); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(ok, old); else old(); };
+  $("#fbCopyMail").onclick = e => copy(FEEDBACK_EMAIL, e.target);
+  if (window.SEMI_UPDATE) { $("#app").insertAdjacentHTML("beforeend", SEMI_UPDATE.card()); SEMI_UPDATE.bind(); }
+  $("#fbCopy").onclick = e => { if (!$("#fbMsg").value.trim()) { $("#fbMsg").focus(); return; } copy(`To: ${FEEDBACK_EMAIL}\nSubject: TaxSphere: ${$("#fbType").value}\n\n` + body(), e.target); };
+}
+// ================================================================ study hub
+const STUDY_ITEMS = [
+  ["syllabus", "Syllabus tracker", "Official CA, CMA & CS syllabus. Tick chapters as you finish them."],
+  ["planner", "Study planner", "A day-by-day plan built from your exam date and study hours."],
+  ["learn", "Concept notes", "Quick revision notes for income tax, GST, accounts and costing."],
+  ["concepts", "Animated concepts", "GST filing, demerger, business combination, AS and transfer pricing, step by step."],
+  ["quiz", "Quiz", "10 random MCQs per round with an explanation after each answer."],
+  ["practice", "Practicals", "CMA Inter practical questions with worked solutions."],
+  ["dates", "Due dates", "Income tax and GST deadlines for the next 60 days."]
+];
+function renderStudy() {
+  const sec = id => SECTIONS.find(s => s.id === id);
+  $("#app").innerHTML = `<div class="head"><h1>Study</h1><p>Everything for exam preparation in one place.</p></div>
+    <div class="grid g2" style="margin-bottom:14px"><div><div class="eyebrow">My syllabus</div>${sylHomeCard()}</div><div><div class="eyebrow">Study plan</div>${planHomeCard()}</div></div>
+    <div class="grid g3">${STUDY_ITEMS.map(([id, name, sub]) => `<a class="card tile" href="#/${id}"><div class="ic">${icon(sec(id).icon)}</div><h3>${name}</h3><p>${sub}</p></a>`).join("")}</div>
+    <div class="card" style="margin-top:14px;display:flex;gap:12px;align-items:center"><div style="flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6d4aff,#e0459b)">${icon("spark")}</div>
+      <div style="flex:1"><h3 style="margin:0">Stuck on a topic?</h3><p class="note" style="margin:2px 0 0">KINTY AI explains concepts, gives examples and opens the official study material.</p></div><a class="btn" href="#/kinty" style="text-decoration:none">Ask KINTY</a></div>
+    ${CREDIT_HTML}`;
+}
+
+// ================================================================ home
+function renderHome() {
+  const exam = store.get("exam", ""), best = store.get("best", {});
+  let cd = "";
+  if (exam) { const d = Math.ceil((new Date(exam) - new Date().setHours(0, 0, 0, 0)) / 864e5); cd = d >= 0 ? `<div class="big" style="color:#fff">${d} days</div><p>until your exam on ${new Date(exam).toLocaleDateString("en-IN", {day: "numeric", month: "long", year: "numeric"})}</p>` : `<p>Your exam date has passed. Set the next one.</p>`; }
+  const pop = ["itax", "gst", "emi", "hra", "cvp", "dep"].map(id => CALC_TOOLS.find(t => t.id === id));
+  $("#app").innerHTML = `
+    <div class="card hero"><span class="pill">CA · CMA · CS</span><h1 style="margin:10px 0 4px">Hey, future professional 👋</h1>
+      ${cd || "<p>Set your exam date to start a countdown.</p>"}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
+        <input type="date" id="examd" value="${exam}" style="border:none;border-radius:10px;padding:9px 10px;min-height:42px;color:#16131f;background:#fff">
+        <button class="btn" style="background:var(--lime);color:var(--lime-ink)" onclick="store.set('exam', val('examd')); renderHome()">Save exam date</button></div></div>
+    ${window.SEMI_UPDATE ? SEMI_UPDATE.apkBanner() : ""}
+    <div class="card kask" style="display:flex;gap:12px;align-items:center;margin:14px 0;border-color:color-mix(in srgb,var(--accent) 35%,var(--rule))">
+      <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6d4aff,#e0459b)">${icon("spark")}</div>
+      <div style="flex:1;min-width:0"><h3 style="margin:0">Ask KINTY AI</h3><p class="note" style="margin:2px 0 8px">Your study assistant. Concepts, syllabus, practicals, tax &amp; GST maths, due dates. Works offline.</p>
+        <form onsubmit="event.preventDefault();kintyAsk(this.q.value)" style="display:flex;gap:6px"><input name="q" placeholder="e.g. What is residential status?" style="flex:1;min-width:0;border:1px solid var(--rule);border-radius:10px;padding:9px 10px;background:var(--surface2);color:var(--ink)">
+        <button class="btn" style="flex:none">Ask</button></form></div></div>
+    <div class="eyebrow">Professional tools</div>
+    <a class="card" href="#/returns" style="display:flex;gap:12px;align-items:center;text-decoration:none;margin-bottom:14px;background:linear-gradient(120deg,#3b259e,#5b3fd6 60%,#8a4fd8);border:0;color:#fff">
+      <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.18);font-weight:800;font-size:13px">GST</div>
+      <div style="flex:1"><h3 style="margin:0;color:#fff">Return Filings</h3><p style="margin:2px 0 0;color:rgba(255,255,255,.85);font-size:13px">GSTR-1 & GSTR-3B JSON, Meesho GST, GSTR-9/9C and filing guide. Try any tool with Load sample.</p></div><b style="font-size:20px">›</b></a>
+    <a class="card" href="#/company" style="display:flex;gap:12px;align-items:center;text-decoration:none;margin-bottom:14px;background:linear-gradient(120deg,#0e2c52,#1b5fa6);border:0;color:#fff">
+      <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.16);color:#f3d36b">${icon("book")}</div>
+      <div style="flex:1"><h3 style="margin:0;color:#fff">Company Law & ROC toolkit</h3><p style="margin:2px 0 0;color:rgba(255,255,255,.85);font-size:13px">${CO_TOOLS.length} tools: ROC fees & penalties, RPT, board resolutions, minutes, directors' report, MOA/AOA, share certificates, legal notices.</p></div><b style="font-size:20px">›</b></a>
+    <a class="card" href="#/reckoners" style="display:flex;gap:12px;align-items:center;text-decoration:none;margin-bottom:14px;background:linear-gradient(120deg,#5a3a06,#a8770f 60%,#c9971c);border:0;color:#fff">
+      <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.18);color:#fff">${icon("tax")}</div>
+      <div style="flex:1"><h3 style="margin:0;color:#fff">Tax & GST Reckoners</h3><p style="margin:2px 0 0;color:rgba(255,255,255,.88);font-size:13px">${RK_ALL.length} reckoners: GST forms, e-way bill, house property, other sources, senior citizens, NPOs, The Thin Line.</p></div><b style="font-size:20px">›</b></a>
+    <div class="eyebrow">Animated concepts</div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+      <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:var(--accent);background:var(--accent-wash)">${icon("play")}</div>
+      <div><h3 style="margin:0">Learn with animations</h3><p class="note" style="margin:2px 0 0">Step-by-step animated explainers of tricky topics.</p></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${(window.CONCEPTS || []).map(c => `<a class="btn ghost" style="text-decoration:none;font-size:13px;padding:8px 12px" href="#/concepts/${c.id}">▶ ${c.title.replace(/ \(.*\)$/, "")}</a>`).join("")}</div></div>
+    <div class="grid g2"><div><div class="eyebrow">My syllabus</div>${sylHomeCard()}</div><div><div class="eyebrow">Study plan</div>${planHomeCard()}</div></div>
+    <div class="eyebrow" style="display:flex;justify-content:space-between;align-items:baseline">Popular calculators <a href="#/calc" style="text-transform:none;letter-spacing:0;font-size:13px">All ${CALC_TOOLS.length} →</a></div>
+    <div class="grid g3">${pop.map(t => `<a class="card tile" href="#/calc/${t.id}"><div class="ic">${icon("calc")}</div><h3>${t.name}</h3><p>${t.sub}</p></a>`).join("")}</div>
+    <div class="grid g2" style="margin-top:14px">
+      <div><div class="eyebrow">Coming up</div><div class="card">${upcoming(30).slice(0, 4).map(dueRow).join("") || "<p>Nothing due in the next 30 days.</p>"}
+        <a href="#/dates" style="font-weight:600;font-size:13px">All due dates →</a></div></div>
+      <div><div class="eyebrow">Practice</div><div class="card"><h3>Quick quiz</h3><p class="note">10 random MCQs on tax, accounts and costing.</p>
+        <div class="kpis">${["tax", "acc", "cost"].map(k => kpi({tax: "Tax best", acc: "Accounts best", cost: "Costing best"}[k], best[k] != null ? best[k] + "/10" : "—")).join("")}</div>
+        <a class="btn" href="#/quiz" style="text-decoration:none;display:inline-block">Start a quiz</a>
+        <a class="btn ghost" href="#/learn" style="text-decoration:none;display:inline-block;margin-left:6px">Revise concepts</a>
+        <a class="btn ghost" href="#/practice" style="text-decoration:none;display:inline-block;margin-top:8px">CMA Inter practicals (June 2027)</a></div></div></div>
+    <p class="credit" style="text-align:center;margin:22px 0 4px;font-size:13px;color:var(--soft)">Developed &amp; Managed By <b class="gold">Sachin Sanwal</b><br><a href="#/feedback" style="font-size:12.5px;font-weight:600;text-decoration:none">✉ Feedback & suggestions</a></p>
+    <p class="foot">For study and practice. Rates and limits follow the Finance Act 2025 and GST 2.0, so check later amendments and your exam's applicable syllabus before relying on them.</p>`;
+}
+
+// ================================================================ learn
+const NOTES = [
+  {sub: "Income Tax", items: [
+    ["Five heads of income (Sec. 14)", `<ul><li><b>Salaries</b> (Sec. 15–17)</li><li><b>Income from house property</b> (Sec. 22–27)</li><li><b>Profits and gains of business or profession</b> (Sec. 28–44)</li><li><b>Capital gains</b> (Sec. 45–55A)</li><li><b>Income from other sources</b> (Sec. 56–59)</li></ul><p>Agricultural income is exempt under Sec. 10(1); it is not a head of income.</p>`],
+    ["Residential status (Sec. 6)", `<p>An individual is <b>resident</b> if they are in India for:</p><ul><li>182 days or more in the previous year, <b>or</b></li><li>60 days or more in the previous year <b>and</b> 365 days or more in the 4 preceding years.</li></ul><p>The 60-day rule becomes 182 days for Indian citizens leaving for employment and for Indian citizens/PIOs visiting India (120 days if Indian income exceeds ₹15 lakh). A resident is <b>not ordinarily resident</b> if non-resident in 9 of 10 preceding years, or in India 729 days or less in the 7 preceding years.</p>`],
+    ["New regime slabs, Sec. 115BAC (FY 2025-26)", `<table><tr><th>Total income</th><th class="n">Rate</th></tr><tr><td>Up to ₹4,00,000</td><td class="n">Nil</td></tr><tr><td>₹4–8 lakh</td><td class="n">5%</td></tr><tr><td>₹8–12 lakh</td><td class="n">10%</td></tr><tr><td>₹12–16 lakh</td><td class="n">15%</td></tr><tr><td>₹16–20 lakh</td><td class="n">20%</td></tr><tr><td>₹20–24 lakh</td><td class="n">25%</td></tr><tr><td>Above ₹24 lakh</td><td class="n">30%</td></tr></table><p>Rebate u/s 87A up to ₹60,000 for total income up to ₹12 lakh. Standard deduction ₹75,000. Surcharge capped at 25%. Cess 4%.</p>`],
+    ["Old regime slabs", `<table><tr><th>Total income</th><th class="n">Below 60</th><th class="n">60–79</th><th class="n">80+</th></tr><tr><td>Up to ₹2.5 lakh</td><td class="n">Nil</td><td class="n">Nil</td><td class="n">Nil</td></tr><tr><td>₹2.5–3 lakh</td><td class="n">5%</td><td class="n">Nil</td><td class="n">Nil</td></tr><tr><td>₹3–5 lakh</td><td class="n">5%</td><td class="n">5%</td><td class="n">Nil</td></tr><tr><td>₹5–10 lakh</td><td class="n">20%</td><td class="n">20%</td><td class="n">20%</td></tr><tr><td>Above ₹10 lakh</td><td class="n">30%</td><td class="n">30%</td><td class="n">30%</td></tr></table><p>Rebate u/s 87A up to ₹12,500 for income up to ₹5 lakh. Standard deduction ₹50,000.</p>`],
+    ["Key deductions (old regime)", `<ul><li><b>80C</b>: PPF, ELSS, LIC, EPF, principal on home loan, tuition fees. Combined cap with 80CCC/80CCD(1) ₹1.5 lakh.</li><li><b>80CCD(1B)</b>: extra NPS up to ₹50,000.</li><li><b>80CCD(2)</b>: employer NPS contribution, allowed in <b>both</b> regimes (14% of salary in new, 10% in old).</li><li><b>80D</b>: health insurance, ₹25,000 (₹50,000 for senior citizens), plus parents.</li><li><b>80E</b>: interest on education loan, no cap, 8 years.</li><li><b>80G</b>: donations. <b>80TTA</b>: savings interest up to ₹10,000.</li><li><b>24(b)</b>: home loan interest, self-occupied up to ₹2 lakh.</li></ul>`],
+    ["Capital gains rates (transfers on or after 23 July 2024)", `<table><tr><th>Asset</th><th>Short term</th><th>Long term</th></tr><tr><td>Listed equity / equity MF (STT paid)</td><td>20% (111A), held ≤ 12 months</td><td>12.5% above ₹1.25 lakh (112A)</td></tr><tr><td>Other assets (land, building, unlisted shares)</td><td>Slab rates, held ≤ 24 months</td><td>12.5% without indexation (112)</td></tr></table><p>Resident individuals and HUFs can choose 20% with indexation for land or buildings bought before 23 July 2024.</p>`],
+    ["Common TDS sections", `<table><tr><th>Section</th><th>Payment</th><th>Rate</th></tr><tr><td>192</td><td>Salary</td><td>Slab rates</td></tr><tr><td>194A</td><td>Interest (other than securities)</td><td>10%</td></tr><tr><td>194C</td><td>Contractors</td><td>1% individual/HUF, 2% others</td></tr><tr><td>194H</td><td>Commission / brokerage</td><td>2%</td></tr><tr><td>194I</td><td>Rent</td><td>2% plant & machinery, 10% land/building</td></tr><tr><td>194J</td><td>Professional / technical fees</td><td>10% / 2%</td></tr><tr><td>194Q</td><td>Purchase of goods</td><td>0.1%</td></tr></table><p>Thresholds were revised in the Finance Act 2025. Check the current limits.</p>`],
+    ["Income-tax Act, 2025", `<p>The Income-tax Act, 2025 replaces the Income-tax Act, 1961 from 1 April 2026 and uses the term <b>tax year</b> in place of previous year and assessment year. Section numbers have changed. The section references in this app follow the 1961 Act; check which law your exam attempt covers in your institute's applicability notification.</p>`]
+  ]},
+  {sub: "Accounting", items: [
+    ["Golden rules of accounting", GOLDEN],
+    ["Accounting equation", `<p><span class="formula">Assets = Liabilities + Capital</span></p><p>Every transaction affects at least two accounts, so the equation always balances (dual aspect concept).</p>`],
+    ["Accounting concepts & conventions", `<ul><li><b>Business entity</b>: business is separate from its owner.</li><li><b>Going concern</b>: the business will continue for the foreseeable future.</li><li><b>Money measurement</b>: only transactions measurable in money are recorded.</li><li><b>Accrual</b>: record income and expenses when earned or incurred, not when cash moves.</li><li><b>Matching</b>: match expenses with the revenue of the same period.</li><li><b>Consistency</b>: use the same methods from year to year.</li><li><b>Prudence (conservatism)</b>: provide for all known losses, don't anticipate profits.</li><li><b>Materiality</b> and <b>full disclosure</b>.</li></ul>`],
+    ["Depreciation methods", `<ul><li><b>SLM</b>: same amount every year. <span class="formula">(Cost − Residual) ÷ Life</span></li><li><b>WDV</b>: fixed rate on the reducing balance, so the charge falls every year. <span class="formula">Rate = 1 − (R ÷ C)^(1/n)</span></li><li>Companies Act, Schedule II uses useful lives; the Income Tax Act uses block-of-assets WDV rates, with half rate if the asset is used under 180 days in the year of purchase.</li></ul>`],
+    ["Bank reconciliation statement", `<p>Starting from the <b>debit balance as per cash book</b>:</p><ul><li><b>Add</b>: cheques issued but not presented; direct credits by bank (interest, collections) not yet in the cash book.</li><li><b>Less</b>: cheques deposited but not cleared; bank charges and direct debits not yet in the cash book.</li></ul><p>The result is the balance as per pass book.</p>`],
+    ["Capital vs revenue", `<ul><li><b>Capital expenditure</b>: gives a benefit over several years (buying machinery, building). Shown in the balance sheet.</li><li><b>Revenue expenditure</b>: benefit used up within the year (wages, rent, repairs). Charged to profit and loss.</li><li><b>Deferred revenue expenditure</b>: revenue in nature but benefit spread over years (heavy advertising).</li></ul>`]
+  ]},
+  {sub: "Cost Accounting", items: [
+    ["Cost sheet format", `<table><tr><td>Direct material + direct labour + direct expenses</td><td class="n"><b>Prime cost</b></td></tr><tr><td>+ Factory overheads (± WIP adjustment)</td><td class="n"><b>Works / factory cost</b></td></tr><tr><td>+ Administration overheads</td><td class="n"><b>Cost of production</b></td></tr><tr><td>± Finished goods stock adjustment</td><td class="n"><b>Cost of goods sold</b></td></tr><tr><td>+ Selling & distribution overheads</td><td class="n"><b>Cost of sales</b></td></tr><tr><td>+ Profit</td><td class="n"><b>Sales</b></td></tr></table>`],
+    ["Marginal costing formulas", `<ul><li><span class="formula">Contribution = Sales − Variable cost = Fixed cost + Profit</span></li><li><span class="formula">P/V ratio = Contribution ÷ Sales × 100</span></li><li><span class="formula">BEP (units) = Fixed cost ÷ Contribution per unit</span></li><li><span class="formula">BEP (₹) = Fixed cost ÷ P/V ratio</span></li><li><span class="formula">Margin of safety = Actual sales − BEP sales = Profit ÷ P/V</span></li></ul><p>Under marginal costing, stock is valued at variable cost and fixed costs are charged as period costs.</p>`],
+    ["Material variances", `<ul><li><span class="formula">MCV = SQ × SP − AQ × AP</span></li><li><span class="formula">MPV = AQ × (SP − AP)</span></li><li><span class="formula">MUV = SP × (SQ − AQ)</span></li><li>MCV = MPV + MUV. MUV splits into mix and yield variances.</li></ul><p>SQ = standard quantity for actual output. A positive result is favourable.</p>`],
+    ["Labour variances", `<ul><li><span class="formula">LCV = SH × SR − AH × AR</span></li><li><span class="formula">LRV = AH paid × (SR − AR)</span></li><li><span class="formula">LEV = SR × (SH − AH worked)</span></li><li><span class="formula">Idle time variance = Idle hours × SR</span></li></ul>`],
+    ["Inventory control levels", `<ul><li><span class="formula">EOQ = √(2AO ÷ C)</span></li><li><span class="formula">Re-order level = Max usage × Max lead time</span></li><li><span class="formula">Minimum level = ROL − (Normal usage × Normal lead time)</span></li><li><span class="formula">Maximum level = ROL + ROQ − (Min usage × Min lead time)</span></li><li><span class="formula">Average level = Min level + ½ ROQ</span></li></ul>`]
+  ]},
+  {sub: "GST", items: [
+    ["Structure of GST", `<ul><li><b>Intra-state</b> supply: CGST + SGST/UTGST.</li><li><b>Inter-state</b> supply, imports and exports: IGST.</li><li>Place of supply decides which applies (IGST Act, Sec. 10–13).</li><li>From 22 Sep 2025 (GST 2.0) the main slabs are 5% and 18%, with 40% for demerit/luxury goods; 0.25% and 3% still apply to specific goods.</li></ul>`],
+    ["Input tax credit (Sec. 16 & 17)", `<p>Conditions under Sec. 16(2): tax invoice held, goods/services received, credit shown in GSTR-2B, tax actually paid by the supplier, and return filed. Pay the supplier within 180 days or the credit reverses.</p><p>Sec. 17(5) blocks credit on items such as motor vehicles for passenger transport (with exceptions), food and beverages, club memberships, and works contracts for immovable property.</p>`],
+    ["Returns at a glance", `<table><tr><th>Return</th><th>What</th><th>Due</th></tr><tr><td>GSTR-1</td><td>Outward supplies</td><td>11th (monthly)</td></tr><tr><td>GSTR-3B</td><td>Summary + payment</td><td>20th (monthly)</td></tr><tr><td>GSTR-4</td><td>Composition dealers</td><td>Annual</td></tr><tr><td>GSTR-9</td><td>Annual return</td><td>31 December</td></tr></table>`]
+  ]}
+];
+function renderLearn() {
+  const q = store.get("learnq", "");
+  $("#app").innerHTML = `<div class="head"><h1>Concept notes</h1><p>Quick revision of the most-asked concepts. Tap a topic to open it.</p></div>
+    <label class="fld" style="max-width:420px;margin-bottom:8px"><span>Search notes</span><input id="lq" placeholder="e.g. 80C, BRS, EOQ" value="${q}" inputmode="search"></label>
+    <div id="notes"></div>`;
+  const draw = () => {
+    const s = val("lq").trim().toLowerCase(); store.set("learnq", s);
+    $("#notes").innerHTML = NOTES.map(g => {
+      const items = g.items.filter(([t, b]) => !s || (t + b).toLowerCase().includes(s));
+      return items.length ? `<div class="eyebrow">${g.sub}</div>` + items.map(([t, b]) => `<details ${s ? "open" : ""}><summary>${t}</summary><div class="body">${b}</div></details>`).join("") : "";
+    }).join("") || `<p class="note">No notes match "${s.replace(/</g, "&lt;")}".</p>`;
+  };
+  $("#lq").addEventListener("input", draw);
+  draw();
+}
+
+// ================================================================ quiz
+const QUIZ = [
+  ["tax", "Under the new regime (FY 2025-26), rebate u/s 87A makes tax nil for a resident with total income up to:", ["₹12,00,000", "₹7,00,000", "₹10,00,000", "₹5,00,000"], "The rebate is up to ₹60,000 for total income up to ₹12 lakh."],
+  ["tax", "Standard deduction for salaried employees under the new regime (FY 2025-26) is:", ["₹75,000", "₹50,000", "₹40,000", "₹1,00,000"], "Raised from ₹50,000 to ₹75,000 by the Finance (No. 2) Act 2024."],
+  ["tax", "Maximum deduction under Section 80C is:", ["₹1,50,000", "₹1,00,000", "₹2,00,000", "₹2,50,000"], "₹1.5 lakh, combined with 80CCC and 80CCD(1)."],
+  ["tax", "Which of these is NOT a head of income?", ["Agricultural income", "Salaries", "Capital gains", "Income from other sources"], "Agricultural income is exempt under Sec. 10(1); the five heads are in Sec. 14."],
+  ["tax", "LTCG on listed equity shares u/s 112A is exempt each year up to:", ["₹1,25,000", "₹1,00,000", "₹2,50,000", "₹50,000"], "Raised to ₹1.25 lakh for transfers on or after 23 July 2024; the excess is taxed at 12.5%."],
+  ["tax", "STCG on listed equity shares u/s 111A (transfers on or after 23 July 2024) is taxed at:", ["20%", "15%", "10%", "Slab rates"], "Increased from 15% to 20%."],
+  ["tax", "Health and education cess is levied at:", ["4% of tax plus surcharge", "3% of tax", "2% of income", "1% of tax"], "Cess is 4% on income tax plus surcharge."],
+  ["tax", "Basic exemption limit for a super senior citizen (80+) under the old regime is:", ["₹5,00,000", "₹3,00,000", "₹2,50,000", "₹4,00,000"], "₹2.5 lakh below 60, ₹3 lakh for 60–79, ₹5 lakh for 80+."],
+  ["tax", "Under Sec. 6(1), the basic condition for being resident is a stay in India of at least:", ["182 days in the previous year", "120 days in the previous year", "365 days in 4 years only", "90 days"], "182 days, or 60 days plus 365 days in the 4 preceding years."],
+  ["tax", "Standard deduction from net annual value of house property u/s 24(a) is:", ["30% of NAV", "50% of NAV", "₹50,000", "25% of NAV"], "A flat 30% of NAV, whatever the actual expenses."],
+  ["tax", "The last advance tax instalment (100%) is due by:", ["15 March", "31 March", "15 December", "31 July"], "15 June 15%, 15 Sep 45%, 15 Dec 75%, 15 March 100%."],
+  ["tax", "Which GST applies to an inter-state supply?", ["IGST", "CGST + SGST", "UTGST only", "SGST only"], "Inter-state supplies attract IGST under the IGST Act."],
+  ["tax", "GSTR-3B for monthly filers is due by the:", ["20th of the next month", "11th of the next month", "25th of the next month", "Last day of the quarter"], "GSTR-3B: 20th. GSTR-1: 11th."],
+  ["tax", "Section 80D allows a deduction for:", ["Medical insurance premium", "Education loan interest", "Donations", "Rent paid"], "80E is education loan interest, 80G donations, 80GG rent."],
+  ["tax", "TDS on salary is deducted under Section:", ["192", "194J", "194C", "194A"], "Sec. 192, at the employee's average rate."],
+  ["acc", "Golden rule for a real account:", ["Debit what comes in, credit what goes out", "Debit the receiver, credit the giver", "Debit expenses, credit incomes", "Debit the giver, credit the receiver"], "Real accounts are assets, so debit what comes in."],
+  ["acc", "The accounting equation is:", ["Assets = Liabilities + Capital", "Assets = Capital − Liabilities", "Capital = Assets + Liabilities", "Liabilities = Assets + Capital"], "It reflects the dual aspect concept."],
+  ["acc", "Goods withdrawn by the proprietor for personal use are debited to:", ["Drawings A/c", "Purchases A/c", "Capital A/c", "Sales A/c"], "Drawings A/c Dr, To Purchases A/c."],
+  ["acc", "The concept that assumes the business will continue indefinitely is:", ["Going concern", "Business entity", "Money measurement", "Accrual"], "Going concern is why assets are shown at cost less depreciation, not break-up value."],
+  ["acc", "Prepaid expenses are shown in the balance sheet as a:", ["Current asset", "Current liability", "Fixed asset", "Revenue item"], "The benefit is still to be received, so it is an asset."],
+  ["acc", "Under the WDV method, the depreciation charge each year:", ["Decreases", "Stays the same", "Increases", "Is zero after year 1"], "A fixed rate applies to a falling book value."],
+  ["acc", "Starting from the cash book's debit balance, cheques issued but not yet presented are:", ["Added", "Deducted", "Ignored", "Shown separately"], "The bank hasn't paid them yet, so the pass book balance is higher."],
+  ["acc", "The conventional ideal current ratio is:", ["2 : 1", "1 : 1", "1 : 2", "3 : 1"], "Quick ratio ideal is 1 : 1."],
+  ["acc", "Quick (liquid) ratio excludes from current assets:", ["Inventory and prepaid expenses", "Cash", "Debtors", "Bank balance"], "Inventory and prepaids cannot be turned into cash quickly."],
+  ["acc", "Interest on capital allowed to the proprietor is credited to:", ["Capital A/c", "Interest A/c", "Cash A/c", "Drawings A/c"], "Interest on Capital A/c Dr, To Capital A/c."],
+  ["cost", "Prime cost is:", ["Direct material + direct labour + direct expenses", "Prime cost + factory overheads", "Total cost − profit", "Direct material + overheads"], "Adding factory overheads gives works cost."],
+  ["cost", "P/V ratio is:", ["Contribution ÷ Sales × 100", "Profit ÷ Sales × 100", "Fixed cost ÷ Sales", "Variable cost ÷ Sales"], "Also = change in profit ÷ change in sales."],
+  ["cost", "Break-even point in units is:", ["Fixed cost ÷ Contribution per unit", "Fixed cost ÷ Selling price", "Variable cost ÷ Contribution", "Sales ÷ P/V ratio"], "At BEP, total contribution equals fixed cost."],
+  ["cost", "The EOQ formula is:", ["√(2AO ÷ C)", "2AO ÷ C", "√(AO ÷ 2C)", "A × O ÷ C"], "A = annual demand, O = ordering cost, C = carrying cost per unit."],
+  ["cost", "Margin of safety equals:", ["Actual sales − BEP sales", "BEP sales − Actual sales", "Fixed cost ÷ P/V ratio", "Contribution − Fixed cost"], "It also equals Profit ÷ P/V ratio."],
+  ["cost", "Re-order level is:", ["Maximum usage × maximum lead time", "Minimum usage × minimum lead time", "Normal usage × normal lead time", "EOQ ÷ 2"], "It avoids stock-outs even in the worst case."],
+  ["cost", "Material cost variance is:", ["SQ × SP − AQ × AP", "AQ × (SP − AP)", "SP × (SQ − AQ)", "AQ × AP − SQ × SP"], "MCV = MPV + MUV."],
+  ["cost", "Which is usually a fixed cost?", ["Factory rent", "Direct material", "Direct wages (piece rate)", "Sales commission"], "Rent does not change with output within the relevant range."],
+  ["cost", "Under marginal costing, closing stock is valued at:", ["Variable (marginal) cost", "Total cost", "Selling price", "Prime cost plus fixed overheads"], "Fixed costs are treated as period costs."]
+];
+let qz = null;
+function renderQuiz() {
+  if (!qz) {
+    const best = store.get("best", {});
+    const card = (k, n, d) => `<button class="card tile" style="text-align:left;cursor:pointer;width:100%" onclick="startQuiz('${k}')"><div class="ic">${icon("quiz")}</div><h3>${n}</h3><p>${d} · best ${best[k] != null ? best[k] + "/10" : "—"}</p></button>`;
+    $("#app").innerHTML = `<div class="head"><h1>Quiz</h1><p>10 random MCQs per round, with an explanation after each answer.</p></div>
+      <div class="grid g3">${card("tax", "Income Tax & GST", QUIZ.filter(q => q[0] === "tax").length + " questions")}${card("acc", "Accounting", QUIZ.filter(q => q[0] === "acc").length + " questions")}${card("cost", "Cost Accounting", QUIZ.filter(q => q[0] === "cost").length + " questions")}${card("mix", "Mixed bag", "All subjects")}</div>`;
+    return;
+  }
+  if (qz.i >= qz.qs.length) {
+    const best = store.get("best", {}), k = qz.k;
+    if (k !== "mix" && (best[k] == null || qz.score > best[k])) { best[k] = qz.score; store.set("best", best); }
+    $("#app").innerHTML = `<div class="card" style="max-width:640px;text-align:center;padding:32px"><div class="big">${qz.score} / ${qz.qs.length}</div>
+      <p>${qz.score >= 8 ? "Excellent, you're exam-ready on this." : qz.score >= 5 ? "Good going. Revise the ones you missed." : "Keep practising. Open the notes and try again."}</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap"><button class="btn" onclick="startQuiz('${k}')">Play again</button><button class="btn ghost" onclick="qz=null;renderQuiz()">Choose subject</button></div></div>`;
+    return;
+  }
+  const [, q, opts, why] = qz.qs[qz.i];
+  $("#app").innerHTML = `<div class="card" style="max-width:680px"><div style="display:flex;justify-content:space-between" class="note"><span>Question ${qz.i + 1} of ${qz.qs.length}</span><span>Score ${qz.score}</span></div>
+    <div class="bar"><i style="width:${qz.i / qz.qs.length * 100}%"></i></div><h2 style="font-size:18px;line-height:1.35">${q}</h2>
+    <div id="opts">${qz.order.map(o => `<button class="opt" data-o="${o}">${opts[o]}</button>`).join("")}</div><div id="qx"></div></div>`;
+  $$("#opts .opt").forEach(b => b.onclick = () => {
+    const pick = +b.dataset.o;
+    $$("#opts .opt").forEach(x => { x.disabled = true; if (+x.dataset.o === 0) x.classList.add("ok"); });
+    if (pick === 0) qz.score++; else b.classList.add("no");
+    $("#qx").innerHTML = `<div class="explain">${why}</div><button class="btn" style="margin-top:12px" onclick="qz.i++;qz.order=shuffle([0,1,2,3]);renderQuiz()">${qz.i + 1 < qz.qs.length ? "Next question" : "See result"}</button>`;
+  });
+}
+function startQuiz(k) { qz = {k, i: 0, score: 0, qs: shuffle(QUIZ.filter(q => k === "mix" || q[0] === k)).slice(0, 10), order: shuffle([0, 1, 2, 3])}; renderQuiz(); }
+
+// ---------------------------------------------------------------- boot
+applyTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+addEventListener("hashchange", () => { if (route.sec !== "quiz") qz = null; go(); });
+// App editions can ship a preset: the Android CMA Intermediate edition reports "cma-inter" through its bridge.
+(function applyPreset() {
+  let p = null;
+  try { p = new URLSearchParams(location.search).get("preset") || (window.AndroidBridge && AndroidBridge.preset && AndroidBridge.preset()); } catch (e) {}
+  if (p !== "cma-inter" || store.get("plan.cfg", null)) return;           // only on a fresh install
+  store.set("syl.course", "cma");
+  const st = store.get("syl.stage", {}); st.cma = st.cma || "int1"; store.set("syl.stage", st);
+  presetCmaInterPlan();
+})();
+// First launch: start on the course picker (CA / CMA / CS).
+if (!location.hash && !store.get("syl.course", null)) location.replace("#/syllabus");
+go();
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
+try { localStorage.removeItem("semi.upd.trial"); } catch (e) {}     // this start worked
+</script>
+<script src="update.js"></script>
+</body>
+</html>

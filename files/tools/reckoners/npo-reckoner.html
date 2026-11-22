@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPO Reckoner — RNPO Applicability, Structures &amp; Calculators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#F1F3F7;
+    --ink:#000000;
+    --ink-2:#000000;
+    --ink-3:#4A4A4A;
+    --navy:#132449;
+    --navy-2:#1C3566;
+    --gold:#C0952F;
+    --gold-light:#DCAF4C;
+    --gold-soft:#FBF2DC;
+    --border:#E6E8EF;
+    --border-strong:#D6DAE4;
+    --add:#2E9C57;
+    --add-soft:#E7F6EC;
+    --less:#D14B4B;
+    --less-soft:#FBEAEA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:'Public Sans', sans-serif;
+    -webkit-font-smoothing:antialiased; padding:0 0 80px 0;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 0;}
+
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding-bottom:22px; margin-bottom:22px;}
+  .header-main{display:flex; align-items:flex-start; gap:14px;}
+  .app-mark{
+    flex:none; width:44px;height:44px; border-radius:12px;
+    background:linear-gradient(155deg, var(--navy-2), var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px -4px rgba(19,36,73,0.45);
+  }
+  .app-mark span{font-family:'Fraunces',serif; font-weight:700; font-size:12px; color:var(--gold-light);}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); display:flex; align-items:center; gap:6px;
+    margin-bottom:6px; font-weight:600;
+  }
+  h1{font-family:'Fraunces', serif; font-weight:600; font-size:clamp(24px,5vw,31px); line-height:1.12; margin:0 0 6px 0; letter-spacing:-.01em; color:var(--ink);}
+  header p{font-size:13.5px; color:var(--ink-2); max-width:560px; margin:0; line-height:1.55;}
+  .reg-no{
+    flex:none; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-3);
+    background:var(--surface-2); border:1px solid var(--border); padding:6px 10px;
+    border-radius:8px; text-align:right; line-height:1.6; white-space:nowrap;
+  }
+
+  .tabs{display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; background:var(--surface-2); padding:5px; border-radius:12px; border:1px solid var(--border);}
+  .tab{
+    font-family:'Public Sans', sans-serif; font-size:12.5px; font-weight:600; padding:9px 13px;
+    background:transparent; color:var(--ink-2); border:none; cursor:pointer; border-radius:8px;
+    display:flex; align-items:baseline; gap:6px; transition:background .15s, color .15s;
+  }
+  .tab .num{color:var(--ink-3); font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:10px;}
+  .tab.active{background:var(--navy); color:#fff; box-shadow:0 2px 8px -2px rgba(19,36,73,0.35);}
+  .tab.active .num{color:var(--gold-light);}
+  .tab:not(.active):hover{background:#EBEDF3; color:var(--ink);}
+
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:26px 24px 28px; box-shadow:0 1px 2px rgba(16,24,40,0.03), 0 12px 32px -16px rgba(16,24,40,0.10);
+  }
+  .view{display:none;} .view.active{display:block;}
+
+  h2{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 4px; color:var(--ink);}
+  .sub{font-size:12px; color:var(--ink-3); margin:0 0 20px; font-family:'IBM Plex Mono', monospace;}
+  h3{font-family:'Fraunces', serif; font-size:15px; font-weight:600; margin:24px 0 10px; color:var(--ink);}
+  p, li{font-size:13.5px; line-height:1.65; color:var(--ink-2);}
+  .note{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--gold-light); padding:10px 13px; background:var(--gold-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+  .warn{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--less); padding:10px 13px; background:var(--less-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+
+  .section-head-row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .sample-btn{
+    font-family:'Public Sans',sans-serif; font-size:11.5px; font-weight:600;
+    background:var(--surface); color:var(--gold); border:1px solid var(--gold-light);
+    border-radius:20px; padding:6px 13px; cursor:pointer; white-space:nowrap; flex:none;
+    transition:background .15s;
+  }
+  .sample-btn:hover{background:var(--gold-soft);}
+  .sample-btn.applied{background:var(--add-soft); color:var(--add); border-color:#C9EAD2;}
+  .calc-actions{display:flex; gap:8px; margin:14px 0 4px;}
+  .btn-compute{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600;
+    background:var(--navy); color:#fff; border:1px solid var(--navy);
+    border-radius:8px; padding:9px 18px; cursor:pointer; transition:background .15s;
+  }
+  .btn-compute:hover{background:var(--navy-2);}
+  .btn-clear{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600;
+    background:var(--surface); color:var(--ink-3); border:1px solid var(--border-strong);
+    border-radius:8px; padding:9px 18px; cursor:pointer; transition:background .15s, color .15s;
+  }
+  .btn-clear:hover{background:var(--surface-2); color:var(--ink);}
+
+  .profile-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;}
+  .profile-field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:150px;}
+  .profile-field label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3);}
+  .profile-field input, .profile-field select{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--ink);
+  }
+  .profile-field input:focus, .profile-field select:focus{outline:2px solid var(--gold-light); border-color:var(--gold);}
+  .toggle-group{display:flex; gap:6px; flex-wrap:wrap;}
+  .toggle-btn{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600; padding:8px 16px;
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-2);
+    cursor:pointer; border-radius:8px;
+  }
+  .toggle-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  table.thresh{width:100%; border-collapse:collapse; margin-top:8px; font-size:12.5px;}
+  table.thresh th, table.thresh td{border:1px solid var(--border); padding:9px 10px; vertical-align:middle;}
+  table.thresh th{background:var(--navy); color:#fff; font-family:'Public Sans',sans-serif; font-size:10.5px; font-weight:600; text-align:center;}
+  table.thresh td{background:var(--surface);}
+  table.thresh td.tname{font-weight:600; color:var(--ink); font-size:12.5px;}
+  table.thresh td.tformula{font-size:11px; color:var(--ink-3); font-family:'IBM Plex Mono',monospace;}
+  table.thresh td.tval{text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--navy); background:var(--surface-2);}
+  .pill{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.02em;}
+  .pill.ok{background:var(--add-soft); color:var(--add);}
+  .pill.req{background:var(--less-soft); color:var(--less);}
+  .pill.warn2{background:var(--gold-soft); color:var(--gold);}
+  .pill.na{background:var(--surface-2); color:var(--ink-3);}
+
+  .verdict-card{margin-top:16px; border-radius:12px; padding:16px 18px; background:linear-gradient(135deg, var(--navy), var(--navy-2));}
+  .verdict-card .vk{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.05em;}
+  .verdict-card .vv{font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:#fff; margin-top:4px;}
+  .verdict-card .vv small{font-size:12px; font-weight:500; color:#9FACC9;}
+  .verdict-card .status-line{margin-top:10px; font-size:13px; font-weight:600;}
+  .verdict-card .status-line.ok{color:#8BE0A8;}
+  .verdict-card .status-line.req{color:#F0A6A6;}
+  .verdict-card .status-line.warn2{color:#F3D28A;}
+  .verdict-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+  .verdict-chip{
+    flex:1; min-width:150px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+    border-radius:8px; padding:9px 11px;
+  }
+  .verdict-chip .vck{font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.04em;}
+  .verdict-chip .vcv{font-size:13px; font-weight:700; margin-top:3px;}
+  .verdict-chip .vcv.ok{color:#8BE0A8;} .verdict-chip .vcv.req{color:#F0A6A6;} .verdict-chip .vcv.na{color:#B9C4DE;}
+
+  .mat-slabs{display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px;}
+  .mat-slab{display:flex; justify-content:space-between; gap:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 13px; font-size:12px;}
+  .mat-slab b{color:var(--ink); font-weight:600;}
+  .mat-slab .formula{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:700;}
+
+  .def-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.def-grid{grid-template-columns:1fr;}}
+  .def-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .def-card .clno{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700;}
+  .def-card b{font-size:13px; color:var(--ink); display:block; margin:2px 0 3px;}
+  .def-card p{margin:0; font-size:12px; line-height:1.5;}
+
+  .rate-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.rate-grid{grid-template-columns:1fr;}}
+  .rate-card{border-radius:10px; padding:13px 15px; border:1px solid var(--border);}
+  .rate-card .rate-pct{font-family:'Fraunces',serif; font-size:22px; font-weight:700; color:var(--navy);}
+  .rate-card .rate-label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); margin-bottom:4px;}
+  .rate-card p{margin:6px 0 0; font-size:12px;}
+  .rate-card.nil{background:var(--surface-2);}
+  .rate-card.merit{background:var(--add-soft);}
+  .rate-card.std{background:var(--gold-soft);}
+  .rate-card.demerit{background:var(--less-soft);}
+
+  .guide-list{counter-reset:guide; margin-top:14px;}
+  .guide-item{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);}
+  .guide-item:last-child{border-bottom:none;}
+  .guide-num{
+    counter-increment:guide; flex:none; width:28px; height:28px; border-radius:50%;
+    background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700;
+  }
+  .guide-num::before{content:counter(guide);}
+  .guide-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:3px;}
+  .guide-body p{margin:0; font-size:12px;}
+  .guide-body .when{font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--gold); text-transform:uppercase; letter-spacing:.04em; margin-left:8px;}
+
+  .role-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.role-grid{grid-template-columns:1fr;}}
+  .role-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 15px;}
+  .role-card .rc-head{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--gold); font-weight:700; margin-bottom:8px;}
+  .role-card ul{margin:0; padding-left:18px;}
+  .role-card li{font-size:12px; margin-bottom:6px;}
+
+  table.simple{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+  table.simple th, table.simple td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); color:var(--ink-2);}
+  table.simple th{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); font-weight:600;}
+  table.simple td b{color:var(--ink);}
+
+  .exclude-list{margin-top:10px; padding-left:0; list-style:none;}
+  .exclude-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .exclude-list li::before{content:"✕"; position:absolute; left:0; top:1px; color:var(--less); font-size:11px; font-weight:700;}
+  .check-list{margin-top:10px; padding-left:0; list-style:none;}
+  .check-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .check-list li::before{content:"✓"; position:absolute; left:0; top:1px; color:var(--add); font-size:11px; font-weight:700;}
+
+  .exempt-box{margin-top:16px; background:var(--gold-soft); border:1px solid #EEDCA6; border-radius:10px; padding:14px 16px;}
+  .exempt-box b{color:var(--gold); font-size:12.5px; display:block; margin-bottom:6px;}
+
+  .doc-list{margin-top:14px; border-top:1px solid var(--border);}
+  .doc-row{display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border);}
+  .doc-row .doc-no{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--gold); font-weight:700; flex:none; width:34px; padding-top:1px;}
+  .doc-row .doc-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:2px;}
+  .doc-row .doc-body p{margin:0; font-size:12px;}
+  .doc-tag{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase;
+    padding:2px 8px; border-radius:20px; margin-left:8px; background:var(--gold-soft); color:var(--gold);
+    font-weight:700; vertical-align:1px;
+  }
+
+  .state-cols{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+  @media(max-width:600px){.state-cols{grid-template-columns:1fr;}}
+  .state-col{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:13px 15px;}
+  .state-col .sc-head{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;}
+  .state-col p{margin:0; font-size:12px; line-height:1.6;}
+
+  .it-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:640px){.it-grid{grid-template-columns:1fr;}}
+  .it-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .it-card .it-head{
+    font-family:'Fraunces',serif; font-size:14px; font-weight:600; color:var(--navy);
+    margin-bottom:4px;
+  }
+  .it-card .it-sec{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--gold); font-weight:700;
+    text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px;
+  }
+  .it-card p{margin:0; font-size:12.5px; line-height:1.6;}
+
+  .disclaimer{margin-top:30px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--ink-3); line-height:1.6; font-family:'IBM Plex Mono',monospace;}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-main">
+      <div class="app-mark"><span>RNPO</span></div>
+      <div>
+        <div class="eyebrow">Income-tax Act, 2025 · Ch. XVII-B</div>
+        <h1>NPO Reckoner</h1>
+        <p>Applicability, legal structures, registration, income classification, and every Registered Non-Profit Organisation (RNPO) section — plus calculators for registration validity, the 85% application rule, and anonymous-donation tax.</p>
+      </div>
+    </div>
+    <div class="reg-no">v1.0<br>Aug 2026</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="calc"><span class="num">01</span> Calculator</div>
+    <div class="tab" data-tab="overview"><span class="num">02</span> Overview &amp; Concept</div>
+    <div class="tab" data-tab="types"><span class="num">03</span> Types of NPO</div>
+    <div class="tab" data-tab="registration"><span class="num">04</span> Registration (Sec 332)</div>
+    <div class="tab" data-tab="income"><span class="num">05</span> Income Classification</div>
+    <div class="tab" data-tab="application"><span class="num">06</span> Application &amp; Accumulation</div>
+    <div class="tab" data-tab="commercial"><span class="num">07</span> Commercial Activities</div>
+    <div class="tab" data-tab="compliance"><span class="num">08</span> Compliances &amp; Audit</div>
+    <div class="tab" data-tab="donations"><span class="num">09</span> Donations &amp; Sec 354</div>
+    <div class="tab" data-tab="violations"><span class="num">10</span> Violations &amp; Exit Tax</div>
+    <div class="tab" data-tab="fcra"><span class="num">11</span> FCRA Compliance</div>
+    <div class="tab" data-tab="gst"><span class="num">12</span> GST for NPOs</div>
+    <div class="tab" data-tab="calendar"><span class="num">13</span> Compliance Calendar</div>
+    <div class="tab" data-tab="process"><span class="num">14</span> Registration Process</div>
+  </div>
+
+  <div class="panel">
+
+    <!-- ============ TAB 1: CALCULATOR ============ -->
+    <div class="view active" id="view-calc">
+      <div class="section-head-row">
+        <div>
+          <h2>Compliance snapshot calculator</h2>
+          <p class="sub">Registration validity, FCRA, GST-adjacent flags &amp; the 85% application test</p>
+        </div>
+        <button class="sample-btn" id="loadSampleBtn">Load sample data</button>
+      </div>
+
+      <h3>Organisation profile</h3>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Legal structure</label>
+          <select id="c-type">
+            <option value="trust">Trust</option>
+            <option value="society">Society</option>
+            <option value="sec8">Section 8 Company</option>
+            <option value="unregistered">Not yet incorporated</option>
+          </select>
+        </div>
+        <div class="profile-field">
+          <label>Purpose category</label>
+          <select id="c-purpose">
+            <option value="core">Relief of poor / education / medical / yoga / environment / monuments / religious</option>
+            <option value="gpu">Advancement of any other object of general public utility (GPU)</option>
+          </select>
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Total income, each of preceding 2 tax years (₹ lakh, pre-exemption)</label>
+          <input type="number" id="c-income2yr" value="0" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Commercial / incidental-business receipts (% of total receipts)</label>
+          <input type="number" id="c-combiz" value="0" min="0" max="100">
+        </div>
+      </div>
+
+      <h3>Registration status under Section 332</h3>
+      <div class="toggle-group" id="reg-toggle">
+        <button class="toggle-btn active" data-val="none">Not registered</button>
+        <button class="toggle-btn" data-val="provisional">Provisional (Sl. No. 1)</button>
+        <button class="toggle-btn" data-val="regular">Regular / renewed</button>
+      </div>
+
+      <h3 style="margin-top:18px;">Receives foreign contribution?</h3>
+      <div class="toggle-group">
+        <button class="toggle-btn" id="forex-yes">Yes</button>
+        <button class="toggle-btn active" id="forex-no">No</button>
+      </div>
+
+      <div class="calc-actions">
+        <button class="btn-compute" id="computeSnapshotBtn">Compute</button>
+        <button class="btn-clear" id="clearSnapshotBtn">Clear</button>
+      </div>
+
+      <div class="verdict-card">
+        <div class="vk">Snapshot</div>
+        <div class="vv" id="snapshot-headline">—</div>
+        <div class="verdict-row" id="snapshot-chips"></div>
+      </div>
+
+      <h3>85% application &amp; anonymous-donation tax calculator</h3>
+      <p class="sub">Sections 337 (specified income), 341 (application), 342–343 (accumulation)</p>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Regular income for the tax year (₹)</label>
+          <input type="number" id="lf-regincome" value="0" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Amount applied for charitable/religious purposes in India (₹)</label>
+          <input type="number" id="lf-applied" value="0" min="0">
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Total donations received in the year (₹)</label>
+          <input type="number" id="lf-totaldon" value="0" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Of which, anonymous donations (₹)</label>
+          <input type="number" id="lf-anondon" value="0" min="0">
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Foreign contribution received in tax year (₹)</label>
+          <input type="number" id="lf-forex" value="0" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Application of income outside India (₹)</label>
+          <input type="number" id="lf-outsideindia" value="0" min="0">
+        </div>
+      </div>
+      <div class="toggle-group" style="margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-3); align-self:center; margin-right:6px;">Wholly religious NPO?</span>
+        <button class="toggle-btn" id="relig-yes">Yes</button>
+        <button class="toggle-btn active" id="relig-no">No</button>
+      </div>
+
+      <div class="mat-slabs" id="lf-results">
+        <div class="mat-slab"><span>85% application requirement</span><b class="formula" id="lf-required">₹ 0</b></div>
+        <div class="mat-slab"><span>Shortfall not applied (needs Form 109/342 accumulation or Form 108/341(7) option)</span><b class="formula" id="lf-shortfall">₹ 0</b></div>
+        <div class="mat-slab"><span>Anonymous-donation exemption threshold (Sec 337 — higher of ₹1,00,000 or 5% of donations)</span><b class="formula" id="lf-threshold">₹ 0</b></div>
+        <div class="mat-slab"><span>Taxable anonymous donation</span><b class="formula" id="lf-taxableanon">₹ 0</b></div>
+        <div class="mat-slab"><span>Estimated tax on specified income @30% (Sec 334(1)(a))</span><b class="formula" id="lf-tax">₹ 0</b></div>
+        <div class="mat-slab"><span>NPO size classification (Form 112, Row 6)</span><b class="formula" id="lf-size">Small Registered NPO</b></div>
+      </div>
+      <div class="note" id="lf-note">Enter figures above to see the result.</div>
+
+      <div class="calc-actions">
+        <button class="btn-compute" id="computeApplicationBtn">Compute</button>
+        <button class="btn-clear" id="clearApplicationBtn">Clear</button>
+      </div>
+    </div>
+
+    <!-- ============ TAB 2: OVERVIEW & CONCEPT ============ -->
+    <div class="view" id="view-overview">
+      <h2>Overview &amp; concept</h2>
+      <p class="sub">What changes — and what doesn't — under the Income-tax Act, 2025</p>
+      <p>A Non-Profit Organisation (NPO) in India is any trust, society, Section 8 company, fund, university, hospital or similar entity constituted for a charitable or religious purpose rather than for profit. Under the <b>Income-tax Act, 2025</b> (effective 1 April 2026), every such entity that holds a valid registration is uniformly termed a <b>Registered Non-Profit Organisation (RNPO)</b> — replacing the old collection of labels ("charitable trust", "charitable institution", "fund", "institution under Section 10(23C)") that existed across the Income-tax Act, 1961.</p>
+      <div class="note">The 2025 Act does <b>not</b> change the underlying tax policy for NPOs. It consolidates roughly a dozen scattered sections of the 1961 Act — 2(15), 10(23C), 11, 12, 12A, 12AA, 12AB, 13, 80G, 115BBC, 115TD — into one self-contained code: <b>Part B of Chapter XVII (Sections 332–355)</b>, cutting the word count from ~12,800 to ~7,600 and replacing "previous year / assessment year" with a single unified <b>"tax year."</b></div>
+
+      <h3>Charitable purpose — Section 2(23)</h3>
+      <p class="sub">Unchanged in substance from Section 2(15) of the 1961 Act</p>
+      <div class="def-grid">
+        <div class="def-card"><div class="clno">2(23)(a)</div><b>Relief of the poor</b><p>Includes relief to the economically and socially disadvantaged.</p></div>
+        <div class="def-card"><div class="clno">2(23)(b)</div><b>Education</b><p>Formal and non-formal education, including skill development.</p></div>
+        <div class="def-card"><div class="clno">2(23)(c)</div><b>Yoga</b><p>Retained as a standalone charitable head (added in 2015).</p></div>
+        <div class="def-card"><div class="clno">2(23)(d)</div><b>Medical relief</b><p>Includes hospitals, dispensaries and public health activity.</p></div>
+        <div class="def-card"><div class="clno">2(23)(e)</div><b>Preservation of environment</b><p>Watersheds, forests, wildlife and pollution control.</p></div>
+        <div class="def-card"><div class="clno">2(23)(f)</div><b>Preservation of monuments</b><p>Monuments or places/objects of artistic or historic interest.</p></div>
+        <div class="def-card"><div class="clno">2(23)(g)</div><b>Any other object of general public utility (GPU)</b><p>The residual, most-litigated head — subject to the strictest commercial-activity limits (see Sec 346).</p></div>
+      </div>
+
+      <h3>Core vocabulary of the RNPO framework</h3>
+      <div class="it-grid">
+        <div class="it-card"><div class="it-head">RNPO</div><div class="it-sec">Sec 355(g)</div><p>Any person with a valid registration under Section 332, or under a specified provision of the 1961 Act (12A/12AA/12AB/10(23C)) that has not expired or been cancelled.</p></div>
+        <div class="it-card"><div class="it-head">Regular income</div><div class="it-sec">Sec 335</div><p>Activity income, property/investment income, voluntary contributions, and business-undertaking income — the base for the 85% application test.</p></div>
+        <div class="it-card"><div class="it-head">Specified income</div><div class="it-sec">Sec 337</div><p>Anonymous donations beyond the threshold, related-party benefit, foreign application, non-prescribed investment, and similar misuse — taxed at a flat 30%.</p></div>
+        <div class="it-card"><div class="it-head">Residual income</div><div class="it-sec">—</div><p>Income that is neither regular nor specified; taxed at the RNPO's normal applicable rate.</p></div>
+        <div class="it-card"><div class="it-head">Corpus donation</div><div class="it-sec">Sec 339</div><p>A voluntary contribution given with the donor's specific written direction that it form part of corpus — excluded from the 85% test if invested per Sec 350.</p></div>
+        <div class="it-card"><div class="it-head">Application of income</div><div class="it-sec">Sec 341</div><p>Spending regular income on the RNPO's charitable/religious objects in India; only 85% of a donation to another RNPO counts as application.</p></div>
+        <div class="it-card"><div class="it-head">Accumulation</div><div class="it-sec">Sec 342–343</div><p>Formal set-aside for up to 5 years (Form 109) or an automatic 15% deemed accumulation, both invested per Sec 350.</p></div>
+        <div class="it-card"><div class="it-head">Tax year</div><div class="it-sec">—</div><p>The single unified concept (1 April–31 March) that now replaces both "previous year" and "assessment year."</p></div>
+      </div>
+      <div class="warn">This tool is a plain-language guide, not the statute. Always cross-check the applicable Section against the Income-tax Act, 2025 and the Income-tax Rules, 2026 before acting.</div>
+    </div>
+
+    <!-- ============ TAB 3: TYPES OF NPO ============ -->
+    <div class="view" id="view-types">
+      <h2>Types of Non-Profit Organisation</h2>
+      <p class="sub">Legal form is chosen under state/central law — the Income-tax Act, 2025 governs taxation regardless of form</p>
+      <table class="simple">
+        <tr><th>Feature</th><th>Trust</th><th>Society</th><th>Section 8 Company</th></tr>
+        <tr><td><b>Governing law</b></td><td>Indian Trusts Act, 1882 (private) / State Public Trusts Acts</td><td>Societies Registration Act, 1860 (or state variant)</td><td>Companies Act, 2013, Section 8</td></tr>
+        <tr><td><b>Minimum people</b></td><td>2 trustees (author + trustee)</td><td>7 members (state-dependent)</td><td>2 directors / 2 shareholders</td></tr>
+        <tr><td><b>Founding document</b></td><td>Trust Deed</td><td>Memorandum &amp; Rules/Bye-laws</td><td>Memorandum &amp; Articles of Association</td></tr>
+        <tr><td><b>Registering authority</b></td><td>Sub-Registrar (state)</td><td>Registrar of Societies (state)</td><td>Registrar of Companies (central, via MCA)</td></tr>
+        <tr><td><b>Governance body</b></td><td>Board of Trustees</td><td>Governing body / Managing committee</td><td>Board of Directors</td></tr>
+        <tr><td><b>Ownership / control</b></td><td>Concentrated with trustees; hardest to change</td><td>Democratic — general body elects governing body</td><td>Members elect directors; most corporate-style governance</td></tr>
+        <tr><td><b>Annual regulatory filings</b></td><td>Minimal beyond income-tax return &amp; state trust filings</td><td>Annual list of members to Registrar (state-dependent)</td><td>ROC filings (AOC-4, MGT-7A) in addition to income-tax return</td></tr>
+        <tr><td><b>Profit distribution</b></td><td>Prohibited — must be applied to objects</td><td>Prohibited — must be applied to objects</td><td>Prohibited by law (Sec 8, Companies Act) — no dividend</td></tr>
+        <tr><td><b>Typically suited to</b></td><td>Family-run charities, single-purpose institutions, temples</td><td>Membership-driven bodies, professional/cultural associations</td><td>Large NGOs, CSR implementation partners, entities seeking institutional funding/credibility</td></tr>
+      </table>
+      <p class="note">All three forms can equally apply for RNPO registration under Section 332 of the Income-tax Act, 2025 and for donor-deduction approval under Section 354 — the Income-tax Act does not prefer one legal structure over another. The choice is driven by governance style, funding sources (CSR/institutional funders often prefer Section 8 companies), and state-level ease of registration.</p>
+    </div>
+
+    <!-- ============ TAB 4: REGISTRATION (SEC 332) ============ -->
+    <div class="view" id="view-registration">
+      <h2>Registration — Section 332</h2>
+      <p class="sub">Replaces Sections 12A, 12AA, 12AB and 10(23C) of the 1961 Act</p>
+      <h3>Eligibility conditions</h3>
+      <div class="check-list">
+        <li><b>Condition (a):</b> Constituted, registered or incorporated in India for one or more charitable purposes under Section 2(23), for public religious purposes, or both.</li>
+        <li><b>Condition (b):</b> Properties held for the benefit of the general public under an <b>irrevocable trust</b>, wholly for charitable or religious purposes in India (entities constituted before the 1961 Act may qualify partly). The explicit "irrevocable trust" requirement is new in statute — earlier it existed only through judicial interpretation.</li>
+      </div>
+      <p class="note">Section 355(p) clarifies that "wholly for charitable or religious purposes" covers wholly charitable, wholly religious, or wholly both — resolving earlier ambiguity for mixed-purpose trusts.</p>
+
+      <h3>The seven registration situations — Section 332(3)</h3>
+      <div class="guide-list">
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Sl. 1 — Activities not yet commenced <span class="when">Form 104</span></b><p>Provisional registration, granted within 1 month of application; valid 3 years.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Sl. 2 — Provisional registration about to expire <span class="when">Form 105</span></b><p>Apply at least 6 months before expiry, or within 6 months of commencing activities — whichever is earlier.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Sl. 3–7 — Regular registration / renewal / modification of objects <span class="when">Form 105</span></b><p>Covers first regular registration after activities commence, renewal of a 5- or 10-year registration, and re-registration after a change of objects.</p></div></div>
+      </div>
+
+      <h3>Validity periods</h3>
+      <table class="thresh">
+        <tr><th>Situation</th><th>Validity</th></tr>
+        <tr><td class="tname">Provisional registration (Sl. 1)</td><td class="tval">3 tax years</td></tr>
+        <tr><td class="tname">Regular registration — standard</td><td class="tval">5 tax years</td></tr>
+        <tr><td class="tname">Regular registration — total income ≤ ₹5 crore in each of preceding 2 tax years (Sec 332(5))</td><td class="tval">10 tax years</td></tr>
+      </table>
+
+      <h3>Forms in the registration chain</h3>
+      <div class="doc-list">
+        <div class="doc-row"><div class="doc-no">104</div><div class="doc-body"><b>Application for provisional registration/approval <span class="doc-tag">was 10A</span></b><p>Filed under Section 332(3) Sl. No. 1, for activities not yet commenced.</p></div></div>
+        <div class="doc-row"><div class="doc-no">105</div><div class="doc-body"><b>Application for regular registration (Sec 332) or 80G-equivalent approval (Sec 354) <span class="doc-tag">was 10AB</span></b><p>Common form for Sl. Nos. 2–7 and for separate Section 354 donor-deduction approval.</p></div></div>
+        <div class="doc-row"><div class="doc-no">106</div><div class="doc-body"><b>Order granting or rejecting provisional registration/approval <span class="doc-tag">was 10AC</span></b></div></div>
+        <div class="doc-row"><div class="doc-no">107</div><div class="doc-body"><b>Order granting, rejecting or cancelling regular registration/approval <span class="doc-tag">was 10AD</span></b></div></div>
+      </div>
+
+      <h3>Transition for existing NGOs</h3>
+      <div class="exempt-box">
+        <b>No fresh application needed on 1 April 2026</b>
+        Any entity holding a valid, uncancelled registration under Section 12A, 12AA, 12AB or 10(23C) of the 1961 Act automatically transitions to RNPO status. Tax benefits continue seamlessly until the existing registration's own expiry date, at which point renewal follows the Section 332 timelines above.
+      </div>
+      <div class="warn">Late applications (Sl. 3C/4C/5C/7C) can be condoned by the Principal Commissioner/Commissioner for "reasonable cause" — inadvertence alone is usually not accepted. If the delay is not condoned, the RNPO becomes liable to exit tax on accreted income under Section 352.</div>
+    </div>
+
+    <!-- ============ TAB 5: INCOME CLASSIFICATION ============ -->
+    <div class="view" id="view-income">
+      <h2>Classification of income — Sections 334–339</h2>
+      <p class="sub">Every rupee an RNPO receives falls into one of three buckets</p>
+      <div class="rate-grid">
+        <div class="rate-card merit"><div class="rate-label">Sec 335</div><div class="rate-pct">Regular</div><p>Activity receipts, property/investment income, voluntary contributions, business-undertaking and incidental-business income. Exempt (Sec 336) if 85% is applied/accumulated per Sections 341–342.</p></div>
+        <div class="rate-card demerit"><div class="rate-label">Sec 337 · @30%</div><div class="rate-pct">Specified</div><p>Anonymous donations beyond the threshold, related-party benefit, income applied outside India without CBDT permission, non-prescribed investment, inter-charity donation of accumulated income, accumulated income unused within timelines, AO-determined excess income.</p></div>
+        <div class="rate-card std"><div class="rate-label">Residual</div><div class="rate-pct">Balance</div><p>Income that is neither regular nor specified — taxed at the RNPO's ordinary applicable rate, same as any other assessee.</p></div>
+      </div>
+
+      <h3>Tax rates — Section 334</h3>
+      <table class="simple">
+        <tr><th>Income type</th><th>Rate</th></tr>
+        <tr><td><b>Specified income</b> (Sec 337)</td><td>Flat 30%</td></tr>
+        <tr><td><b>Taxable regular income</b> (shortfall against the 85% rule, if not accumulated)</td><td>Rate applicable to the RNPO</td></tr>
+      </table>
+
+      <div class="exempt-box">
+        <b>Anonymous donations — Section 337(1)</b>
+        Not taxable up to the higher of <b>₹1,00,000</b> or <b>5% of total donations</b> received in the tax year; the excess is taxed at 30%. RNPOs established <b>wholly for religious purposes</b> are excluded from this tax entirely.
+      </div>
+
+      <h3>Corpus &amp; deemed corpus donations</h3>
+      <div class="def-grid">
+        <div class="def-card"><div class="clno">Sec 339</div><b>Corpus donation</b><p>A voluntary contribution given with the donor's specific written direction that it form part of the RNPO's corpus. Excluded from regular income and from the 85% test — provided it is invested/deposited in a mode permitted under Section 350.</p></div>
+        <div class="def-card"><div class="clno">Sec 340</div><b>Deemed corpus donation</b><p>Certain contributions are treated as corpus by deeming fiction, subject to conditions specified in the section — same investment discipline under Section 350 applies.</p></div>
+      </div>
+      <p class="note">Income applied outside India is normally taxed at 30% as specified income (Sec 338), unless the CBDT permits it by general or special order — available only to RNPOs established before 1 April 1952 for charitable or religious purposes, in narrow circumstances.</p>
+    </div>
+
+    <!-- ============ TAB 6: APPLICATION & ACCUMULATION ============ -->
+    <div class="view" id="view-application">
+      <h2>Application &amp; accumulation of income — Sections 341–343</h2>
+      <p class="sub">How an RNPO satisfies the 85% application requirement</p>
+
+      <h3>1. Direct application — Section 341</h3>
+      <div class="check-list">
+        <li>At least 85% of regular income must be applied for charitable/religious purposes in India during the tax year.</li>
+        <li>A donation to <b>another RNPO</b> counts as application only to the extent of 85% of the amount donated.</li>
+        <li>Amounts applied out of corpus or out of a loan are <b>not</b> treated as application — but reinvesting the corpus, or repaying the loan, within 5 years is allowed as application in that later year.</li>
+        <li>A shortfall can be treated as deemed application under Section 341(5)/(7) by exercising an option in <b>Form 108</b>, before the return due date under Section 263(1), subject to conditions on when the amount must actually be spent.</li>
+      </div>
+
+      <h3>2. Formal accumulation — Section 342</h3>
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="rc-head">How it works</div>
+          <ul>
+            <li>Income may be accumulated/set apart for a specific purpose for up to <b>5 years</b> (court-order/injunction periods excluded).</li>
+            <li>A statement of accumulation must be filed in <b>Form 109</b> on or before the return due date under Section 263(1).</li>
+            <li>Accumulated funds must be invested only in modes permitted under <b>Section 350</b>.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="rc-head">Repurposing &amp; dissolution</div>
+          <ul>
+            <li>Change of purpose is allowed with prior Assessing Officer approval, via <b>Form 110</b>.</li>
+            <li>Paying accumulated income to another RNPO is <b>not</b> treated as application — except on dissolution, where the AO may allow transfer to a similarly-placed RNPO.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>3. Deemed (statutory) accumulation — Section 343</h3>
+      <p>Regular income, less amounts actually applied and formally accumulated, is automatically treated as deemed accumulated income up to <b>15% of regular income</b> — and must likewise be invested in modes permitted under Section 350. This is the mechanical equivalent of the old "15% set-apart" that most RNPOs use by default even without filing anything extra.</p>
+      <div class="warn">Failing the 85% test — without either applying, formally accumulating (Form 109), or exercising the Form 108 option — turns the shortfall into taxable regular income for that year.</div>
+    </div>
+
+    <!-- ============ TAB 7: COMMERCIAL ACTIVITIES ============ -->
+    <div class="view" id="view-commercial">
+      <h2>Commercial activities — Sections 344–346</h2>
+      <p class="sub">RNPOs are not businesses — the Act keeps a tight leash on trading activity</p>
+      <div class="it-grid">
+        <div class="it-card"><div class="it-head">Business undertaking as property</div><div class="it-sec">Sec 344</div><p>An RNPO may hold a business undertaking as part of its property (equivalent to the old Section 11(4)); the Assessing Officer can determine income in excess of what the books show.</p></div>
+        <div class="it-card"><div class="it-head">General restriction</div><div class="it-sec">Sec 345</div><p>An RNPO cannot otherwise carry on commercial activity unless it is <b>incidental</b> to attaining its objects, and separate books of account are maintained for it.</p></div>
+        <div class="it-card"><div class="it-head">GPU-specific cap</div><div class="it-sec">Sec 346</div><p>An RNPO advancing "any other object of general public utility" may run commercial activity incidental to that object only if receipts from it do not exceed <b>20% of total receipts</b>, with separate books maintained.</p></div>
+      </div>
+      <div class="warn">Carrying on non-incidental commercial activity — or breaching the 20% GPU cap — can jeopardise RNPO status entirely and is treated as a specified violation under Section 351.</div>
+    </div>
+
+    <!-- ============ TAB 8: COMPLIANCES & AUDIT ============ -->
+    <div class="view" id="view-compliance">
+      <h2>Compliances — Sections 347–350</h2>
+      <p class="sub">Books, audit, return of income, and permitted investments</p>
+
+      <h3>Books of account — Section 347</h3>
+      <div class="check-list">
+        <li>Cash book, ledger, journal, bills, receipts and vouchers sufficient to present a true and fair view of the RNPO's affairs.</li>
+        <li>Separate books for any business undertaking (Sec 344) and for GPU-incidental commercial activity (Sec 346).</li>
+        <li>Project-wise records distinguishing charitable income, voluntary contributions, commercial income, specified income and residual income.</li>
+        <li>Records of application (India and abroad, with payee and purpose), accumulation (Sec 342 — year, purpose, amount applied, balance), investments under Section 350, corpus donations, and loans/borrowings/repayments.</li>
+      </div>
+
+      <h3>Audit — Section 348</h3>
+      <p>Where the RNPO's income exceeds the basic exemption threshold before claiming the Chapter's exemptions, its accounts must be audited by a Chartered Accountant. The report is filed in <b>Form 112</b> — a single consolidated form replacing the earlier <b>Form 10B and Form 10BB</b>.</p>
+
+      <h3>Small vs Large Registered NPO — Form 112 classification</h3>
+      <p class="sub">Determines how much of Form 112 an auditee must complete</p>
+      <p>Form 112 itself classifies every auditee as either a <b>Small Registered NPO</b> or a <b>Large Registered NPO</b>. An RNPO is a <b>Large Registered NPO</b> if <b>any one</b> of the following is satisfied for the tax year; otherwise it is a <b>Small Registered NPO</b>:</p>
+      <table class="thresh">
+        <tr><th>Condition</th><th>Threshold</th></tr>
+        <tr><td class="tname">(a) Regular income (Sec 335)</td><td class="tval">Exceeds ₹5 crore</td></tr>
+        <tr><td class="tname">(b) Foreign contribution received in the tax year</td><td class="tval">Exceeds ₹10 lakh</td></tr>
+        <tr><td class="tname">(c) Application of income outside India</td><td class="tval">Exceeds ₹10 lakh</td></tr>
+      </table>
+      <div class="note">"Foreign contribution" here takes the same meaning as under Section 2(1)(h) of the FCRA, 2010. The classification is self-tested by the auditor on Form 112 itself (Row 6: if (a), (b) or (c) is "Yes", the auditee is large; otherwise small) and determines which additional schedules — related-party transactions, Section 337 specified-income details, Section 346 GPU commercial-activity compliance, and related disclosures — the auditor must complete.</div>
+
+      <h3>Return of income — Section 349</h3>
+      <p>The RNPO must file its return of income by the due date prescribed under Section 263(1) — typically the audit-linked due date where Section 348 audit applies.</p>
+
+      <h3>Permitted modes of investment — Section 350</h3>
+      <p class="sub">Broadly carried over from the old Section 11(5) list</p>
+      <div class="check-list">
+        <li>Government securities and Post Office savings/deposit schemes.</li>
+        <li>Deposits with scheduled banks or co-operative banks (including term deposits).</li>
+        <li>Units of UTI and specified mutual funds; shares of specified public-sector or statutory companies.</li>
+        <li>Immovable property, and deposits with IFSC-based entities and other modes as prescribed by rule.</li>
+      </div>
+      <p class="note">Corpus, accumulated (Sec 342) and deemed-accumulated (Sec 343) funds must all sit in these permitted modes; investing them elsewhere converts the amount into specified income taxable at 30%.</p>
+    </div>
+
+    <!-- ============ TAB 9: DONATIONS & SEC 354 ============ -->
+    <div class="view" id="view-donations">
+      <h2>Donations &amp; donor-deduction approval — Section 354</h2>
+      <p class="sub">The 80G-equivalent route — now a separate application from RNPO registration</p>
+      <p>Under the 2025 Act, becoming an RNPO (Section 332) and being able to issue donors a tax-deductible receipt (Section 354, referencing Section 133(1)(b)(ii)) are <b>two distinct approvals</b>. Most entities — public trusts, societies, Section 8 companies — must first hold Section 332 registration before applying for Section 354 approval, generally via the same <b>Form 105</b>. Entities listed in <b>Schedule VII, Table Sl. No. 1</b> (certain government-linked funds and institutions) may apply for Section 354 approval directly, without prior Section 332 registration.</p>
+      <div class="note">Donations made <b>before</b> a cancellation date remain eligible for the donor's deduction; donations made <b>after</b> cancellation are not. Donors should be notified promptly on any cancellation.</div>
+
+      <h3>Annual donor-reporting forms</h3>
+      <div class="doc-list">
+        <div class="doc-row"><div class="doc-no">113</div><div class="doc-body"><b>Statement of donations received <span class="doc-tag">was 10BD</span></b><p>Annual donor-wise statement the RNPO files with the tax department.</p></div></div>
+        <div class="doc-row"><div class="doc-no">114</div><div class="doc-body"><b>Certificate of donation <span class="doc-tag">was 10BE</span></b><p>Issued to each donor so they can claim the Section 133(1)(b)(ii) deduction in their own return.</p></div></div>
+      </div>
+
+      <h3>Corpus vs ordinary donation</h3>
+      <table class="simple">
+        <tr><th>Type</th><th>Treatment</th></tr>
+        <tr><td><b>Ordinary donation</b></td><td>Forms part of regular income; subject to the 85% application/accumulation test (Sec 341–343).</td></tr>
+        <tr><td><b>Corpus donation</b> (Sec 339)</td><td>Excluded from regular income if invested per Sec 350 — not subject to the 85% test.</td></tr>
+        <tr><td><b>Anonymous donation</b> (Sec 337)</td><td>Exempt up to the higher of ₹1,00,000 or 5% of total donations; excess taxed at 30% (wholly-religious RNPOs excluded).</td></tr>
+      </table>
+    </div>
+
+    <!-- ============ TAB 10: VIOLATIONS & EXIT TAX ============ -->
+    <div class="view" id="view-violations">
+      <h2>Violations &amp; exit tax — Sections 351–353</h2>
+      <p class="sub">What can cost an RNPO its registration — and the one-time tax that follows</p>
+
+      <h3>Specified violation — Section 351</h3>
+      <div class="exclude-list">
+        <li>Income applied for a purpose other than the registered charitable/religious object.</li>
+        <li>Income or property applied, directly or indirectly, for the benefit of a related/specified person.</li>
+        <li>Activities found to be non-genuine, or not carried out in accordance with registration conditions.</li>
+        <li>Non-compliance with a requirement of any other law material to achieving the RNPO's objects.</li>
+        <li>Failure to file the return of income (Sec 349) as required.</li>
+      </div>
+
+      <h3>Tax on accreted income — Section 352</h3>
+      <p>On cancellation of registration, conversion into a non-RNPO form, merger with an entity that is not a similarly-placed RNPO, or dissolution without transferring assets to another RNPO with similar objects, the RNPO is liable to a one-time <b>"exit tax"</b> computed on its <b>accreted income</b> — broadly, the fair market value of its assets less its liabilities on the specified date. This tax is levied at the maximum marginal rate and can be far larger than years of the exemption it once claimed, so it is treated as a last-resort consequence rather than routine tax planning.</p>
+
+      <h3>Other violations — Section 353</h3>
+      <p>Covers consequential matters such as denial of exemption for the relevant tax year and other administrative consequences of non-compliance, distinct from the accreted-income exit tax under Section 352.</p>
+
+      <div class="warn">Condonation of a late Form 104/105 application is available from the Principal Commissioner/Commissioner only for demonstrated "reasonable cause" — plain inadvertence is generally not accepted, and an uncondoned lapse can itself trigger Section 352 exit tax.</div>
+    </div>
+
+    <!-- ============ TAB 11: FCRA COMPLIANCE ============ -->
+    <div class="view" id="view-fcra">
+      <h2>FCRA compliance</h2>
+      <p class="sub">Foreign Contribution (Regulation) Act, 2010 — administered by the Ministry of Home Affairs, independent of the Income-tax Act</p>
+      <p>Any NPO that wishes to accept a contribution from a foreign source must either hold <b>FCRA registration</b> or obtain <b>prior permission</b> for a specific one-off contribution. This is a separate compliance track from Income-tax RNPO registration — an entity can be a fully compliant RNPO and still be barred from receiving foreign funds without FCRA clearance.</p>
+
+      <h3>Key requirements</h3>
+      <div class="check-list">
+        <li>Ordinarily available to an entity that has existed for at least <b>3 years</b> and has undertaken reasonable charitable activity/spend in that period (or, for newer entities, via prior permission for a specific donor and purpose).</li>
+        <li>Foreign contribution must be received only in the designated <b>FCRA account</b> at the SBI, New Delhi Main Branch, with a separate utilisation account permitted at any scheduled bank.</li>
+        <li>Administrative expenses are capped at <b>20%</b> of the foreign contribution utilised in a financial year.</li>
+        <li>Registration is valid for <b>5 years</b>; renewal (Form FC-3C) must be filed before expiry.</li>
+        <li>Annual return in <b>Form FC-4</b> is mandatory, whether or not any foreign contribution was received in the year.</li>
+      </div>
+      <p class="note">FCRA registration/renewal and Income-tax RNPO registration/renewal run on independent clocks — track both separately in your compliance calendar.</p>
+    </div>
+
+    <!-- ============ TAB 12: GST FOR NPOs ============ -->
+    <div class="view" id="view-gst">
+      <h2>GST for NPOs</h2>
+      <p class="sub">Registered NPO status does not mean automatic GST exemption</p>
+      <p>An NPO is subject to GST registration on the same turnover thresholds as any other entity (₹20 lakh for services, ₹40 lakh for goods, lower in special category states) once it makes a "supply" for consideration. RNPO status only triggers a <b>narrow, specific exemption</b> — it does not exempt every activity an NPO undertakes.</p>
+
+      <h3>What is exempt</h3>
+      <div class="check-list">
+        <li>Services by an entity registered as charitable (formerly under Sec 12AA/12AB, now an RNPO) <b>by way of specified charitable activities</b> — relief of the poor, afflicted, disabled, orphans or the abandoned; advancement of religion, spirituality or yoga; educational programmes for the abandoned, orphans, prisoners or the physically/mentally challenged; and environment preservation.</li>
+        <li>Certain renting of religious precincts below prescribed tariff/rent thresholds, and specified education services by recognised institutions.</li>
+      </div>
+      <h3>What is typically taxable</h3>
+      <div class="exclude-list">
+        <li>General Public Utility (GPU) activities that don't fall within the narrower GST definition of "charitable activities" — e.g. fee-based skill training outside the exempt categories, consultancy, or event services.</li>
+        <li>Renting of commercial space, sale of goods/merchandise, and sponsorship income.</li>
+        <li>Membership/subscription fees — an area of ongoing litigation following judicial rulings on the doctrine of mutuality.</li>
+      </div>
+      <div class="warn">The GST definition of "charitable activities" (Notification 12/2017-Central Tax (Rate), as amended) is narrower than the Income-tax Act's Section 2(23) definition — an activity can be a valid charitable purpose for income-tax exemption while still attracting GST.</div>
+    </div>
+
+    <!-- ============ TAB 13: COMPLIANCE CALENDAR ============ -->
+    <div class="view" id="view-calendar">
+      <h2>Annual compliance calendar</h2>
+      <p class="sub">Illustrative — always confirm the current year's dates against the applicable notification</p>
+      <table class="simple">
+        <tr><th>Compliance</th><th>Governing law</th><th>Typical timing</th></tr>
+        <tr><td><b>Form 104 / 105</b> — registration renewal</td><td>Income-tax Act, 2025 (Sec 332)</td><td>At least 6 months before expiry of provisional/regular registration</td></tr>
+        <tr><td><b>Form 112</b> — audit report</td><td>Income-tax Act, 2025 (Sec 348)</td><td>Before the Section 263(1) return due date</td></tr>
+        <tr><td><b>Return of income</b></td><td>Income-tax Act, 2025 (Sec 349)</td><td>31 October (audit cases) / 31 July (others), following the tax year</td></tr>
+        <tr><td><b>Form 109</b> — accumulation statement</td><td>Income-tax Act, 2025 (Sec 342)</td><td>On or before the return due date</td></tr>
+        <tr><td><b>Form 108</b> — deemed-application option</td><td>Income-tax Act, 2025 (Sec 341(7))</td><td>Before the return due date</td></tr>
+        <tr><td><b>Form 113 / 114</b> — donation statement &amp; certificate</td><td>Income-tax Act, 2025 (Sec 354)</td><td>Statement by 31 May; certificate to donors shortly after</td></tr>
+        <tr><td><b>Form FC-4</b> — FCRA annual return</td><td>FCRA, 2010</td><td>31 December, following the financial year</td></tr>
+        <tr><td><b>Form FC-3C</b> — FCRA renewal</td><td>FCRA, 2010</td><td>At least 6 months before the 5-year registration expires</td></tr>
+        <tr><td><b>GST returns</b> (if registered)</td><td>CGST Act, 2017</td><td>Monthly/quarterly, per the standard GST calendar</td></tr>
+        <tr><td><b>AOC-4 / MGT-7A</b> (Section 8 companies only)</td><td>Companies Act, 2013</td><td>Within prescribed days of the AGM, annually</td></tr>
+      </table>
+    </div>
+
+    <!-- ============ TAB 14: REGISTRATION PROCESS ============ -->
+    <div class="view" id="view-process">
+      <h2>Step-by-step registration process</h2>
+      <p class="sub">From incorporation to a fully compliant RNPO</p>
+      <div class="guide-list">
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Choose a legal structure &amp; incorporate</b></div><p>Trust (Trust Deed + Sub-Registrar), Society (Memorandum + Registrar of Societies), or Section 8 Company (MCA/ROC) — pick based on governance style and funder expectations.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Draft objects aligned to Section 2(23)</b></div><p>Ensure the founding document's objects clause maps clearly to a recognised charitable purpose (or public religious purpose).</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Obtain PAN &amp; open a bank account</b></div><p>Required before any registration application can be filed.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>File Form 104 for provisional registration</b></div><p>Section 332(3) Sl. No. 1, where activities have not yet commenced — typically granted within 1 month.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Commence activities within the 3-year provisional window</b></div><p>Maintain books from day one (Sec 347), even before regular registration is granted.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Apply for regular registration on Form 105</b></div><p>At least 6 months before provisional expiry, or within 6 months of commencing activities — whichever is earlier.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Apply for Section 354 approval (donor deduction)</b></div><p>A separate application (usually the same Form 105) so donors can claim a deduction on their contributions.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Register under FCRA if foreign funding is expected</b></div><p>Ordinarily only after ~3 years of demonstrated charitable activity.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Register for GST if taxable supplies cross the threshold</b></div><p>Charitable-activity exemption is narrow — review each revenue stream separately.</p></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Run the annual cycle</b></div><p>Books (Sec 347) → Audit/Form 112 (Sec 348) → Return of income (Sec 349) → Form 109/108 as needed → Form 113/114 for donors.</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    Working tool for illustrative reference and computation only — not legal or tax advice. The Income-tax Act, 2025 and Income-tax Rules, 2026 (effective 1 April 2026), FCRA thresholds, and GST notifications are amended and clarified frequently by CBDT, MHA and CBIC — always verify current section numbers, form numbers, thresholds and due dates against the official Acts, Rules and portal notifications, or with your chartered accountant / company secretary, before relying on this for an actual filing.
+  </div>
+</div>
+
+<script>
+  // ---- Tabs ----
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('.view');
+  tabs.forEach(t=>{
+    t.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      views.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('view-'+t.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Registration status toggle ----
+  let regStatus = 'none';
+  const regToggleBtns = document.querySelectorAll('#reg-toggle .toggle-btn');
+  regToggleBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      regToggleBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      regStatus = btn.dataset.val;
+      computeSnapshot();
+    });
+  });
+
+  // ---- Foreign contribution toggle ----
+  let receivesForex = false;
+  const forexYesBtn = document.getElementById('forex-yes');
+  const forexNoBtn = document.getElementById('forex-no');
+  function setForex(val){
+    receivesForex = val;
+    forexYesBtn.classList.toggle('active', val);
+    forexNoBtn.classList.toggle('active', !val);
+    computeSnapshot();
+  }
+  forexYesBtn.addEventListener('click', ()=>setForex(true));
+  forexNoBtn.addEventListener('click', ()=>setForex(false));
+
+  ['c-type','c-purpose','c-income2yr','c-combiz'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', computeSnapshot);
+    document.getElementById(id).addEventListener('change', computeSnapshot);
+  });
+
+  document.getElementById('computeSnapshotBtn').addEventListener('click', computeSnapshot);
+  document.getElementById('clearSnapshotBtn').addEventListener('click', ()=>{
+    document.getElementById('c-type').value = 'trust';
+    document.getElementById('c-purpose').value = 'core';
+    document.getElementById('c-income2yr').value = 0;
+    document.getElementById('c-combiz').value = 0;
+    regToggleBtns.forEach(b=>b.classList.remove('active'));
+    document.querySelector('#reg-toggle .toggle-btn[data-val="none"]').classList.add('active');
+    regStatus = 'none';
+    setForex(false);
+    computeSnapshot();
+  });
+
+  function chip(label, value, cls){
+    return `<div class="verdict-chip"><div class="vck">${label}</div><div class="vcv ${cls}">${value}</div></div>`;
+  }
+
+  function computeSnapshot(){
+    const purpose = document.getElementById('c-purpose').value;
+    const income2yr = parseFloat(document.getElementById('c-income2yr').value)||0; // lakh
+    const combiz = parseFloat(document.getElementById('c-combiz').value)||0; // %
+
+    let headline, chips = '';
+
+    if(regStatus === 'none'){
+      headline = 'Not yet an RNPO';
+      chips += chip('Next step', 'File Form 104 (Sec 332(3) Sl.1)', 'req');
+      chips += chip('Validity once granted', 'Provisional: 3 years', 'na');
+    } else if(regStatus === 'provisional'){
+      headline = 'Provisionally registered';
+      chips += chip('Validity', '3 tax years (Sec 332(8))', 'ok');
+      chips += chip('Next step', 'Apply Form 105 before expiry', 'warn2');
+    } else {
+      const longValidity = income2yr <= 500; // ₹5 crore in lakh
+      headline = 'Regular RNPO';
+      chips += chip('Validity', longValidity ? '10 tax years (Sec 332(5))' : '5 tax years', longValidity ? 'ok' : 'na');
+    }
+
+    chips += chip('Donor deduction (Sec 354)', regStatus==='none' ? 'Register under Sec 332 first' : 'Can apply separately (Form 105)', regStatus==='none' ? 'req' : 'ok');
+
+    if(purpose === 'gpu'){
+      chips += chip('Commercial activity cap', combiz > 20 ? 'Exceeds 20% cap (Sec 346)' : 'Within 20% cap (Sec 346)', combiz > 20 ? 'req' : 'ok');
+    } else {
+      chips += chip('Commercial activity', combiz > 0 ? 'Only incidental allowed (Sec 345)' : 'None declared', combiz > 0 ? 'na' : 'ok');
+    }
+
+    chips += chip('FCRA registration', receivesForex ? 'Required (FCRA, 2010)' : 'Not applicable', receivesForex ? 'req' : 'ok');
+
+    document.getElementById('snapshot-headline').innerHTML = headline;
+    document.getElementById('snapshot-chips').innerHTML = chips;
+  }
+
+  // ---- 85% application & anonymous donation calculator ----
+  let whollyReligious = false;
+  const religYesBtn = document.getElementById('relig-yes');
+  const religNoBtn = document.getElementById('relig-no');
+  function setRelig(val){
+    whollyReligious = val;
+    religYesBtn.classList.toggle('active', val);
+    religNoBtn.classList.toggle('active', !val);
+    computeApplication();
+  }
+  religYesBtn.addEventListener('click', ()=>setRelig(true));
+  religNoBtn.addEventListener('click', ()=>setRelig(false));
+
+  function fmtInr(n){
+    if(isNaN(n)) n = 0;
+    return '₹ ' + Math.round(n).toLocaleString('en-IN');
+  }
+
+  function computeApplication(){
+    const regIncome = parseFloat(document.getElementById('lf-regincome').value)||0;
+    const applied = parseFloat(document.getElementById('lf-applied').value)||0;
+    const totalDon = parseFloat(document.getElementById('lf-totaldon').value)||0;
+    const anonDon = parseFloat(document.getElementById('lf-anondon').value)||0;
+    const forexRecvd = parseFloat(document.getElementById('lf-forex').value)||0;
+    const outsideIndia = parseFloat(document.getElementById('lf-outsideindia').value)||0;
+
+    const required = regIncome * 0.85;
+    const shortfall = Math.max(required - applied, 0);
+
+    const threshold = Math.max(100000, totalDon * 0.05);
+    const taxableAnon = whollyReligious ? 0 : Math.max(anonDon - threshold, 0);
+    const taxOnAnon = taxableAnon * 0.30;
+
+    const isLarge = (regIncome > 50000000) || (forexRecvd > 1000000) || (outsideIndia > 1000000);
+
+    document.getElementById('lf-required').textContent = fmtInr(required);
+    document.getElementById('lf-shortfall').textContent = fmtInr(shortfall);
+    document.getElementById('lf-threshold').textContent = whollyReligious ? 'N/A — wholly religious' : fmtInr(threshold);
+    document.getElementById('lf-taxableanon').textContent = fmtInr(taxableAnon);
+    document.getElementById('lf-tax').textContent = fmtInr(taxOnAnon);
+    document.getElementById('lf-size').textContent = isLarge ? 'Large Registered NPO' : 'Small Registered NPO';
+
+    const noteEl = document.getElementById('lf-note');
+    let msg = '';
+    if(shortfall > 0){
+      msg += `The 85% requirement is short by ${fmtInr(shortfall)} — accumulate it via Form 109 (Sec 342), rely on the automatic 15% deemed accumulation (Sec 343), or exercise the Form 108 option (Sec 341(7)); otherwise it becomes taxable regular income for the year. `;
+    } else {
+      msg += 'The 85% application requirement is satisfied on the figures entered. ';
+    }
+    if(taxableAnon > 0){
+      msg += `${fmtInr(taxableAnon)} of anonymous donations exceeds the Section 337 threshold and is taxable as specified income at 30%. `;
+    } else if(!whollyReligious){
+      msg += 'Anonymous donations are within the exempt threshold. ';
+    } else {
+      msg += 'As a wholly religious RNPO, anonymous donations are excluded from this tax altogether. ';
+    }
+    msg += isLarge
+      ? 'Regular income above ₹5 crore, foreign contribution above ₹10 lakh, or overseas application above ₹10 lakh classifies this RNPO as a Large Registered NPO — the fuller Form 112 schedules apply.'
+      : 'None of the Large-NPO thresholds are crossed, so the shorter Small Registered NPO schedules of Form 112 apply.';
+    noteEl.textContent = msg;
+  }
+  ['lf-regincome','lf-applied','lf-totaldon','lf-anondon','lf-forex','lf-outsideindia'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', computeApplication);
+  });
+
+  document.getElementById('computeApplicationBtn').addEventListener('click', computeApplication);
+  document.getElementById('clearApplicationBtn').addEventListener('click', ()=>{
+    document.getElementById('lf-regincome').value = 0;
+    document.getElementById('lf-applied').value = 0;
+    document.getElementById('lf-totaldon').value = 0;
+    document.getElementById('lf-anondon').value = 0;
+    document.getElementById('lf-forex').value = 0;
+    document.getElementById('lf-outsideindia').value = 0;
+    setRelig(false);
+    computeApplication();
+    document.getElementById('lf-note').textContent = 'Enter figures above to see the result.';
+  });
+
+  // ---- Load sample data ----
+  const loadSampleBtn = document.getElementById('loadSampleBtn');
+  loadSampleBtn.addEventListener('click', ()=>{
+    document.getElementById('c-type').value = 'trust';
+    document.getElementById('c-purpose').value = 'core';
+    document.getElementById('c-income2yr').value = 320;
+    document.getElementById('c-combiz').value = 8;
+    regToggleBtns.forEach(b=>b.classList.remove('active'));
+    document.querySelector('#reg-toggle .toggle-btn[data-val="regular"]').classList.add('active');
+    regStatus = 'regular';
+    setForex(false);
+    computeSnapshot();
+
+    document.getElementById('lf-regincome').value = 1500000;
+    document.getElementById('lf-applied').value = 1150000;
+    document.getElementById('lf-totaldon').value = 1800000;
+    document.getElementById('lf-anondon').value = 150000;
+    document.getElementById('lf-forex').value = 0;
+    document.getElementById('lf-outsideindia').value = 0;
+    setRelig(false);
+    computeApplication();
+
+    loadSampleBtn.textContent = 'Sample loaded ✓';
+    loadSampleBtn.classList.add('applied');
+    setTimeout(()=>{ loadSampleBtn.textContent='Load sample data'; loadSampleBtn.classList.remove('applied'); }, 1800);
+  });
+
+  // ---- init ----
+  computeSnapshot();
+  computeApplication();
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

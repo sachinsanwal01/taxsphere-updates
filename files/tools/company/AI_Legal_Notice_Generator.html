@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Legal Notice Generator — Companies Act Reckoner</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b2545; --navy2:#16365f; --gold:#c9a227; --gold2:#f3e7bf;
+  --ink:#1a2233; --ink2:#33405a; --ink3:#6b7689; --line:#e3e6ec; --line2:#eff1f5;
+  --bg:#f5f3ee; --card:#fff; --soft:#f2f3f6; --ok:#1d7a4c; --okbg:#e8f5ee; --warn:#8a5a00; --warnbg:#fff6df; --err:#b3261e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(1200px 600px at 10% -10%,#f3ecdc 0,transparent 60%),radial-gradient(900px 500px at 110% 110%,#e9eef7 0,transparent 60%),var(--bg);
+  font-family:Manrope,system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+a{color:inherit}
+.shell{display:flex;gap:16px;justify-content:center;align-items:stretch;height:100vh;padding:16px 16px 70px}
+.app{width:100%;max-width:820px;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 40px rgba(11,37,69,.08);overflow:hidden;min-width:0}
+body.split .app{max-width:520px;flex:0 0 520px}
+body.split .top .sub{display:none}
+.top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line2)}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-size:17px;flex:none}
+.top h1{margin:0;font-size:16px;font-weight:700;letter-spacing:-.2px}
+.top .sub{font-size:11.5px;color:var(--ink3)}
+.sp{flex:1}
+.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px}
+.seg button{white-space:nowrap;border:0;background:transparent;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink3);font-weight:600}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.ib{border:1px solid var(--line);background:#fff;border-radius:9px;width:34px;height:34px;display:grid;place-items:center;color:var(--ink2);flex:none}
+.ib:hover{border-color:var(--navy);color:var(--navy)}
+.log{flex:1;overflow-y:auto;padding:18px 18px 8px;scroll-behavior:smooth}
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink3);padding:20px}
+.empty .bub{font-size:56px;color:#a3a9b5;line-height:1}
+.empty h2{color:var(--ink);font-size:19px;margin:14px 0 6px}
+.empty p{max-width:420px;margin:0}
+.msg{display:flex;margin:0 0 14px}
+.msg.u{justify-content:flex-end}
+.msg.u .b{background:#eceef2;border-radius:16px 16px 4px 16px;padding:10px 14px;max-width:80%;white-space:pre-wrap}
+.msg.a .b{max-width:100%;width:100%}
+.b p{margin:0 0 8px}.b p:last-child{margin-bottom:0}
+.b ol,.b ul{margin:4px 0 8px;padding-left:22px}
+.chk{border:1px solid #e3dcf3;background:#fbfaff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink2);display:inline-flex;align-items:center;gap:7px;margin-bottom:8px;cursor:pointer;user-select:none}
+.chk.open{border-radius:12px;display:block}
+.chk .sum{display:none;margin-top:8px;font-size:12.5px}
+.chk.open .sum{display:block}
+.chk table{border-collapse:collapse;width:100%}
+.chk td{border-top:1px solid #ece8f6;padding:4px 6px;vertical-align:top}
+.chk td:first-child{color:var(--ink3);width:38%}
+.q{font-weight:600}
+.qn{font-size:11.5px;color:var(--ink3);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:2px}
+.hint{font-size:12.5px;color:var(--ink3)}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.opt{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink2)}
+.opt:hover{border-color:var(--navy);color:var(--navy)}
+.opt.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.opt.pri:hover{background:var(--navy2);color:#fff}
+.opt.gh{border-style:dashed;color:var(--ink3)}
+.typing{display:inline-flex;gap:4px;padding:6px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:#9aa6ba;animation:td 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes td{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.warn{background:var(--warnbg);border:1px solid #f0d79a;color:var(--warn);border-radius:10px;padding:8px 11px;font-size:13px;margin:6px 0}
+.okn{background:var(--okbg);border:1px solid #bfe3cd;color:var(--ok);border-radius:10px;padding:8px 11px;font-size:13px;margin:6px 0}
+.dcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:6px;background:#fff}
+.dcard .dh{display:flex;align-items:center;gap:10px;padding:11px 13px;background:#fafbfc;border-bottom:1px solid var(--line2)}
+.dcard .dh i{font-size:20px;color:var(--navy)}
+.dcard .dh b{display:block;font-size:14px}
+.dcard .dh span{font-size:12px;color:var(--ink3)}
+.dcard .dp{padding:10px 14px;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#333;max-height:120px;overflow:hidden;position:relative}
+.dcard .dp:after{content:"";position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(transparent,#fff)}
+.dcard .da{display:flex;flex-wrap:wrap;gap:6px;padding:10px 13px;border-top:1px solid var(--line2)}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:8px}
+.tc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;text-align:left;display:flex;gap:10px;align-items:flex-start}
+.tc:hover{border-color:var(--navy);box-shadow:0 2px 10px rgba(11,37,69,.08)}
+.tc i{font-size:18px;color:var(--navy);margin-top:1px}
+.tc b{display:block;font-size:13.5px;color:var(--ink)}
+.tc span{display:block;font-size:12px;color:var(--ink3);line-height:1.35}
+.saved{border:1px solid var(--line);border-radius:12px;padding:9px 12px;display:flex;gap:10px;align-items:center;margin-top:6px;background:#fff}
+.saved .t{flex:1;min-width:0}
+.saved .t b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saved .t span{font-size:12px;color:var(--ink3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:6px 18px 10px}
+.chip{border:0;background:#eceef2;border-radius:999px;padding:8px 14px;font-size:13.5px;color:var(--ink)}
+.chip:hover{background:#e1e4ea}
+.chip i{margin-right:5px;color:var(--navy)}
+.inbar{margin:0 16px 10px;display:flex;align-items:flex-end;gap:8px;background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:8px 8px 8px 12px}
+.inbar:focus-within{border-color:#b9c3d6;background:#fff}
+.inbar .lead{color:var(--ink3);font-size:16px;padding-bottom:5px}
+.inbar textarea{flex:1;border:0;background:transparent;resize:none;font:inherit;outline:0;max-height:140px;min-height:24px;padding:4px 0;color:var(--ink)}
+.send{width:34px;height:34px;border-radius:50%;border:0;background:var(--navy);color:#fff;display:grid;place-items:center;flex:none}
+.send:disabled{background:#cfd4dd}
+.foot{text-align:center;font-size:12px;color:var(--ink3);padding:0 12px 12px}
+.foot b{color:var(--ink2)}
+/* preview panel */
+.panel{display:none;flex:1;min-width:0;max-width:900px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 40px rgba(11,37,69,.08);flex-direction:column;overflow:hidden}
+body.split .panel{display:flex}
+.ph{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.ph h3{margin:0;font-size:14.5px;flex:1;min-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid var(--line2)}
+.tabs button{border:0;background:none;padding:7px 12px;font-size:13px;color:var(--ink3);font-weight:600;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--gold)}
+.pbody{flex:1;overflow:auto;background:#eef0f4;padding:18px}
+.paper{background:#fff;max-width:780px;margin:0 auto;padding:44px 52px;box-shadow:0 2px 12px rgba(0,0,0,.08);font-family:Georgia,'Times New Roman',serif;font-size:14.5px;line-height:1.65;color:#111;outline:0;min-height:600px}
+.paper:focus{box-shadow:0 0 0 2px #c9a22766,0 2px 12px rgba(0,0,0,.08)}
+.paper .lh{text-align:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:14px}
+.paper .lh b{font-size:18px;letter-spacing:.5px}
+.paper .lh div{font-size:12.5px}
+.paper .row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.paper .subj{font-weight:700;text-decoration:underline;margin:12px 0}
+.paper p{margin:0 0 10px;text-align:justify}
+.paper ol{padding-left:24px;margin:0 0 10px}
+.paper ol li{margin-bottom:8px;text-align:justify}
+.paper table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:13.5px}
+.paper td{border:1px solid #444;padding:6px 8px;vertical-align:top}
+.paper .ph-x{background:#fff3b0;color:#7a5b00;border-radius:3px;padding:0 3px;font-family:Manrope,system-ui,sans-serif;font-size:12.5px}
+.paper .sig{margin-top:28px}
+.form{max-width:780px;margin:0 auto;background:#fff;border-radius:12px;padding:16px 18px;border:1px solid var(--line)}
+.form label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin:10px 0 4px}
+.form input,.form textarea,.form select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13.5px;background:#fff}
+.form textarea{min-height:64px;resize:vertical}
+.form .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.notes{max-width:780px;margin:0 auto;background:#fff;border-radius:12px;padding:16px 20px;border:1px solid var(--line)}
+.notes h4{margin:4px 0 8px;font-size:14px}
+.notes li{margin-bottom:6px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;font-size:13px;color:var(--ink2);display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn:hover{border-color:var(--navy);color:var(--navy)}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.pri:hover{background:var(--navy2);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:100000}
+.toast.show{opacity:1}
+.modal{position:fixed;inset:0;background:rgba(11,37,69,.45);display:none;align-items:center;justify-content:center;z-index:99990;padding:16px}
+.modal.show{display:flex}
+.modal .box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h3{margin:0 0 6px;font-size:16px}
+.modal label{display:block;font-size:12.5px;font-weight:600;margin:10px 0 4px;color:var(--ink2)}
+.modal input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit}
+.modal .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+@media (max-width:980px){
+  body.split .app{display:none}
+  body.split .panel{max-width:none}
+}
+@media (max-width:600px){
+  .shell{padding:8px 8px 96px}
+  .top .sub{display:none}
+  .top h1{font-size:14.5px}
+  .seg button{padding:5px 9px}
+  .paper{padding:24px 18px;font-size:13.5px}
+  .form .g2{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff}
+  .app,.ph,.tabs,.rk-nav,.rk-spacer{display:none!important}
+  .shell{padding:0;height:auto}
+  .panel{display:block!important;border:0;box-shadow:none}
+  .pbody{background:#fff;padding:0;overflow:visible}
+  .paper{box-shadow:none;padding:0;max-width:none}
+  .paper .ph-x{background:none}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <section class="app" aria-label="Legal notice chat">
+    <div class="top">
+      <div class="logo" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></div>
+      <div style="min-width:0"><h1>AI Legal Notice Generator</h1><div class="sub">Companies Act Reckoner &middot; Board &amp; general meetings, resolutions and legal notices — as Company Secretary</div></div>
+      <div class="sp"></div>
+      <div class="seg" role="tablist"><button id="mSearch" type="button">Search</button><button id="mAsk" type="button" class="on">Ask AI</button></div>
+      <button class="ib" id="newChat" type="button" title="New conversation"><i class="bi bi-pencil-square"></i></button>
+    </div>
+    <div class="log" id="log"></div>
+    <div class="chips" id="chips">
+      <button class="chip" data-act="generate"><i class="bi bi-magic"></i>Generate Legal Notice</button>
+      <button class="chip" data-act="templates"><i class="bi bi-search"></i>Find Legal Templates</button>
+      <button class="chip" data-act="email"><i class="bi bi-envelope"></i>Send Legal Notice via Email</button>
+      <button class="chip" data-act="stored"><i class="bi bi-archive"></i>Store Legal Notices</button>
+      <button class="chip" data-act="t:board_notice"><i class="bi bi-calendar2-check"></i>Board Meeting Notice</button>
+      <button class="chip" data-act="t:board_ctc"><i class="bi bi-patch-check"></i>Board Resolution</button>
+      <button class="chip" data-act="t:circular"><i class="bi bi-arrow-repeat"></i>Circular Resolution</button>
+      <button class="chip" data-act="gm"><i class="bi bi-people"></i>AGM / EGM Notice</button>
+    </div>
+    <form class="inbar" id="inbar" autocomplete="off">
+      <span class="lead"><i class="bi bi-pencil-square"></i></span>
+      <textarea id="q" rows="1" placeholder="Describe the notice or resolution you need..."></textarea>
+      <button class="send" id="sendBtn" type="submit" title="Send" disabled><i class="bi bi-arrow-up"></i></button>
+    </form>
+    <div class="foot">Drafted offline by the <b>Companies Act Reckoner</b> &middot; review every draft before you send it</div>
+  </section>
+
+  <section class="panel" id="panel" aria-label="Notice preview">
+    <div class="ph">
+      <button class="ib" id="pClose" type="button" title="Back to chat"><i class="bi bi-arrow-left"></i></button>
+      <h3 id="pTitle">Legal notice</h3>
+      <button class="btn gold" id="pSave" type="button"><i class="bi bi-archive"></i>Save</button>
+      <button class="btn" id="pCopy" type="button"><i class="bi bi-clipboard"></i>Copy</button>
+      <button class="btn" id="pWord" type="button"><i class="bi bi-file-earmark-word"></i>Word</button>
+      <button class="btn" id="pPrint" type="button"><i class="bi bi-printer"></i>Print / PDF</button>
+      <button class="btn pri" id="pMail" type="button"><i class="bi bi-envelope"></i>Email</button>
+    </div>
+    <div class="tabs"><button data-pt="doc" class="on">Notice</button><button data-pt="det">Details</button><button data-pt="notes">Law &amp; timelines</button></div>
+    <div class="pbody" id="pbody"></div>
+  </section>
+</div>
+
+<div class="modal" id="mailModal"><div class="box">
+  <h3><i class="bi bi-envelope"></i> Send legal notice by email</h3>
+  <div class="hint">The full notice is copied to your clipboard. Your email opens with the subject and text filled in; attach the Word / PDF copy if you want a signed version on record.</div>
+  <label for="mTo">To</label><input id="mTo" type="email" placeholder="recipient@example.com">
+  <label for="mCc">Cc (optional)</label><input id="mCc" type="text" placeholder="client@example.com">
+  <label for="mSub">Subject</label><input id="mSub" type="text">
+  <div class="acts">
+    <button class="btn" type="button" id="mCancel">Cancel</button>
+    <button class="btn" type="button" id="mWord"><i class="bi bi-file-earmark-word"></i>Download Word to attach</button>
+    <button class="btn" type="button" id="mGmail"><i class="bi bi-google"></i>Open in Gmail</button>
+    <button class="btn pri" type="button" id="mApp"><i class="bi bi-envelope-open"></i>Open email app</button>
+  </div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   AI LEGAL NOTICE GENERATOR — offline guided drafting engine
+   Templates: Indian law notices with Companies Act focus.
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const fmtDate=d=>d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+const TODAY=fmtDate(new Date());
+
+/* ---------- numbers & dates ---------- */
+function parseMoney(s){
+  if(s==null) return null; s=String(s).toLowerCase().replace(/rs\.?|inr|₹|\/-|only/g,'').trim();
+  const m=s.match(/([\d,]*\.?\d+)\s*(crores?|cr\b|lakhs?|lacs?|l\b|k\b|thousand)?/); if(!m) return null;
+  let n=parseFloat(m[1].replace(/,/g,'')); if(isNaN(n)) return null;
+  const u=m[2]||''; if(/^cr/.test(u)) n*=1e7; else if(/^(lakh|lac|l$)/.test(u)) n*=1e5; else if(/^(k|thousand)/.test(u)) n*=1e3;
+  return Math.round(n*100)/100;
+}
+const inr=n=>Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+function words(n){
+  n=Math.floor(Number(n)); if(!n) return 'Zero';
+  const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const two=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');
+  const three=x=>(x>=100?a[Math.floor(x/100)]+' Hundred'+(x%100?' ':''):'')+(x%100?two(x%100):'');
+  let out=[]; const cr=Math.floor(n/1e7); n%=1e7; const lk=Math.floor(n/1e5); n%=1e5; const th=Math.floor(n/1e3); n%=1e3;
+  if(cr) out.push((cr>=100?words(cr):two(cr))+' Crore'); if(lk) out.push(two(lk)+' Lakh'); if(th) out.push(two(th)+' Thousand'); if(n) out.push(three(n));
+  return out.join(' ');
+}
+const rupees=n=>'₹'+inr(n)+'/- (Rupees '+words(n)+(Math.round((n%1)*100)?' and Paise '+words(Math.round((n%1)*100)):'')+' Only)';
+function parseDate(s){
+  s=String(s||'').trim(); const t=new Date(); t.setHours(0,0,0,0);
+  if(/^today$/i.test(s)) return t; if(/^yesterday$/i.test(s)) return new Date(t-864e5);
+  let m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/); if(m){ let y=+m[3]; if(y<100) y+=2000; const d=new Date(y,+m[2]-1,+m[1]); if(!isNaN(d)&&d.getMonth()===+m[2]-1) return d; }
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  m=s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3,})\.?,?\s+(\d{4})$/i)||s.match(/^([a-z]{3,})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/i);
+  if(m){ let dd=m[1],mm=m[2]; if(isNaN(+dd)){[dd,mm]=[mm,dd];} const mi=MONTHS.findIndex(x=>x.toLowerCase().startsWith(mm.toLowerCase().slice(0,3))); if(mi>=0) return new Date(+m[3],mi,+dd); }
+  return null;
+}
+const daysSince=d=>Math.floor((new Date().setHours(0,0,0,0)-d)/864e5);
+
+/* ---------- fields ---------- */
+const F=(k,l,q,o={})=>Object.assign({k,l,q},o);
+const isCo=n=>/\b(pvt|private|ltd|limited|llp|company|corporation|bank)\b/i.test(n||'');
+const PRE=[
+  F('toName','Recipient name','Who is the notice addressed to? (person or company name)',{ph:'e.g. M/s ABC Traders Private Limited'}),
+  F('toAddr','Recipient address','What is the recipient\'s address?',{ph:'Registered office / residential address',multi:1}),
+  F('fromName','Sender (client) name','On whose behalf is the notice being sent? (your client, or your own name)',{ph:'e.g. XYZ Industries Private Limited'}),
+  F('fromAddr','Sender address','And the sender\'s address?',{multi:1})
+];
+const POST=[
+  F('by','Sent by','Who issues the notice?',{opts:['Company Secretary','Party itself','Advocate'],def:'Company Secretary'}),
+  F('csName','Company Secretary','Name of the Company Secretary signing the notice?',{when:v=>!v.by||/secretary/i.test(v.by)}),
+  F('csMem','CS membership no.','ICSI membership no. (ACS / FCS)?',{when:v=>!v.by||/secretary/i.test(v.by)}),
+  F('adv','Advocate details','Advocate\'s name, enrolment no., office address and phone/email.',{multi:1,when:v=>v.by==='Advocate',ph:'e.g. Adv. R. Sharma, D/1234/2010, 12 Lawyers Chambers, New Delhi, 98xxxxxx'}),
+  F('signName','Signatory','Who signs for the sender? (name and designation)',{when:v=>v.by==='Party itself'&&isCo(v.fromName),ph:'e.g. Ravi Kumar, Director (DIN 01234567)'}),
+  F('period','Days to comply','How many days should the recipient get to comply?',{type:'num',opts:['7','15','30'],def:'15',when:(v,t)=>!t.fixedDays}),
+  F('fee','Notice charges','Notice charges to claim from the recipient, if any? (₹)',{type:'money',opt:1}),
+  F('place','Place','Place of signing?',{ph:'e.g. New Delhi'}),
+  F('toEmail','Recipient email','Recipient\'s email address (for sending by email), if known?',{opt:1,type:'email'})
+];
+const EXTRA=[F('date','Date of notice','',{def:TODAY,type:'date'}),F('ref','Reference no.','',{opt:1}),F('mode','Mode of service','',{def:'Registered Post A.D. / Speed Post and Email'})];
+
+/* ---------- templates ---------- */
+const T=[];
+const add=t=>T.push(t);
+const CO_DIRS='(Through its Managing Director / Board of Directors)';
+
+add({id:'cheque',icon:'bi-receipt-cutoff',n:'Cheque bounce notice',law:'Section 138, Negotiable Instruments Act, 1881',fixedDays:15,
+ d:'Statutory demand notice after a cheque is dishonoured — send within 30 days of the bank memo.',
+ kw:/cheque|check bounce|dishono|bounc|138|ni act|negotiable/i,
+ fields:[F('chqNo','Cheque no.','What is the cheque number?',{ph:'6-digit cheque no.'}),F('chqDate','Cheque date','Date written on the cheque?',{type:'date'}),
+  F('amount','Cheque amount','Cheque amount (₹)?',{type:'money'}),F('drawnOn','Drawee bank','Drawn on which bank and branch?',{ph:'e.g. State Bank of India, Connaught Place branch'}),
+  F('purpose','Debt / liability','The cheque was given towards which debt or liability?',{ph:'e.g. payment for goods supplied under invoice no. 45 dated 2 Aug 2026',multi:1}),
+  F('presDate','Presented on','On what date was it presented, and through which bank?',{ph:'e.g. 10 Oct 2026 through HDFC Bank, Karol Bagh'}),
+  F('reason','Return reason','Reason given on the return memo?',{opts:['Funds Insufficient','Exceeds Arrangement','Account Closed','Payment Stopped by Drawer','Drawer\'s Signature Differs']}),
+  F('memoDate','Memo received on','On what date did you receive the return memo from the bank?',{type:'date'})],
+ warn(v){ const d=parseDate(v.memoDate); if(!d) return ''; const n=daysSince(d); return n>30?'The return memo was received '+n+' days ago. A s.138 notice must be sent within 30 days of receiving the memo — the criminal remedy may be lost; consider re-presenting the cheque (within its validity) or a civil recovery notice instead.':(n>=0?'Return memo received '+n+' day'+(n===1?'':'s')+' ago — send this notice by '+fmtDate(new Date(d.getTime()+30*864e5))+' at the latest.':''); },
+ build(v,h){ const co=isCo(v.toName);
+  return {subj:'Legal notice under Section 138 of the Negotiable Instruments Act, 1881 for dishonour of cheque no. '+h.x('chqNo')+' for '+h.m('amount'),
+  paras:[
+   'That you are known to '+h.cl+'. Towards discharge of your legally enforceable debt / liability, namely '+h.x('purpose')+', you issued cheque no. '+h.x('chqNo')+' dated '+h.d('chqDate')+' for '+h.mw('amount')+', drawn on '+h.x('drawnOn')+', in favour of '+h.cl+'.',
+   'That on your assurance that the cheque would be honoured on presentation, '+h.cl+' presented it for encashment on '+h.x('presDate')+'. The cheque was returned unpaid with the remark &ldquo;'+h.x('reason')+'&rdquo;, and the return memo was received by '+h.cl+' on '+h.d('memoDate')+'.',
+   'That the dishonour of the said cheque shows that you issued it knowing that it would not be honoured, and you have thereby committed an offence punishable under Section 138 of the Negotiable Instruments Act, 1881'+(co?'. As the drawer is a company, every person who was in charge of and responsible to it for the conduct of its business at the relevant time is also liable under Section 141 of the said Act':'')+'.',
+   'That this notice is being issued within thirty days of receipt of information from the bank regarding the return of the cheque as unpaid, as required by clause (b) of the proviso to Section 138 of the said Act.'],
+  demand:'make payment of the said cheque amount of '+h.mw('amount')+' to '+h.cl+' within <b>15 (fifteen) days</b> of receipt of this notice',
+  cons:'a criminal complaint under Sections 138 and 142 of the Negotiable Instruments Act, 1881 (in which interim compensation under Section 143A may also be sought), besides civil proceedings for recovery of the amount with interest'};},
+ notes:['Send the notice within <b>30 days</b> of receiving the bank\'s return memo (s.138 proviso (b)).','The drawer has <b>15 days</b> from receipt of the notice to pay (s.138 proviso (c)).','If not paid, the complaint must be filed within <b>one month</b> after the 15 days expire (s.142(1)(b)).','Jurisdiction: court where the payee\'s bank branch (where the cheque was delivered for collection) is situated (s.142(2)).','Company drawer: name the company and the directors / officers in charge of its business (s.141).','Interim compensation up to 20% of the cheque amount can be sought (s.143A).']});
+
+add({id:'recovery',icon:'bi-cash-coin',n:'Recovery of outstanding dues',law:'Indian Contract Act, 1872 · CPC Order XXXVII · MSMED Act, 2006',
+ d:'Demand for unpaid invoices for goods supplied or services rendered, with interest.',
+ kw:/recover|outstanding|dues|unpaid|payment due|invoice|bill|money recovery|pending payment|balance amount/i,
+ fields:[F('nature','Transaction','What was the transaction? ',{opts:['Supply of goods','Services rendered','Work contract'],ph:'or describe'}),
+  F('invoices','Invoices','Invoice numbers, dates and amounts (or ledger summary).',{multi:1,ph:'e.g. Inv. 101 dt 5 Jun 2026 ₹2,00,000; Inv. 118 dt 2 Jul 2026 ₹1,50,000'}),
+  F('amount','Amount due','Total principal amount outstanding (₹)?',{type:'money'}),
+  F('dueSince','Due since','Since when is the amount due?',{type:'date'}),
+  F('rate','Interest rate','Interest to claim (% per annum)?',{opts:['18','24','12','Not claimed'],def:'18'}),
+  F('msme','MSME supplier','Is the sender registered as a Micro or Small enterprise (Udyam)?',{opts:['Yes','No'],def:'No'}),
+  F('ack','Acknowledgements','Any part-payments, confirmations of balance or promises to pay? (optional)',{opt:1,multi:1})],
+ build(v,h){ const r=/^\d/.test(v.rate||'')?parseFloat(v.rate):0; const ms=/^y/i.test(v.msme||'');
+  const p=['That '+h.cl+' and you have had business dealings, in the course of which '+h.cl+' undertook '+h.x('nature').toLowerCase()+' for you on your request.',
+   'That '+h.cl+' duly performed its part and raised the following invoices / bills on you: '+h.x('invoices')+'. You accepted the same without any protest or complaint as to quality, quantity or price.',
+   'That a sum of '+h.mw('amount')+' is due and payable by you to '+h.cl+' since '+h.d('dueSince')+', which you have failed to pay despite repeated reminders and requests.'];
+  if(v.ack) p.push('That you have admitted your liability, as is evident from the following: '+h.x('ack')+'.');
+  if(ms) p.push('That '+h.cl+' is a supplier registered as a micro / small enterprise under the Micro, Small and Medium Enterprises Development Act, 2006. Under Sections 15 and 16 of that Act you were bound to pay within the agreed period (which cannot exceed forty-five days), failing which you are liable to pay compound interest with monthly rests at three times the bank rate notified by the Reserve Bank of India. '+h.Cl+' also reserves the right to refer the dispute to the Micro and Small Enterprises Facilitation Council under Section 18 of that Act.');
+  else if(r) p.push('That in terms of the dealings between the parties and the usage of trade, you are also liable to pay interest at '+r+'% per annum on the outstanding amount from the due date until payment.');
+  return {subj:'Legal notice for recovery of '+h.m('amount')+' outstanding against '+h.x('nature').toLowerCase(),paras:p,
+   demand:'pay the outstanding sum of '+h.mw('amount')+(ms?' together with interest under Section 16 of the MSMED Act, 2006':(r?' together with interest at '+r+'% per annum from '+h.d('dueSince')+' till realisation':''))+' within <b>'+h.days+' days</b> of receipt of this notice',
+   cons:'appropriate civil proceedings for recovery (including a summary suit under Order XXXVII of the Code of Civil Procedure, 1908 / a commercial suit'+(ms?' or a reference to the MSE Facilitation Council':'')+') and such other proceedings as '+h.cl+' may be advised'};},
+ notes:['Limitation for a money suit is generally <b>3 years</b> from the due date (Limitation Act, 1963) — an acknowledgment in writing restarts it (s.18).','Commercial disputes of ₹3 lakh and above: pre-institution mediation is mandatory unless urgent interim relief is sought (s.12A, Commercial Courts Act, 2015).','MSE suppliers: buyer must pay within the agreed period, max 45 days (s.15 MSMED Act); interest at 3× RBI bank rate (s.16); reference to MSEFC (s.18) or the MSME Samadhaan portal.','For an operational debt of ₹1 crore or more against a company, see the IBC Section 8 demand notice template.']});
+
+add({id:'ibc',icon:'bi-bank2',n:'IBC demand notice (Form 3)',law:'Section 8, Insolvency and Bankruptcy Code, 2016 · Rule 5, Form 3',fixedDays:10,
+ d:'Operational creditor\'s statutory demand on a corporate debtor before filing under Section 9.',
+ kw:/\bibc\b|insolven|bankrupt|section 8|form 3|operational creditor|corporate debtor|cirp|nclt.*(debt|insolv)/i,
+ fields:[F('cin','Debtor CIN','Corporate debtor\'s CIN?',{opt:1,ph:'U12345DL2015PTC123456'}),
+  F('amount','Amount claimed','Total amount of operational debt in default (₹) — principal plus interest claimed?',{type:'money'}),
+  F('particulars','Transactions','Details of the transactions giving rise to the debt (invoices, agreement, dates).',{multi:1}),
+  F('defaultDate','Date of default','Date(s) from which the debt fell into default?',{ph:'e.g. 30 June 2026 (due date of Inv. 101)'}),
+  F('security','Security','Particulars of any security held, with date of creation? (optional)',{opt:1}),
+  F('docs','Documents attached','Documents attached to the notice?',{multi:1,def:'Copies of invoices, purchase orders, ledger account statement, and correspondence acknowledging the debt'}),
+  F('authName','Authorised person','Name and position of the person signing for the operational creditor?',{ph:'e.g. Anil Mehta, Director, authorised by board resolution dated 1 Nov 2026'})],
+ warn(v){ const a=parseMoney(v.amount); return a&&a<1e7?'Amount '+rupees(a).split(' (')[0]+' is below the ₹1 crore minimum default (s.4 IBC) — the notice can be sent, but a Section 9 application will not be maintainable. A recovery notice may suit better.':''; },
+ build(v,h){ return {ibc:true,subj:'Demand notice of unpaid operational debt under Section 8 of the Insolvency and Bankruptcy Code, 2016',
+  intro:'This letter is a demand notice of unpaid operational debt due from '+h.x('toName')+(v.cin?' (CIN '+esc(v.cin)+')':'')+'. Particulars of the unpaid operational debt are given below.',
+  table:[['Name of operational creditor',h.x('fromName')],['Address of operational creditor',h.x('fromAddr')],['Total amount of debt, details of transactions on account of which debt fell due, and date from which such debt fell due',h.mw('amount')+'<br>'+h.x('particulars')],['Amount claimed to be in default and the date on which the default occurred',h.mw('amount')+' — default from '+h.x('defaultDate')],['Particulars of security held, if any, the date of its creation, its estimated value',v.security?esc(v.security):'Nil'],['Details of reservation / retention of title arrangements (if any) in respect of goods',v.security?'As above':'Nil'],['List of documents attached to this notice in support of the debt',h.x('docs')]],
+  after:['If you dispute the existence or amount of the unpaid operational debt in default, please provide the undersigned, within ten days of the receipt of this letter, details of the pendency of any suit or arbitration proceedings in relation to such dispute filed before the receipt of this letter / notice.',
+   'If you believe that the debt has been repaid before the receipt of this letter, please demonstrate such repayment by sending to us, within ten days of receipt of this letter, (a) an attested copy of the record of electronic transfer of the unpaid amount from the bank account of the corporate debtor, or (b) an attested copy of any record that '+h.x('fromName')+' has received the payment.',
+   'The undersigned requests you to unconditionally repay the unpaid operational debt in default in full within <b>ten days</b> from the receipt of this letter, failing which we shall initiate a corporate insolvency resolution process in respect of '+h.x('toName')+' under Section 9 of the Code.']};},
+ notes:['Prescribed form: <b>Form 3</b> (demand notice) or <b>Form 4</b> (invoice demanding payment), Rule 5 of the IBBI (Application to Adjudicating Authority) Rules, 2016.','Deliver at the <b>registered office</b> by hand, registered post or speed post with acknowledgement, or by email to a whole-time director / designated KMP.','The debtor has <b>10 days</b> to pay or point out a pre-existing dispute (s.8(2)); then the creditor may apply under s.9 in Form 5.','Minimum default for s.9: <b>₹1 crore</b> (s.4, w.e.f. 24 March 2020); each operational creditor must meet it individually.','A pre-existing dispute (raised before receipt of the notice) defeats a s.9 application.']});
+
+add({id:'contract',icon:'bi-file-earmark-break',n:'Breach of contract',law:'Sections 39, 73 & 74, Indian Contract Act, 1872',
+ d:'Calls on the other party to perform or compensate for breach of an agreement.',
+ kw:/breach|agreement|contract|mou|non[- ]?performance|terminat|failed to deliver|deficient work/i,
+ fields:[F('agreement','Agreement','Which agreement — name and date?',{ph:'e.g. Supply Agreement dated 1 April 2026'}),
+  F('obligation','Obligations','What was the recipient obliged to do under it?',{multi:1}),
+  F('breach','Breach','How did they breach it? (facts with dates)',{multi:1}),
+  F('loss','Loss / compensation','Compensation or damages claimed (₹)?',{type:'money',opt:1}),
+  F('relief','Relief sought','What do you want?',{opts:['Perform the contract','Pay compensation','Perform and compensate','Treat contract as terminated and compensate']})],
+ build(v,h){ const r=(v.relief||'Pay compensation').toLowerCase(); const amt=v.loss?h.mw('loss'):h.x('loss');
+  return {subj:'Legal notice for breach of '+h.x('agreement'),
+  paras:['That '+h.cl+' and you entered into '+h.x('agreement')+' (&ldquo;the Agreement&rdquo;), under which you undertook, inter alia, the following obligations: '+h.x('obligation')+'.',
+   'That '+h.cl+' has at all times performed and remained ready and willing to perform its obligations under the Agreement.',
+   'That you have committed breach of the Agreement, in that '+h.x('breach')+'.',
+   'That on account of your breach, '+h.cl+' has suffered loss and damage which naturally arose in the usual course of things from such breach, and you are liable to compensate '+h.cl+' under Sections 73 and 74 of the Indian Contract Act, 1872. '+h.Cl+' presently quantifies the loss at '+amt+', without prejudice to its right to claim further amounts.'],
+  demand:(/perform/.test(r)&&!/terminat/.test(r)?'perform your obligations under the Agreement in full':'')+(/perform/.test(r)&&/compens/.test(r)&&!/terminat/.test(r)?' and also ':'')+(/terminat/.test(r)?'take notice that '+h.cl+' treats the Agreement as terminated on account of your breach, and ':'')+(/compens/.test(r)?'pay '+amt+' as compensation to '+h.cl:'')+' within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'appropriate legal proceedings, including a suit for damages / specific performance or arbitration under the Agreement (if it contains an arbitration clause)'};},
+ notes:['Check the Agreement for a notice clause (mode, address, cure period) and an arbitration clause — follow them.','Limitation: generally 3 years from the date of breach (Limitation Act, 1963).','Liquidated damages (s.74) are capped at the amount named in the contract — only reasonable compensation is recoverable.','Specific performance is governed by the Specific Relief Act, 1963 (as amended in 2018).']});
+
+add({id:'dividend',icon:'bi-piggy-bank',n:'Non-payment of declared dividend',law:'Sections 123, 124 & 127, Companies Act, 2013',
+ d:'Shareholder\'s demand on a company that has not paid a declared dividend within 30 days.',
+ kw:/dividend/i,
+ fields:[F('folio','Folio / DP-Client ID','Folio no. or DP ID / Client ID of the shareholder?'),F('shares','No. of shares','Number of shares held?',{type:'num'}),
+  F('divRate','Dividend rate','Dividend declared (₹ per share or % of face value)?',{ph:'e.g. ₹2 per share (20%)'}),
+  F('amount','Dividend amount','Dividend amount due to the shareholder (₹)?',{type:'money'}),
+  F('meeting','Declared at','Declared at which meeting?',{opts:['Annual General Meeting','Board meeting (interim dividend)']}),
+  F('declDate','Declaration date','Date on which the dividend was declared?',{type:'date'})],
+ warn(v){ const d=parseDate(v.declDate); if(!d) return ''; const n=daysSince(d); return n<=30?'Only '+n+' days have passed since declaration — the company has 30 days to pay (s.127). Consider waiting until '+fmtDate(new Date(d.getTime()+31*864e5))+'.':''; },
+ build(v,h){ return {subj:'Legal notice for non-payment of dividend declared on '+h.d('declDate')+' — Section 127 of the Companies Act, 2013',
+  paras:['That '+h.cl+' is a registered shareholder / beneficial owner of '+h.x('shares')+' equity shares of your company under folio / DP-Client ID '+h.x('folio')+'.',
+   'That at its '+h.x('meeting')+' held on '+h.d('declDate')+', your company declared a dividend of '+h.x('divRate')+', and '+h.cl+' became entitled to a dividend of '+h.mw('amount')+'.',
+   'That under Section 127 of the Companies Act, 2013, a declared dividend must be paid, or the warrant posted, within thirty days from the date of declaration. More than thirty days have elapsed and the dividend has not been paid to '+h.cl+'. Under Section 124, any dividend remaining unpaid was also required to be transferred to an Unpaid Dividend Account within seven days of the expiry of the said period.',
+   'That on account of this default, every director of the company who is knowingly a party to it is punishable with imprisonment which may extend to two years and with fine of not less than one thousand rupees for every day during which the default continues, and the company is liable to pay simple interest at <b>18% per annum</b> for the period of default.'],
+  demand:'pay the dividend of '+h.mw('amount')+' together with simple interest at 18% per annum from the thirty-first day after declaration till payment, within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'a complaint for prosecution of the company\'s directors under Section 127 of the Companies Act, 2013, civil proceedings for recovery, and a complaint to the Registrar of Companies / SEBI (for a listed company)'};},
+ notes:['Dividend must be paid within <b>30 days</b> of declaration (s.127).','Unpaid amount to the Unpaid Dividend Account within <b>7 days</b> after those 30 days (s.124(1)).','Default: directors — imprisonment up to 2 years and fine ≥ ₹1,000 per day; company — simple interest @ <b>18% p.a.</b> (s.127).','Exceptions in s.127 (e.g. operation of law, shareholder\'s instructions not complied with, dispute about the right to receive) — check before sending.','Listed company: also complain on SEBI SCORES.']});
+
+add({id:'transfer',icon:'bi-arrow-left-right',n:'Share transfer / transmission not registered',law:'Sections 56 & 58, Companies Act, 2013',
+ d:'Demand that the company register a transfer or transmission of shares and issue certificates.',
+ kw:/share transfer|transfer of shares|transmission|sh-4|register(ing)? (the )?transfer|refus.*transfer|section 58|section 56/i,
+ fields:[F('kind','Transfer or transmission','Is this a transfer or a transmission?',{opts:['Transfer','Transmission']}),
+  F('shares','Shares','Number and class of shares, with distinctive numbers if known?',{ph:'e.g. 10,000 equity shares of ₹10 each, distinctive nos. 1001–11000'}),
+  F('certNos','Certificate nos.','Share certificate number(s)?',{opt:1}),
+  F('transferor','Transferor / deceased','Name of the transferor (or the deceased holder, for transmission)?'),
+  F('lodgeDate','Lodged on','Date on which the documents were lodged with the company?',{type:'date'}),
+  F('status','Company\'s response','What did the company do?',{opts:['No response','Refused without sufficient cause','Asked for documents already given']})],
+ build(v,h){ const tr=/^transm/i.test(v.kind||''); const st=(v.status||'No response');
+  return {subj:'Legal notice for registration of '+(tr?'transmission':'transfer')+' of '+h.x('shares'),
+  paras:['That '+h.cl+(tr?' is the legal heir / nominee / successor of the late '+h.x('transferor')+', who held ':' acquired from '+h.x('transferor')+' ')+h.x('shares')+' of your company'+(v.certNos?' comprised in share certificate no(s). '+esc(v.certNos):'')+'.',
+   'That on '+h.d('lodgeDate')+', '+h.cl+' lodged with your company '+(tr?'an intimation of transmission along with the required documents':'the duly stamped and executed instrument of transfer in Form SH-4 along with the share certificate(s)')+', as required by Section 56 of the Companies Act, 2013.',
+   'That under Section 56(4) of the said Act, the company was bound to deliver the certificates of the shares '+(tr?'transmitted':'transferred')+' within one month from the date of receipt of the '+(tr?'intimation of transmission':'instrument of transfer')+'. '+(/refus/i.test(st)?'Instead, you have refused to register the '+(tr?'transmission':'transfer')+' without any sufficient cause.':/document/i.test(st)?'Instead, you have sought documents that were already furnished, only to delay the registration.':'You have neither registered the '+(tr?'transmission':'transfer')+' nor sent any notice of refusal.'),
+   'That your default attracts penalty on the company and every officer in default under Section 56(6) of the said Act, and entitles '+h.cl+' to appeal to the National Company Law Tribunal under Section 58 for a direction to register the '+(tr?'transmission':'transfer')+'.'],
+  demand:'register the '+(tr?'transmission':'transfer')+' of the said shares in the name of '+h.cl+', enter the name of '+h.cl+' in the register of members, and deliver the share certificate(s) (or credit the shares in demat form) within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'an appeal / petition before the National Company Law Tribunal under Sections 58 and 59 of the Companies Act, 2013, and a complaint to the Registrar of Companies'};},
+ notes:['Certificates must be delivered within <b>1 month</b> of receipt of the transfer instrument / transmission intimation (s.56(4)).','Private company refusal: notice of refusal with reasons within 30 days; appeal to NCLT within 30 days of receiving the notice, or 60 days from delivery of the instrument if no notice (s.58(1)–(3)).','Public company: refusal "without sufficient cause" — appeal within 60 days of the refusal notice, or 90 days from delivery if no notice (s.58(4)).','Rectification of the register of members: s.59.','Unlisted public / private companies must issue securities only in demat form (Rule 9A / 9B) — consider dematerialisation.']});
+
+add({id:'inspect',icon:'bi-journal-bookmark',n:'Inspection / copies of registers & minutes',law:'Sections 88, 94 & 119, Companies Act, 2013',
+ d:'Member\'s demand for inspection or copies of statutory registers, returns or general-meeting minutes.',
+ kw:/inspect|register of members|copies of (the )?(minutes|register)|section 94|section 119|statutory register/i,
+ fields:[F('folio','Folio / DP-Client ID','Shareholder\'s folio no. or DP ID / Client ID?'),
+  F('records','Records sought','Which registers / returns / minutes do you want to inspect or copy?',{multi:1,def:'Register of members, register of directors and KMP, annual returns of the last three years, and minutes of general meetings'}),
+  F('reqDate','Request made on','When did you first ask the company?',{type:'date'}),
+  F('resp','Company\'s response','What was the response?',{opts:['No response','Refused','Partly allowed']})],
+ build(v,h){ return {subj:'Legal notice for inspection and copies of statutory registers and minutes',
+  paras:['That '+h.cl+' is a member of your company holding shares under folio / DP-Client ID '+h.x('folio')+'.',
+   'That on '+h.d('reqDate')+', '+h.cl+' requested your company to allow inspection of, and to furnish copies of, the following: '+h.x('records')+'. Your response: '+h.x('resp').toLowerCase()+'.',
+   'That under Section 94 of the Companies Act, 2013, the registers and indices maintained under Section 88 and copies of annual returns are open to inspection by members during business hours without fee, and a member may obtain extracts or copies on payment of the prescribed fee, to be furnished within seven days of the request. Under Section 119, the minute books of general meetings are open to members\' inspection and certified copies must be furnished on request within seven working days on payment of the prescribed fee.',
+   'That refusal of inspection or failure to furnish copies makes the company and every officer in default liable to penalty under Sections 94(4) and 119(4), and the Central Government (Regional Director) may direct an immediate inspection.'],
+  demand:'allow inspection of the said records at your registered office on a working day of '+h.cl+'\'s choice and furnish copies thereof on payment of the prescribed fee, within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'a complaint to the Registrar of Companies / Regional Director under Sections 94 and 119 of the Companies Act, 2013, and other appropriate proceedings'};},
+ notes:['Copies of registers / returns: within <b>7 days</b> of request on payment of fee (s.94(3); fee up to ₹10 per page — Rule 14, Companies (Management and Administration) Rules, 2014).','Copies of general-meeting minutes: within <b>7 working days</b> (s.119(3)).','Board minutes are <b>not</b> open to members\' inspection.','Default: penalty under s.94(4) / s.119(4); Central Government may order immediate inspection (s.94(5), s.119(4)).']});
+
+add({id:'oppression',icon:'bi-shield-exclamation',n:'Oppression & mismanagement (pre-petition)',law:'Sections 241–244, Companies Act, 2013',
+ d:'Warning notice to the company and its directors before an NCLT oppression petition.',
+ kw:/oppress|mismanage|minority|241|242|244|siphon|squeez|exclu.*board|dilut/i,
+ fields:[F('holding','Holding','Shares held by the sender (number and % of issued capital)?',{ph:'e.g. 25,000 equity shares (12.5%)'}),
+  F('acts','Acts complained of','List the acts of oppression / mismanagement (with dates).',{multi:1}),
+  F('demand','Demand','What should the company / majority do?',{multi:1,def:'stop the acts complained of, restore the position of my client, and furnish the documents and explanations sought'})],
+ build(v,h){ return {subj:'Notice regarding oppression and mismanagement in the affairs of '+h.x('toName'),
+  paras:['That '+h.cl+' is a member of your company holding '+h.x('holding')+'.',
+   'That the affairs of the company are being conducted in a manner prejudicial to the interests of '+h.cl+' and of the company, and oppressive to '+h.cl+', as shown by the following acts: '+h.x('acts')+'.',
+   'That these acts amount to oppression and mismanagement within the meaning of Section 241 of the Companies Act, 2013, and also constitute breaches by the directors of their duties under Section 166 of the said Act.'],
+  demand:h.x('demand')+', within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'a petition before the National Company Law Tribunal under Sections 241 and 242 of the Companies Act, 2013 seeking appropriate reliefs, including interim reliefs, and such other proceedings against the company and its directors as '+h.cl+' may be advised'};},
+ notes:['A notice before an oppression petition is <b>not mandatory</b> — it builds the record and invites correction.','Eligibility (s.244): at least 100 members or one-tenth of members (whichever is less), or members holding one-tenth of issued share capital (calls paid); NCLT may waive.','Reliefs available under s.242 are wide (regulating conduct, buy-out, setting aside transactions, removal of directors).','Limitation: Article 137, Limitation Act — 3 years from when the right to apply accrues (continuing acts may extend this).']});
+
+add({id:'director',icon:'bi-person-x',n:'Notice to director — breach of duties',law:'Section 166, Companies Act, 2013',
+ d:'Company / member notice to a director for breach of fiduciary duties or undue gain.',
+ kw:/director.*(breach|duty|duties|misconduct|fraud|undue gain|fiduciary)|section 166|breach of fiduciary/i,
+ fields:[F('din','Director DIN','Director\'s DIN?',{opt:1}),F('company','Company','In which company does the director hold office?'),
+  F('acts','Acts complained of','What has the director done? (facts with dates)',{multi:1}),
+  F('loss','Loss / undue gain','Loss to the company or undue gain made (₹)?',{type:'money',opt:1})],
+ build(v,h){ return {subj:'Legal notice for breach of duties as a director of '+h.x('company'),
+  paras:['That you are a director of '+h.x('company')+(v.din?' (DIN '+esc(v.din)+')':'')+' and, as such, owe the duties set out in Section 166 of the Companies Act, 2013, including the duty to act in good faith in the best interests of the company, to exercise due and reasonable care, skill and diligence, to avoid conflicts of interest, and not to achieve any undue gain or advantage.',
+   'That you have acted in breach of these duties, in that '+h.x('acts')+'.',
+   'That by reason of the above, the company has suffered '+(v.loss?'loss of '+h.mw('loss'):'loss and damage')+'. Under Section 166(5), a director who achieves any undue gain is liable to pay an amount equal to that gain to the company, and a contravention of Section 166 is punishable with fine of not less than one lakh rupees, which may extend to five lakh rupees (Section 166(7)).'],
+  demand:'cease the said acts forthwith, render full accounts, and '+(v.loss?'make good '+h.mw('loss')+' to the company':'make good the loss caused to the company')+' within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'civil proceedings for recovery and damages, proceedings before the National Company Law Tribunal, a complaint for prosecution under the Companies Act, 2013, and steps for your removal under Section 169'};},
+ notes:['Duties of directors: s.166(1)–(6); punishment for contravention: fine ₹1 lakh – ₹5 lakh (s.166(7)).','Undue gain must be paid back to the company (s.166(5)).','Removal by ordinary resolution with special notice: s.169 and s.115.','Fraud: s.447 (and s.448 / s.449 for false statements / evidence).']});
+
+add({id:'loan',icon:'bi-wallet2',n:'Repayment of loan / deposit',law:'Indian Contract Act, 1872 · Sections 73–76A, Companies Act, 2013',
+ d:'Demand for repayment of a loan or deposit given to a person or company.',
+ kw:/\bloan\b|deposit|lent|repay|borrow|advance given|friendly loan/i,
+ fields:[F('amount','Loan amount','Amount given (₹)?',{type:'money'}),F('givenDate','Given on','When was it given, and how (bank transfer / cheque)?',{ph:'e.g. 5 January 2026 by RTGS (UTR …)'}),
+  F('terms','Terms','Agreed terms — interest rate, tenure, repayment date?',{multi:1,ph:'e.g. 12% p.a., repayable on demand / by 30 June 2026'}),
+  F('outstanding','Amount outstanding','Amount now outstanding including interest (₹)?',{type:'money',opt:1})],
+ build(v,h){ const co=isCo(v.toName); const out=v.outstanding?h.mw('outstanding'):h.mw('amount');
+  return {subj:'Legal notice for repayment of loan of '+h.m('amount'),
+  paras:['That at your request, '+h.cl+' advanced to you a sum of '+h.mw('amount')+' on '+h.x('givenDate')+', on the following terms: '+h.x('terms')+'.',
+   'That although the amount has become due for repayment, you have failed to repay it despite repeated requests, and a sum of '+out+' remains outstanding.',
+   co?'That if the amount is a deposit within the meaning of Section 2(31) of the Companies Act, 2013 read with the Companies (Acceptance of Deposits) Rules, 2014, its non-repayment also attracts Sections 73 to 76A of that Act, under which the depositor may apply to the National Company Law Tribunal under Section 73(4) for an order directing repayment.':'That you are bound to repay the said amount with interest as agreed.'],
+  demand:'repay '+out+' with further interest as agreed till realisation, within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'civil proceedings for recovery (including a summary suit under Order XXXVII CPC)'+(co?', an application before the National Company Law Tribunal, and other remedies under the Companies Act, 2013 and the Insolvency and Bankruptcy Code, 2016':'')};},
+ notes:['Limitation: 3 years from the date the loan becomes repayable (or from the date of advance if repayable on demand) — Arts. 19 / 21, Limitation Act.','Loans to a company may be "deposits" unless exempted under Rule 2(1)(c) of the Acceptance of Deposits Rules (e.g. from directors with declaration, from banks, inter-corporate).','Depositor remedy: s.73(4) application to NCLT; punishment for default: s.76A.']});
+
+add({id:'salary',icon:'bi-briefcase',n:'Employee salary / full & final dues',law:'Payment of Wages Act / Code on Wages, 2019 · Payment of Gratuity Act, 1972',
+ d:'Employee\'s demand for unpaid salary, full & final settlement, gratuity or relieving letter.',
+ kw:/salary|wages|full and final|f&f|gratuity|relieving|employer|employee|terminated me|notice pay/i,
+ fields:[F('designation','Designation','Employee\'s designation and employee ID?'),F('tenure','Period of service','Date of joining and last working day?',{ph:'e.g. 1 April 2021 to 31 August 2026'}),
+  F('dues','Dues breakdown','What is unpaid? (salary months, leave encashment, bonus, gratuity, reimbursements)',{multi:1}),
+  F('amount','Total dues','Total amount due (₹)?',{type:'money'}),
+  F('docs','Documents sought','Documents to be issued?',{opt:1,def:'relieving letter, experience certificate and Form 16'})],
+ build(v,h){ return {subj:'Legal notice for payment of unpaid salary and full and final dues',
+  paras:['That '+h.cl+' was employed with you as '+h.x('designation')+' from '+h.x('tenure')+', and discharged the duties sincerely and to your satisfaction.',
+   'That the following amounts payable to '+h.cl+' remain unpaid: '+h.x('dues')+', aggregating to '+h.mw('amount')+'.',
+   'That withholding earned wages and terminal dues is illegal and contrary to the applicable labour laws, including the law on payment of wages and, where applicable, the Payment of Gratuity Act, 1972 (under which gratuity is payable within thirty days of becoming due, failing which interest is payable).'],
+  demand:'pay '+h.mw('amount')+' and issue the '+(v.docs?esc(v.docs):'relieving letter and experience certificate')+' to '+h.cl+' within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'proceedings before the appropriate authority / Labour Commissioner / Controlling Authority under the Payment of Gratuity Act and civil proceedings for recovery with interest and costs'};},
+ notes:['Final wages on separation: within 2 working days under the Code on Wages, 2019 (s.17(2)) where in force; check the state notification status.','Gratuity: payable after 5 years\' continuous service; within 30 days of becoming due (s.7, Payment of Gratuity Act).','Recovery authority depends on the employee category and state — "workman" vs managerial staff.']});
+
+add({id:'rent',icon:'bi-house-door',n:'Rent arrears / eviction (tenant)',law:'Section 106, Transfer of Property Act, 1882 · state rent laws',
+ d:'Landlord\'s notice for arrears of rent and / or termination of tenancy.',
+ kw:/rent|tenant|tenancy|evict|vacate|landlord|lease|premises/i,
+ fields:[F('property','Premises','Address / description of the premises?',{multi:1}),F('rentPm','Monthly rent','Monthly rent (₹)?',{type:'money'}),
+  F('arrears','Arrears period','Arrears for which months?',{ph:'e.g. June 2026 to October 2026'}),F('amount','Arrears amount','Total arrears (₹)?',{type:'money'}),
+  F('want','Demand','What do you want?',{opts:['Pay arrears','Pay arrears and vacate','Vacate the premises']})],
+ build(v,h){ const w=(v.want||'Pay arrears').toLowerCase(); const vac=/vacate/.test(w);
+  return {subj:'Legal notice for '+(/pay/.test(w)?'payment of arrears of rent':'')+(/pay/.test(w)&&vac?' and ':'')+(vac?'termination of tenancy and vacation of premises':''),
+  paras:['That you are a tenant of '+h.cl+' in respect of the premises at '+h.x('property')+', at a monthly rent of '+h.mw('rentPm')+'.',
+   'That you have failed to pay the rent for '+h.x('arrears')+', and arrears of '+h.mw('amount')+' are outstanding, despite requests.',
+   vac?'That by this notice '+h.cl+' terminates your tenancy in terms of Section 106 of the Transfer of Property Act, 1882 (and the applicable rent law), with effect from the expiry of the period stated below.':'That you are bound to pay the rent regularly as agreed.'],
+  demand:(/pay/.test(w)?'pay the arrears of '+h.mw('amount'):'')+(/pay/.test(w)&&vac?' and ':'')+(vac?'quit and vacate the premises and hand over its peaceful, vacant possession to '+h.cl:'')+' within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'proceedings for '+(vac?'eviction, ':'')+'recovery of arrears, mesne profits / damages for use and occupation, with costs'};},
+ notes:['Month-to-month tenancy: <b>15 days\'</b> notice (s.106 TPA, as amended in 2002); the notice period runs from receipt.','State rent control laws (and the Model Tenancy Act where adopted) override the TPA for protected tenancies — check grounds for eviction.','Check the lease deed for a notice / lock-in clause.']});
+
+add({id:'consumer',icon:'bi-cart-x',n:'Consumer complaint notice',law:'Consumer Protection Act, 2019',
+ d:'Notice to a seller / service provider for defective goods or deficient service.',
+ kw:/consumer|defect|refund|replace|warranty|deficien|service provider|product|purchased|bought/i,
+ fields:[F('product','Product / service','What was bought or availed?'),F('purchase','Purchase details','Date, invoice / order no. and price paid?',{ph:'e.g. 3 Aug 2026, order #A123, ₹85,000'}),
+  F('defect','Defect / deficiency','What is wrong? (facts, complaints made, responses)',{multi:1}),
+  F('relief','Relief','What do you want?',{opts:['Refund','Replacement','Repair','Refund + compensation']}),
+  F('comp','Compensation','Compensation claimed (₹), if any?',{type:'money',opt:1})],
+ build(v,h){ return {subj:'Legal notice for '+h.x('relief').toLowerCase()+' — defective goods / deficiency in service ('+h.x('product')+')',
+  paras:['That '+h.cl+' purchased / availed '+h.x('product')+' from you ('+h.x('purchase')+').',
+   'That the same suffers from the following defect / deficiency: '+h.x('defect')+'.',
+   'That this amounts to a defect in goods and / or deficiency in service and an unfair trade practice within the meaning of the Consumer Protection Act, 2019, for which you are liable.'],
+  demand:'provide '+h.x('relief').toLowerCase()+(v.comp?' and pay compensation of '+h.mw('comp'):'')+' within <b>'+h.days+' days</b> of receipt of this notice',
+  cons:'a complaint before the appropriate Consumer Disputes Redressal Commission under the Consumer Protection Act, 2019, claiming refund, compensation and costs'};},
+ notes:['Complaint within <b>2 years</b> of the cause of action (s.69).','Pecuniary jurisdiction by consideration paid — District: up to ₹50 lakh; State: ₹50 lakh–₹2 crore; National: above ₹2 crore (Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021).','Complaints can be filed online on e-Daakhil.']});
+
+add({id:'reply',icon:'bi-reply',n:'Reply to a legal notice',law:'General',
+ d:'Point-wise reply denying the allegations in a notice received.',
+ kw:/reply|respond|response to (a |the )?(legal )?notice|received (a )?(legal )?notice|counter/i,
+ fields:[F('nDate','Their notice dated','Date of the notice you received?',{type:'date'}),F('nRef','Their reference','Their reference no. / sent by (advocate)?',{opt:1}),
+  F('allegations','Their allegations','What does their notice allege or demand? (short summary)',{multi:1}),
+  F('response','Your response','Your reply — the true facts and why the claim is wrong (point-wise).',{multi:1}),
+  F('counter','Counter-demand','Any counter-demand? (optional)',{opt:1,multi:1})],
+ build(v,h){ const p=['That '+h.cl+' has received your notice dated '+h.d('nDate')+(v.nRef?' (ref. '+esc(v.nRef)+')':'')+', in which you allege / demand: '+h.x('allegations')+'.',
+   'That the contents of your notice are false, frivolous and misconceived, and are specifically denied, save and except what is expressly admitted herein. Nothing in your notice shall be deemed to be admitted for want of specific traverse.',
+   'That the true facts are as follows: '+h.x('response')+'.',
+   'That in view of the above, '+h.cl+' is not liable to pay any amount or to do anything as demanded in your notice.'];
+  if(v.counter) p.push('That, on the contrary, you are liable to '+esc(v.counter)+'.');
+  return {subj:'Reply to your legal notice dated '+h.d('nDate'),paras:p,reply:true,
+   demand:v.counter?'comply with the above within <b>'+h.days+' days</b> of receipt of this reply':'withdraw your notice and refrain from initiating any frivolous proceedings',
+   cons:'appropriate proceedings, in which '+h.cl+' shall also seek costs and damages for harassment'};},
+ notes:['There is no fixed statutory time limit to reply, but reply promptly — the reply is often an exhibit later.','Deny each allegation specifically; do not admit facts carelessly.','If the original notice is under s.138 NI Act, pay within 15 days or take advice — a reply alone does not stop the offence.']});
+
+add({id:'general',icon:'bi-file-earmark-plus',n:'Other legal notice (custom)',law:'General',
+ d:'Any other matter — you give the facts, demand and consequence; the draft follows standard notice format.',
+ kw:/^$/,
+ fields:[F('subject','Subject','Subject of the notice?',{ph:'e.g. Legal notice for return of security deposit'}),
+  F('facts','Facts','Facts of the case, point-wise (dates, amounts, documents).',{multi:1}),
+  F('demandTxt','Demand','What should the recipient do?',{multi:1}),
+  F('consTxt','Consequence','What will you do if they don\'t comply?',{multi:1,def:'appropriate civil and / or criminal proceedings'})],
+ build(v,h){ const facts=String(v.facts||'').split(/\n+|(?<=\.)\s+(?=\d+[.)]\s)/).map(s=>s.replace(/^\s*\d+[.)]\s*/,'').trim()).filter(Boolean);
+  return {subj:h.x('subject'),paras:facts.length?facts.map(f=>'That '+esc(f).replace(/^that\s+/i,'')):['That '+h.x('facts')+'.'],
+   demand:h.x('demandTxt')+' within <b>'+h.days+' days</b> of receipt of this notice',cons:h.x('consTxt')};},
+ notes:['Keep facts chronological, with dates and document references.','State one clear demand and a reasonable time.','Send by Registered Post A.D. / Speed Post and keep the postal receipts and tracking printouts — they prove service.']});
+
+/* =====================================================================
+   COMPANY SECRETARY DOCUMENTS — Board & general meetings, resolutions
+   (Companies Act, 2013 · SS-1 · SS-2). Signed by the CS / a Director.
+   ===================================================================== */
+const V=(k,l,ph,o={})=>Object.assign({k,l,ph},o);
+const RS=t=>/^\s*resolved/i.test(t)?t:'RESOLVED THAT '+t.replace(/^\s*that\s+/i,'');
+const FILE_AUTH='RESOLVED FURTHER THAT any Director or the Company Secretary of the Company be and is hereby severally authorised to sign and file the necessary forms with the Registrar of Companies, make the required entries in the statutory registers, and do all such acts, deeds and things as may be necessary to give effect to this resolution.';
+
+/* ---- Board resolutions library ---- */
+const BLIB=[
+ {id:'bank_open',n:'Opening of bank account',sec:'s.179 & Articles',kw:/open(ing)?.{0,15}(bank )?account|bank account/i,
+  vars:[V('bank','Bank and branch','e.g. HDFC Bank, Connaught Place, New Delhi'),V('acType','Type of account','',{opts:['current account','savings account','fixed deposit account','escrow account'],def:'current account'}),V('signs','Authorised signatories','names and designations'),V('opMode','Mode of operation','',{opts:['any one of them singly','any two of them jointly'],def:'any one of them singly'})],
+  r:g=>['RESOLVED THAT a '+g('acType')+' be opened in the name of the Company with '+g('bank')+', and that the said bank be and is hereby authorised to honour cheques, bills of exchange, promissory notes and other instruments, and to act on any instructions (including electronic instructions) relating to the said account given on behalf of the Company in accordance with this resolution, whether the account is in credit or overdrawn.',
+   'RESOLVED FURTHER THAT the said account be operated by '+g('signs')+', '+g('opMode')+'.',
+   'RESOLVED FURTHER THAT the account opening form and the standard terms and conditions of the bank be and are hereby accepted, and that a certified true copy of this resolution, together with the specimen signatures of the authorised signatories, be furnished to the bank.']},
+ {id:'bank_sign',n:'Change in bank account signatories',sec:'s.179 & Articles',kw:/signator(y|ies)|operat(e|ion) of (the )?bank/i,
+  vars:[V('bank','Bank and branch'),V('acNo','Account no.'),V('remove','Signatories to be removed','or "None"'),V('add','Signatories to be added'),V('opMode','Mode of operation','',{opts:['singly','jointly by any two'],def:'singly'})],
+  r:g=>['RESOLVED THAT in partial modification of the earlier resolution(s) of the Board relating to the operation of account no. '+g('acNo')+' maintained by the Company with '+g('bank')+', '+g('remove')+' shall cease to be authorised signatories with immediate effect, and '+g('add')+' be and are hereby authorised to operate the said account '+g('opMode')+'.',
+   'RESOLVED FURTHER THAT the bank be informed accordingly and furnished with a certified true copy of this resolution together with the specimen signatures of the new signatories.']},
+ {id:'addl_dir',n:'Appointment of additional director',sec:'s.161(1)',form:'DIR-12 within 30 days',kw:/additional director|appoint(ment)?.{0,10}director/i,
+  vars:[V('name','Name of the director'),V('din','DIN'),V('cat','Category','',{opts:['Non-Executive Director','Executive Director','Independent Director']}),V('wef','With effect from','',{type:'date'})],
+  r:g=>['RESOLVED THAT pursuant to Section 161(1) and other applicable provisions of the Companies Act, 2013, the rules made thereunder and the Articles of Association of the Company, '+g('name')+' (DIN: '+g('din')+'), who has given consent to act as a director in Form DIR-2 and a declaration in Form DIR-8 that he / she is not disqualified under Section 164, be and is hereby appointed as an Additional Director ('+g('cat')+') of the Company with effect from '+g('wef')+', to hold office up to the date of the next annual general meeting or the last date on which the annual general meeting should have been held, whichever is earlier.',FILE_AUTH.replace('the necessary forms','Form DIR-12')]},
+ {id:'cs_appt',n:'Appointment of Company Secretary (KMP)',sec:'s.203',form:'DIR-12 within 30 days',meetOnly:1,kw:/appoint.{0,20}(company secretary|\bcs\b|kmp)/i,
+  vars:[V('name','Name of the Company Secretary'),V('mem','ICSI membership no.','ACS/FCS no.'),V('wef','With effect from','',{type:'date'}),V('pay','Remuneration','e.g. ₹12,00,000 per annum (CTC)')],
+  r:g=>['RESOLVED THAT pursuant to Section 203 and other applicable provisions of the Companies Act, 2013 read with the Companies (Appointment and Remuneration of Managerial Personnel) Rules, 2014, '+g('name')+', a member of the Institute of Company Secretaries of India (Membership No. '+g('mem')+'), be and is hereby appointed as the Company Secretary and a Key Managerial Personnel of the Company with effect from '+g('wef')+', on a remuneration of '+g('pay')+' and on the other terms and conditions set out in the letter of appointment.',FILE_AUTH.replace('the necessary forms','Form DIR-12').replace('any Director or the Company Secretary of the Company be and is hereby severally','any Director of the Company be and is hereby')]},
+ {id:'md_appt',n:'Appointment of Managing / Whole-time Director',sec:'ss.196, 197, 203 & Sch. V',form:'MR-1 within 60 days; DIR-12',meetOnly:1,kw:/managing director|whole.?time director|\bwtd\b|\bmd\b/i,
+  vars:[V('name','Name'),V('din','DIN'),V('desig','Designation','',{opts:['Managing Director','Whole-time Director']}),V('term','Term','e.g. five years'),V('wef','With effect from','',{type:'date'}),V('pay','Remuneration','e.g. ₹3,00,000 per month plus perquisites')],
+  r:g=>['RESOLVED THAT pursuant to Sections 196, 197 and 203 read with Schedule V and other applicable provisions of the Companies Act, 2013 and the rules made thereunder, and subject to the approval of the members, '+g('name')+' (DIN: '+g('din')+') be and is hereby appointed as the '+g('desig')+' of the Company for a period of '+g('term')+' with effect from '+g('wef')+', on a remuneration of '+g('pay')+' and on the other terms and conditions set out in the draft agreement placed before the meeting.',
+   'RESOLVED FURTHER THAT the appointment be placed before the members for approval at the next general meeting, and that any Director or the Company Secretary be authorised to file Form MR-1 within sixty days and Form DIR-12 within thirty days of the appointment, and to do all acts necessary to give effect to this resolution.']},
+ {id:'dir_resign',n:'Resignation of director — taking note',sec:'s.168',form:'DIR-12 within 30 days',kw:/resign/i,
+  vars:[V('name','Name of the director'),V('din','DIN'),V('eff','Effective date','',{type:'date'})],
+  r:g=>['RESOLVED THAT the resignation tendered by '+g('name')+' (DIN: '+g('din')+') from the office of Director of the Company, effective '+g('eff')+', be and is hereby noted, and the Board places on record its appreciation of the contribution made by him / her during his / her tenure.',FILE_AUTH.replace('the necessary forms','Form DIR-12 within thirty days of the resignation')]},
+ {id:'disclosures',n:'Noting MBP-1 & DIR-8 disclosures',sec:'ss.184(1) & 164(2)',kw:/mbp-?1|dir-?8|disclosure of interest/i,
+  vars:[V('fy','Financial year','e.g. 2026-27')],
+  r:g=>['RESOLVED THAT the disclosures of interest received from the directors in Form MBP-1 under Section 184(1) of the Companies Act, 2013, and the declarations of non-disqualification received in Form DIR-8 under Section 164(2), for the financial year '+g('fy')+', as placed before the meeting, be and are hereby taken on record.']},
+ {id:'first_aud',n:'Appointment of first auditor',sec:'s.139(6)',kw:/first auditor/i,
+  vars:[V('firm','Audit firm name'),V('frn','Firm Registration No.')],
+  r:g=>['RESOLVED THAT pursuant to Section 139(6) of the Companies Act, 2013, '+g('firm')+', Chartered Accountants (Firm Registration No. '+g('frn')+'), who have given their written consent and a certificate of eligibility under Section 141, be and are hereby appointed as the first Statutory Auditors of the Company, to hold office until the conclusion of the first annual general meeting, at such remuneration as may be mutually agreed.',
+   'RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to communicate the appointment to the auditors and to do all acts necessary to give effect to this resolution.']},
+ {id:'casual_aud',n:'Auditor — casual vacancy',sec:'s.139(8)',form:'ADT-1',kw:/casual vacancy/i,
+  vars:[V('firm','Audit firm name'),V('frn','Firm Registration No.'),V('cause','Vacancy caused by','',{opts:['resignation','death / disqualification'],def:'resignation'})],
+  r:(g,raw)=>['RESOLVED THAT pursuant to Section 139(8) of the Companies Act, 2013, '+g('firm')+', Chartered Accountants (Firm Registration No. '+g('frn')+'), who have given their consent and a certificate of eligibility under Section 141, be and are hereby appointed as the Statutory Auditors of the Company to fill the casual vacancy caused by the '+g('cause')+' of the existing auditors, to hold office until the conclusion of the next annual general meeting, at such remuneration as may be mutually agreed.',
+   /resign/i.test(raw('cause')||'resignation')?'RESOLVED FURTHER THAT, as the vacancy has been caused by resignation, the appointment be placed before the members for approval at a general meeting to be convened within three months of this recommendation, and that any Director or the Company Secretary be authorised to take the necessary steps, including filing Form ADT-1.':FILE_AUTH.replace('the necessary forms','Form ADT-1')]},
+ {id:'aud_rec',n:'Recommending statutory auditor (5 years)',sec:'s.139(1)',kw:/recommend.{0,20}auditor|statutory auditor/i,
+  vars:[V('firm','Audit firm name'),V('frn','Firm Registration No.'),V('toAgm','Term up to the conclusion of','e.g. the 15th Annual General Meeting')],
+  r:g=>['RESOLVED THAT, subject to the approval of the members, and pursuant to Section 139 and other applicable provisions of the Companies Act, 2013, the Board recommends the appointment of '+g('firm')+', Chartered Accountants (Firm Registration No. '+g('frn')+'), who have given their consent and a certificate of eligibility under Sections 139 and 141, as the Statutory Auditors of the Company for a term of five consecutive years, from the conclusion of the ensuing annual general meeting until the conclusion of '+g('toAgm')+'.',
+   'RESOLVED FURTHER THAT the said item be included in the notice of the ensuing annual general meeting.']},
+ {id:'fs',n:'Approval of financial statements & Board\'s report',sec:'s.134',meetOnly:1,kw:/financial statements|board'?s report|annual accounts/i,
+  vars:[V('fy','Financial year ended','e.g. 31 March 2026'),V('signers','Signing directors / officers','e.g. Mr A (Chairperson, DIN …), Mr B (MD, DIN …) and Ms C (CS)')],
+  r:g=>['RESOLVED THAT the audited financial statements of the Company for the financial year ended '+g('fy')+', comprising the balance sheet as at that date, the statement of profit and loss, the cash flow statement (where applicable) and the notes thereto, as placed before the Board, be and are hereby approved.',
+   'RESOLVED FURTHER THAT pursuant to Section 134(1) of the Companies Act, 2013, the said financial statements be signed on behalf of the Board by '+g('signers')+', and be submitted to the auditors for their report thereon.',
+   'RESOLVED FURTHER THAT the draft Board\'s report for the said financial year, with its annexures, as placed before the meeting, be and is hereby approved, and that the Chairperson be authorised to sign the same on behalf of the Board under Section 134(6).']},
+ {id:'call_agm',n:'Convening the Annual General Meeting',sec:'ss.96 & 101',kw:/(convene|call|calling|convening).{0,15}(agm|annual general)/i,
+  vars:[V('no','AGM number','e.g. 12th'),V('date','Date of AGM','',{type:'date'}),V('time','Time','e.g. 11:00 AM'),V('venue','Venue / mode','e.g. the registered office, or through VC / OAVM')],
+  r:g=>['RESOLVED THAT the '+g('no')+' Annual General Meeting of the members of the Company be held on '+g('date')+' at '+g('time')+' at '+g('venue')+', and that the draft notice convening the meeting, together with the explanatory statement under Section 102 of the Companies Act, 2013, as placed before the Board, be and is hereby approved.',
+   'RESOLVED FURTHER THAT the Company Secretary or any Director be and is hereby authorised to sign and issue the notice to the members, the directors and the auditors of the Company, and to do all acts necessary in connection with the meeting.']},
+ {id:'call_egm',n:'Convening an Extra-ordinary General Meeting',sec:'s.100',kw:/(convene|call|calling|convening).{0,15}(egm|extra.?ordinary)/i,
+  vars:[V('date','Date of EGM','',{type:'date'}),V('time','Time','e.g. 11:00 AM'),V('venue','Venue / mode'),V('purpose','Business to be transacted','e.g. increase in authorised capital')],
+  r:g=>['RESOLVED THAT pursuant to Section 100 of the Companies Act, 2013, an Extra-ordinary General Meeting of the members of the Company be convened on '+g('date')+' at '+g('time')+' at '+g('venue')+' to transact the following business: '+g('purpose')+', and that the draft notice with the explanatory statement under Section 102, as placed before the Board, be and is hereby approved.',
+   'RESOLVED FURTHER THAT the Company Secretary or any Director be and is hereby authorised to sign and issue the notice and to do all acts necessary in connection with the meeting.']},
+ {id:'borrow',n:'Borrowing money',sec:'s.179(3)(d)',form:'CHG-1 within 30 days (if secured)',meetOnly:1,kw:/borrow|term loan|working capital|credit facility/i,
+  vars:[V('lender','Lender'),V('amount','Amount not exceeding','',{type:'money'}),V('purpose','Purpose'),V('security','Security','e.g. hypothecation of stock and book debts / unsecured')],
+  r:g=>['RESOLVED THAT pursuant to Section 179(3)(d) and other applicable provisions of the Companies Act, 2013, and within the limits approved by the members under Section 180(1)(c) (where applicable), the consent of the Board be and is hereby accorded to borrow a sum not exceeding '+g('amount')+' from '+g('lender')+' for '+g('purpose')+', on such terms and conditions as may be agreed with the lender, secured by '+g('security')+'.',
+   'RESOLVED FURTHER THAT any Director or the Company Secretary be and is hereby authorised to negotiate, finalise and execute the loan agreement, security documents and other papers, affix the common seal of the Company (if any) where required, and file Form CHG-1 with the Registrar for creation or modification of the charge within the prescribed time.']},
+ {id:'loan186',n:'Loan / guarantee / investment (s.186)',sec:'s.186',form:'Register MBP-2',meetOnly:1,kw:/section 186|inter.?corporate|give (a )?loan|guarantee|invest(ment)? in/i,
+  vars:[V('kind','Nature','',{opts:['loan','guarantee','security','investment']}),V('party','In favour of / in','name of the body corporate or person'),V('amount','Amount not exceeding','',{type:'money'}),V('purpose','Purpose'),V('rate','Rate of interest (for loans)','e.g. 10% p.a.',{opt:1})],
+  r:(g,raw)=>['RESOLVED THAT pursuant to Section 186 and other applicable provisions of the Companies Act, 2013 read with the Companies (Meetings of Board and its Powers) Rules, 2014, the consent of the Board, being the unanimous consent of all the directors present at the meeting, be and is hereby accorded to make a '+g('kind')+' in favour of / in '+g('party')+' for an amount not exceeding '+g('amount')+' for '+g('purpose')+(/loan/i.test(raw('kind')||'')?', at a rate of interest of '+g('rate')+' (being not lower than the prevailing yield of the Government security closest to the tenor of the loan)':'')+', the aggregate of such loans, guarantees, securities and investments being within the limits laid down in Section 186(2).',
+   'RESOLVED FURTHER THAT the particulars be entered in the register maintained in Form MBP-2, and any Director or the Company Secretary be authorised to execute the necessary documents and do all acts necessary to give effect to this resolution.']},
+ {id:'allot',n:'Allotment of shares',sec:'ss.23, 42 / 62',form:'PAS-3 within 15 days',meetOnly:1,kw:/allot/i,
+  vars:[V('num','Number of equity shares','',{type:'num'}),V('fv','Face value per share (₹)','e.g. 10'),V('prem','Premium per share (₹)','e.g. 0 / 90'),V('route','Route','',{opts:['rights issue under Section 62(1)(a)','private placement under Section 42','preferential allotment under Section 62(1)(c)']}),V('allottees','Allottees and number of shares','one per line',{multi:1})],
+  r:g=>['RESOLVED THAT pursuant to Sections 23 and 62 / 42 (as applicable) and other applicable provisions of the Companies Act, 2013 and the rules made thereunder, the Articles of Association of the Company, and the offer made by way of '+g('route')+', and upon receipt of the full application money in the Company\'s bank account, '+g('num')+' equity shares of face value ₹'+g('fv')+' each at a premium of ₹'+g('prem')+' per share be and are hereby allotted, credited as fully paid up, to the following persons: '+g('allottees')+'.',
+   'RESOLVED FURTHER THAT the shares so allotted shall rank pari passu with the existing equity shares; that the shares be credited to the demat accounts of the allottees (or share certificates be issued) within the period prescribed under Section 56(4); that the names of the allottees be entered in the register of members; and that the return of allotment in Form PAS-3 be filed with the Registrar within fifteen days of allotment.']},
+ {id:'transfer_ok',n:'Approval of share transfer',sec:'s.56',kw:/approv.{0,15}transfer|transfer of shares|share transfer/i,
+  vars:[V('shares','Shares','e.g. 5,000 equity shares of ₹10 each'),V('transferor','Transferor'),V('transferee','Transferee'),V('folio','Transferee\'s folio / DP-Client ID')],
+  r:g=>['RESOLVED THAT the transfer of '+g('shares')+' from '+g('transferor')+' to '+g('transferee')+', lodged with the Company along with a duly stamped and executed instrument of transfer in Form SH-4 and the relevant share certificate(s) / effected through the depository, be and is hereby approved and registered, and the name of the transferee be entered in the register of members under folio / DP-Client ID '+g('folio')+'.',
+   'RESOLVED FURTHER THAT the share certificate(s) be endorsed or issued in the name of the transferee within one month from the date of receipt of the instrument of transfer, as required by Section 56(4)(c).']},
+ {id:'dup_cert',n:'Issue of duplicate share certificate',sec:'s.46 & Rule 6',form:'Register SH-2',kw:/duplicate (share )?certificate|lost (share )?certificate/i,
+  vars:[V('holder','Shareholder'),V('folio','Folio no.'),V('oldNo','Original certificate no.'),V('newNo','New certificate no.'),V('reason','Reason','',{opts:['lost','destroyed','defaced','torn / mutilated']})],
+  r:g=>['RESOLVED THAT pursuant to Section 46 of the Companies Act, 2013 read with Rule 6 of the Companies (Share Capital and Debentures) Rules, 2014, and upon receipt of the documents required under the said Rule, a duplicate share certificate no. '+g('newNo')+' be issued to '+g('holder')+' (folio '+g('folio')+') in lieu of the original certificate no. '+g('oldNo')+', which has been reported as '+g('reason')+'.',
+   'RESOLVED FURTHER THAT the duplicate certificate be signed and issued in accordance with Rule 5, within the time prescribed under Rule 6, and that its particulars be entered in the register of renewed and duplicate share certificates in Form SH-2.']},
+ {id:'rpt',n:'Related party transaction (s.188)',sec:'s.188 & Rule 15',form:'MBP-4; AOC-2 in Board\'s report',meetOnly:1,kw:/related party|\brpt\b|section 188/i,
+  vars:[V('party','Related party'),V('rel','Relationship','e.g. private company in which Mr X is a director'),V('nature','Nature of contract','e.g. purchase of raw material'),V('value','Value not exceeding','',{type:'money'}),V('period','Period','e.g. FY 2026-27')],
+  r:g=>['RESOLVED THAT pursuant to Section 188 of the Companies Act, 2013 read with Rule 15 of the Companies (Meetings of Board and its Powers) Rules, 2014, and on the recommendation of the Audit Committee (where applicable), the consent of the Board be and is hereby accorded for the Company to enter into a contract / arrangement for '+g('nature')+' with '+g('party')+', a related party ('+g('rel')+'), for a value not exceeding '+g('value')+' during '+g('period')+', on an arm\'s length basis and in the ordinary course of business.',
+   'RESOLVED FURTHER THAT the particulars of the contract be entered in the register maintained under Section 189 in Form MBP-4, and the transaction be disclosed in the Board\'s report in Form AOC-2. It is noted that the interested director(s) did not participate in the discussion or voting on this item.']},
+ {id:'ro_shift',n:'Shifting registered office (same city)',sec:'s.12',form:'INC-22 within 30 days',kw:/regist(ered)? office|shift(ing)?.{0,10}office/i,
+  vars:[V('addr','New address',null,{multi:1}),V('wef','With effect from','',{type:'date'})],
+  r:g=>['RESOLVED THAT pursuant to Section 12 and other applicable provisions of the Companies Act, 2013, the registered office of the Company be shifted from its present location to '+g('addr')+', being within the local limits of the same city, town or village, with effect from '+g('wef')+'.',
+   'RESOLVED FURTHER THAT any Director or the Company Secretary be and is hereby authorised to file Form INC-22 with the Registrar within thirty days of the change and to update the Company\'s name board, letterheads and other stationery accordingly.']},
+ {id:'interim_div',n:'Declaration of interim dividend',sec:'s.123(3)',kw:/interim dividend/i,
+  vars:[V('rate','Dividend','e.g. ₹2 per equity share (20%)'),V('fy','Financial year','e.g. 2026-27'),V('amount','Total outlay','',{type:'money'}),V('record','Record date','',{type:'date'})],
+  r:g=>['RESOLVED THAT pursuant to Section 123(3) and other applicable provisions of the Companies Act, 2013 and the rules made thereunder, an interim dividend of '+g('rate')+' for the financial year '+g('fy')+', amounting to '+g('amount')+' in aggregate, be and is hereby declared out of the profits of the Company, payable to the members whose names appear in the register of members / list of beneficial owners as on the record date, '+g('record')+'.',
+   'RESOLVED FURTHER THAT the amount of the interim dividend be deposited in a separate bank account within five days of this declaration as required by Section 123(4), and the dividend be paid within thirty days of declaration in accordance with Section 127.']},
+ {id:'sec_aud',n:'Appointment of secretarial auditor',sec:'s.204',form:'MR-3 report',meetOnly:1,kw:/secretarial audit/i,
+  vars:[V('name','Practising Company Secretary / firm'),V('cop','Certificate of Practice no.'),V('fy','Financial year','e.g. 2026-27')],
+  r:g=>['RESOLVED THAT pursuant to Section 204 of the Companies Act, 2013 read with Rule 9 of the Companies (Appointment and Remuneration of Managerial Personnel) Rules, 2014, '+g('name')+', Practising Company Secretary (Certificate of Practice No. '+g('cop')+'), be and is hereby appointed as the Secretarial Auditor of the Company to conduct the secretarial audit for the financial year '+g('fy')+' and to issue the secretarial audit report in Form MR-3, at such remuneration as may be mutually agreed.']},
+ {id:'int_aud',n:'Appointment of internal auditor',sec:'s.138 & Rule 13',meetOnly:1,kw:/internal audit/i,
+  vars:[V('name','Internal auditor (name / firm)'),V('fy','Financial year','e.g. 2026-27')],
+  r:g=>['RESOLVED THAT pursuant to Section 138 of the Companies Act, 2013 read with Rule 13 of the Companies (Accounts) Rules, 2014, '+g('name')+' be and is hereby appointed as the Internal Auditor of the Company for the financial year '+g('fy')+', and that the scope, functioning, periodicity and methodology of the internal audit be as determined by the Audit Committee or the Board.']},
+ {id:'cost_aud',n:'Appointment of cost auditor',sec:'s.148',form:'CRA-2',kw:/cost audit/i,
+  vars:[V('firm','Cost auditor (firm)'),V('frn','Firm Registration No.'),V('fy','Financial year','e.g. 2026-27'),V('fee','Remuneration','',{type:'money'})],
+  r:g=>['RESOLVED THAT pursuant to Section 148 of the Companies Act, 2013 read with the Companies (Cost Records and Audit) Rules, 2014, '+g('firm')+', Cost Accountants (Firm Registration No. '+g('frn')+'), be and are hereby appointed as the Cost Auditors of the Company for the financial year '+g('fy')+' at a remuneration of '+g('fee')+' plus applicable taxes and out-of-pocket expenses, subject to ratification of the remuneration by the members.',
+   'RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to file Form CRA-2 within thirty days of this meeting or within one hundred and eighty days of the commencement of the financial year, whichever is earlier.']},
+ {id:'csr',n:'CSR annual action plan',sec:'s.135',kw:/\bcsr\b|corporate social/i,
+  vars:[V('fy','Financial year','e.g. 2026-27'),V('amount','CSR expenditure','',{type:'money'}),V('projects','Projects / programmes',null,{multi:1})],
+  r:g=>['RESOLVED THAT pursuant to Section 135 of the Companies Act, 2013 and the Companies (Corporate Social Responsibility Policy) Rules, 2014, and on the recommendation of the CSR Committee (where constituted), the annual action plan for the financial year '+g('fy')+', providing for CSR expenditure of '+g('amount')+' on the following projects / programmes, be and is hereby approved: '+g('projects')+'.',
+   'RESOLVED FURTHER THAT the implementation of the action plan be monitored as per the CSR Policy, and any unspent amount be dealt with in accordance with Section 135(5) and (6).']},
+ {id:'auth_filing',n:'Authority for MCA filings',sec:'General',kw:/authori[sz](e|ation).{0,20}(fil|sign)|e-?filing/i,
+  vars:[V('who','Persons authorised','e.g. Mr A (Director, DIN …) and Ms B (Company Secretary)')],
+  r:g=>['RESOLVED THAT '+g('who')+' be and are hereby severally authorised to sign, digitally sign and file all e-forms, returns, documents and intimations required to be filed with the Ministry of Corporate Affairs, the Registrar of Companies and other authorities under the Companies Act, 2013 and the rules made thereunder, and to do all acts, deeds and things incidental thereto.']},
+ {id:'b_custom',n:'Any other resolution (type it)',sec:'',kw:/^$/,
+  vars:[V('title','Title of the item'),V('text','Resolution text','start with "RESOLVED THAT …"; one paragraph per line',{multi:1})],
+  r:(g,raw)=>String(raw('text')||'').split(/\n+/).filter(s=>s.trim()).map(s=>RS(esc(s.trim()))).concat(raw('text')?[]:[g('text')]),title:raw=>raw('title')}
+];
+
+/* ---- Members' (general meeting) resolutions library ---- */
+const NOINT='None of the Directors or Key Managerial Personnel of the Company or their relatives is, in any way, concerned or interested, financially or otherwise, in this resolution, except to the extent of their shareholding in the Company, if any.';
+const MLIB=[
+ {id:'m_fs',n:'Adoption of audited financial statements',type:'Ordinary',ord:1,kw:/adopt.{0,20}financial/i,
+  item:g=>'To receive, consider and adopt the audited financial statements of the Company for the financial year ended '+g('fy')+', together with the reports of the Board of Directors and the Auditors thereon.',
+  vars:[V('fy','Financial year ended','e.g. 31 March 2026')],
+  r:g=>['RESOLVED THAT the audited financial statements of the Company for the financial year ended '+g('fy')+', together with the reports of the Board of Directors and the Auditors thereon, as laid before this meeting, be and are hereby received, considered and adopted.']},
+ {id:'m_div',n:'Declaration of final dividend',type:'Ordinary',ord:1,kw:/final dividend|declare.{0,10}dividend/i,
+  item:g=>'To declare a final dividend of '+g('rate')+' for the financial year ended '+g('fy')+'.',
+  vars:[V('rate','Dividend','e.g. ₹2 per equity share (20%)'),V('fy','Financial year ended','e.g. 31 March 2026')],
+  r:g=>['RESOLVED THAT a final dividend of '+g('rate')+' for the financial year ended '+g('fy')+', as recommended by the Board of Directors, be and is hereby declared, payable to the members whose names appear in the register of members / list of beneficial owners as on the record date fixed for the purpose.']},
+ {id:'m_rot',n:'Re-appointment of director retiring by rotation',type:'Ordinary',ord:1,kw:/retir(e|ing|es) by rotation|rotation/i,
+  item:g=>'To appoint a Director in place of '+g('name')+' (DIN: '+g('din')+'), who retires by rotation and, being eligible, offers himself / herself for re-appointment.',
+  vars:[V('name','Director retiring by rotation'),V('din','DIN')],
+  r:g=>['RESOLVED THAT pursuant to Section 152 of the Companies Act, 2013, '+g('name')+' (DIN: '+g('din')+'), who retires by rotation at this meeting and, being eligible, has offered himself / herself for re-appointment, be and is hereby re-appointed as a Director of the Company, liable to retire by rotation.']},
+ {id:'m_aud',n:'Appointment of statutory auditors (5 years)',type:'Ordinary',ord:1,kw:/appoint.{0,20}(statutory )?auditor/i,
+  item:g=>'To appoint '+g('firm')+', Chartered Accountants (FRN '+g('frn')+'), as Statutory Auditors of the Company for a term of five years and to fix their remuneration, and in this regard to pass the resolution set out below as an Ordinary Resolution.',
+  vars:[V('firm','Audit firm'),V('frn','Firm Registration No.'),V('toAgm','Term up to the conclusion of','e.g. the 17th Annual General Meeting')],
+  r:g=>['RESOLVED THAT pursuant to Sections 139, 142 and other applicable provisions of the Companies Act, 2013 and the Companies (Audit and Auditors) Rules, 2014, '+g('firm')+', Chartered Accountants (Firm Registration No. '+g('frn')+'), who have given their consent and a certificate of eligibility, be and are hereby appointed as the Statutory Auditors of the Company for a term of five consecutive years, to hold office from the conclusion of this meeting until the conclusion of '+g('toAgm')+', at such remuneration as may be fixed by the Board of Directors in consultation with the auditors.']},
+ {id:'m_reg',n:'Regularisation of additional director',type:'Ordinary',kw:/regulari[sz]|additional director as (a )?director/i,
+  vars:[V('name','Director'),V('din','DIN'),V('wef','Appointed as additional director on','',{type:'date'})],
+  r:g=>['RESOLVED THAT pursuant to Sections 152, 160 and other applicable provisions of the Companies Act, 2013 and the rules made thereunder, '+g('name')+' (DIN: '+g('din')+'), who was appointed as an Additional Director by the Board with effect from '+g('wef')+' and who holds office up to the date of this meeting, and in respect of whom the Company has received a notice in writing under Section 160 proposing his / her candidature, be and is hereby appointed as a Director of the Company, liable to retire by rotation.'],
+  es:g=>[g('name')+' was appointed as an Additional Director by the Board with effect from '+g('wef')+' under Section 161(1) and holds office up to the date of this meeting. The Company has received a notice under Section 160 proposing his / her candidature for the office of Director. He / she has given his / her consent and is not disqualified from being appointed as a Director under Section 164.','The Board considers that his / her continued association will be of benefit to the Company. Except '+g('name')+' and his / her relatives, none of the Directors or Key Managerial Personnel of the Company or their relatives is concerned or interested in this resolution.'],noStd:1},
+ {id:'m_cap',n:'Increase in authorised share capital',type:'Ordinary',form:'SH-7 within 30 days',kw:/authori[sz]ed (share )?capital|increase.{0,10}capital/i,
+  vars:[V('from','Existing authorised capital','',{type:'money'}),V('to','New authorised capital','',{type:'money'}),V('struct','Divided into','e.g. 10,00,000 equity shares of ₹10 each')],
+  r:g=>['RESOLVED THAT pursuant to Sections 13, 61 and 64 and other applicable provisions of the Companies Act, 2013, and as permitted by the Articles of Association, the authorised share capital of the Company be and is hereby increased from '+g('from')+' to '+g('to')+', divided into '+g('struct')+', the new shares ranking pari passu with the existing shares.',
+   'RESOLVED FURTHER THAT Clause V of the Memorandum of Association of the Company be and is hereby substituted by the following: &ldquo;V. The Authorised Share Capital of the Company is '+g('to')+' divided into '+g('struct')+'.&rdquo;',
+   'RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to file Form SH-7 with the Registrar within thirty days and to do all acts necessary to give effect to this resolution.'],
+  es:g=>['To meet the Company\'s growing business requirements and to enable further issue of shares, the Board proposes to increase the authorised share capital from '+g('from')+' to '+g('to')+'. This requires alteration of Clause V (capital clause) of the Memorandum of Association and the approval of the members under Section 61 read with Section 13.']},
+ {id:'m_name',n:'Change of name of the company',type:'Special',form:'MGT-14 & INC-24',kw:/change.{0,10}name/i,
+  vars:[V('newName','New name (as reserved)')],
+  r:(g,raw,h)=>['RESOLVED THAT pursuant to Sections 4, 13 and other applicable provisions of the Companies Act, 2013, and subject to the approval of the Central Government (power delegated to the Registrar of Companies), the name of the Company be changed from '+h.x('coName')+' to '+g('newName')+', the said name having been made available by the Registrar.',
+   'RESOLVED FURTHER THAT Clause I of the Memorandum of Association be substituted accordingly, and the new name be substituted for the existing name wherever it occurs in the Memorandum and Articles of Association.',
+   'RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to file Forms MGT-14 and INC-24 with the Registrar and to do all acts necessary to give effect to this resolution.'],
+  es:g=>['The Board proposes to change the name of the Company to '+g('newName')+', which has been made available by the Registrar. A change of name requires a special resolution under Section 13(2) and the approval of the Central Government, and takes effect on the issue of a fresh certificate of incorporation.']},
+ {id:'m_obj',n:'Alteration of object clause (MOA)',type:'Special',form:'MGT-14 within 30 days',kw:/object clause|alter.{0,10}(moa|memorandum)/i,
+  vars:[V('change','Alteration','e.g. insert the following sub-clause after sub-clause 3 of Clause III(A): "…"',{multi:1})],
+  r:g=>['RESOLVED THAT pursuant to Section 13 and other applicable provisions of the Companies Act, 2013, the object clause (Clause III) of the Memorandum of Association of the Company be and is hereby altered as follows: '+g('change')+'.','RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to file Form MGT-14 with the Registrar within thirty days and to do all acts necessary to give effect to this resolution.'],
+  es:g=>['To enable the Company to undertake the proposed activities, the Board proposes to alter the object clause of the Memorandum of Association as set out in the resolution. Under Section 13(1), this requires a special resolution, and the alteration takes effect on its registration by the Registrar (Section 13(9)).']},
+ {id:'m_aoa',n:'Alteration / adoption of Articles',type:'Special',form:'MGT-14 within 30 days',kw:/articles|\baoa\b/i,
+  vars:[V('change','Alteration','e.g. adopt a new set of Articles in conformity with the Companies Act, 2013 / substitute Article 45 as follows: "…"',{multi:1})],
+  r:g=>['RESOLVED THAT pursuant to Section 14 and other applicable provisions of the Companies Act, 2013, the Articles of Association of the Company be and are hereby altered as follows: '+g('change')+'.','RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to file Form MGT-14 with the Registrar within thirty days and to do all acts necessary to give effect to this resolution.'],
+  es:g=>['The Board proposes the alteration of the Articles of Association set out in the resolution. Under Section 14, Articles may be altered by a special resolution. A copy of the existing and proposed Articles is available for inspection by members at the registered office.']},
+ {id:'m_ro',n:'Shifting registered office to another State',type:'Special',form:'MGT-14; INC-23 (RD approval)',kw:/(another|other) state|one state to another/i,
+  vars:[V('fromSt','From the State of'),V('toSt','To the State of')],
+  r:g=>['RESOLVED THAT pursuant to Sections 12 and 13 and other applicable provisions of the Companies Act, 2013, and subject to the confirmation of the Central Government (Regional Director), the registered office of the Company be shifted from the State of '+g('fromSt')+' to the State of '+g('toSt')+', and Clause II of the Memorandum of Association be altered accordingly.','RESOLVED FURTHER THAT any Director or the Company Secretary be authorised to file the application in Form INC-23 and Form MGT-14, publish the required advertisement, and do all acts necessary to give effect to this resolution.'],
+  es:g=>['For administrative convenience and better management of operations, the Board proposes to shift the registered office from '+g('fromSt')+' to '+g('toSt')+'. This requires a special resolution altering Clause II of the Memorandum and the confirmation of the Regional Director under Section 13(4).']},
+ {id:'m_180c',n:'Borrowing limits — s.180(1)(c)',type:'Special',form:'MGT-14',kw:/180\s*\(?1\)?\s*\(?c|borrowing (powers|limit)/i,
+  vars:[V('limit','Overall borrowing limit','',{type:'money'})],
+  r:g=>['RESOLVED THAT pursuant to Section 180(1)(c) and other applicable provisions of the Companies Act, 2013, the consent of the members be and is hereby accorded to the Board of Directors to borrow money from time to time, notwithstanding that the money to be borrowed, together with the money already borrowed (apart from temporary loans obtained from the Company\'s bankers in the ordinary course of business), may exceed the aggregate of the paid-up share capital, free reserves and securities premium of the Company, provided that the total amount so borrowed and outstanding at any time shall not exceed '+g('limit')+'.'],
+  es:g=>['Under Section 180(1)(c), the Board may borrow beyond the aggregate of the paid-up share capital, free reserves and securities premium only with the approval of the members by special resolution. Considering the Company\'s funding requirements, approval is sought for a borrowing limit of '+g('limit')+'.']},
+ {id:'m_180a',n:'Creation of charge — s.180(1)(a)',type:'Special',form:'MGT-14',kw:/180\s*\(?1\)?\s*\(?a|mortgage|create.{0,10}charge/i,
+  vars:[V('limit','Borrowings to be secured up to','',{type:'money'})],
+  r:g=>['RESOLVED THAT pursuant to Section 180(1)(a) and other applicable provisions of the Companies Act, 2013, the consent of the members be and is hereby accorded to the Board of Directors to create mortgages, charges and hypothecations on all or any of the movable and immovable properties of the Company, present and future, in favour of lenders, to secure borrowings of an amount not exceeding '+g('limit')+' together with interest and other charges.'],
+  es:g=>['Creating a charge on the undertaking of the Company may amount to a disposal of the whole or substantially the whole of the undertaking within the meaning of Section 180(1)(a), which requires a special resolution. Approval is sought to secure borrowings of up to '+g('limit')+'.']},
+ {id:'m_186',n:'Loans & investments beyond s.186(2) limits',type:'Special',form:'MGT-14',kw:/186\s*\(?3|beyond.{0,15}186/i,
+  vars:[V('limit','Overall limit','',{type:'money'})],
+  r:g=>['RESOLVED THAT pursuant to Section 186(3) and other applicable provisions of the Companies Act, 2013, the consent of the members be and is hereby accorded to the Board of Directors to give loans, guarantees or securities and to make investments, from time to time, notwithstanding that the aggregate thereof may exceed sixty per cent of the paid-up share capital, free reserves and securities premium account or one hundred per cent of the free reserves and securities premium account, whichever is more, provided that the aggregate outstanding shall not exceed '+g('limit')+'.'],
+  es:g=>['Section 186(3) requires prior approval of the members by special resolution where loans, guarantees, securities and investments exceed the limits in Section 186(2). Approval is sought for an overall limit of '+g('limit')+'.']},
+ {id:'m_rpt',n:'Related party transaction (members)',type:'Ordinary',kw:/related party|\brpt\b/i,
+  vars:[V('party','Related party'),V('rel','Relationship'),V('nature','Nature of transaction'),V('value','Value not exceeding','',{type:'money'})],
+  r:g=>['RESOLVED THAT pursuant to Section 188 and other applicable provisions of the Companies Act, 2013 read with Rule 15 of the Companies (Meetings of Board and its Powers) Rules, 2014, the consent of the members be and is hereby accorded to the Company to enter into a contract / arrangement for '+g('nature')+' with '+g('party')+', a related party ('+g('rel')+'), for a value not exceeding '+g('value')+', on the terms placed before the members.'],
+  es:g=>['The proposed transaction with '+g('party')+' ('+g('rel')+') for '+g('nature')+' of a value up to '+g('value')+' exceeds the thresholds in Rule 15(3) and therefore requires the prior approval of the members under Section 188(1). The particulars required by Rule 15 are as follows: name of the related party and relationship — as stated above; nature, material terms and value — as stated in the resolution.','Under the second proviso to Section 188(1), no member of the Company shall vote on this resolution if such member is a related party in the context of the contract or arrangement.'],noStd:1},
+ {id:'m_md',n:'Appointment of MD / WTD and remuneration',type:'Ordinary',kw:/managing director|whole.?time director/i,
+  vars:[V('name','Name'),V('din','DIN'),V('desig','Designation','',{opts:['Managing Director','Whole-time Director']}),V('term','Term','e.g. five years'),V('wef','With effect from','',{type:'date'}),V('pay','Remuneration','e.g. ₹3,00,000 per month plus perquisites')],
+  r:g=>['RESOLVED THAT pursuant to Sections 196, 197 and 203 read with Schedule V and other applicable provisions of the Companies Act, 2013, the consent of the members be and is hereby accorded to the appointment of '+g('name')+' (DIN: '+g('din')+') as the '+g('desig')+' of the Company for a period of '+g('term')+' with effect from '+g('wef')+', on a remuneration of '+g('pay')+' and on the other terms set out in the explanatory statement.','RESOLVED FURTHER THAT where in any financial year the Company has no profits or its profits are inadequate, the above remuneration be paid as minimum remuneration, subject to the limits of Schedule V.'],
+  es:g=>['The Board has appointed '+g('name')+' as '+g('desig')+' for '+g('term')+' with effect from '+g('wef')+', subject to the approval of the members, on a remuneration of '+g('pay')+'. The appointment and remuneration require approval under Sections 196 and 197 read with Schedule V (by special resolution where the appointee has attained the age of seventy years — Section 196(3)(a)).','Except '+g('name')+' and his / her relatives, none of the Directors or Key Managerial Personnel or their relatives is concerned or interested in this resolution.'],noStd:1},
+ {id:'m_pp',n:'Private placement / preferential issue',type:'Special',form:'MGT-14; PAS-3',kw:/private placement|preferential/i,
+  vars:[V('num','Number of shares','',{type:'num'}),V('price','Issue price per share (₹)'),V('kind','Route','',{opts:['private placement under Section 42','preferential allotment under Section 62(1)(c)']}),V('allottees','Proposed allottees',null,{multi:1})],
+  r:g=>['RESOLVED THAT pursuant to Sections 23, 42 and 62(1)(c) (as applicable) and other applicable provisions of the Companies Act, 2013 and the rules made thereunder, the consent of the members be and is hereby accorded to the Board to offer, issue and allot up to '+g('num')+' equity shares at a price of ₹'+g('price')+' per share (including premium) by way of '+g('kind')+' to the following proposed allottees: '+g('allottees')+'.','RESOLVED FURTHER THAT the Board be authorised to issue the private placement offer letter in Form PAS-4, maintain the record in Form PAS-5, allot the shares and file the return of allotment in Form PAS-3, and to do all acts necessary to give effect to this resolution.'],
+  es:g=>['The Board proposes to raise funds by issuing up to '+g('num')+' equity shares at ₹'+g('price')+' per share by way of '+g('kind')+'. The disclosures required by Rule 14 of the Companies (Prospectus and Allotment of Securities) Rules, 2014 and, for a preferential issue, Rule 13 of the Companies (Share Capital and Debentures) Rules, 2014 (including the basis of price supported by a registered valuer\'s report) are annexed.']},
+ {id:'m_conv',n:'Conversion of private into public company',type:'Special',form:'MGT-14; INC-27',kw:/conver(t|sion).{0,25}public/i,
+  vars:[V('newName','New name (with "Limited")')],
+  r:(g,raw,h)=>['RESOLVED THAT pursuant to Sections 13, 14, 18 and other applicable provisions of the Companies Act, 2013, the Company be converted from a private limited company into a public limited company, and the name of the Company be changed from '+h.x('coName')+' to '+g('newName')+'.','RESOLVED FURTHER THAT the Memorandum and Articles of Association be altered by deleting the restrictions applicable to private companies, and that any Director or the Company Secretary be authorised to file Forms MGT-14 and INC-27 and do all acts necessary to give effect to this resolution.'],
+  es:g=>['To enable the Company to raise funds from a wider base, the Board proposes its conversion into a public company. Conversion requires alteration of the Articles by special resolution (Section 14) and of the name in the Memorandum; the Company must have at least three directors and seven members.']},
+ {id:'m_custom',n:'Any other resolution (type it)',type:'Ordinary',kw:/^$/,
+  vars:[V('title','Title of the item'),V('rtype','Type','',{opts:['Ordinary','Special']}),V('text','Resolution text','one paragraph per line',{multi:1}),V('esTxt','Explanatory statement (material facts)',null,{multi:1,opt:1})],
+  r:(g,raw)=>String(raw('text')||'').split(/\n+/).filter(s=>s.trim()).map(s=>RS(esc(s.trim()))).concat(raw('text')?[]:[g('text')]),
+  es:(g,raw)=>raw('esTxt')?String(raw('esTxt')).split(/\n+/).map(esc):['[Material facts of the item]'],title:raw=>raw('title'),typeOf:raw=>raw('rtype')||'Ordinary'}
+];
+const LIBS={B:BLIB,M:MLIB};
+const libItem=id=>BLIB.find(x=>x.id===id)||MLIB.find(x=>x.id===id);
+const itemTitle=(it,raw)=>(it.title&&it.title(raw))||it.n;
+const itemType=(it,raw)=>(it.typeOf?it.typeOf(raw):it.type);
+
+/* ---- common corporate fields ---- */
+const CO=[F('coName','Company name','Name of the company?',{ph:'e.g. XYZ Industries Private Limited'}),F('cin','CIN','Company\'s CIN?',{opt:1,ph:'U12345DL2015PTC123456'}),F('roAddr','Registered office','Registered office address?',{multi:1}),F('coContact','Email / phone','Company email / website / phone for the letterhead? (optional)',{opt:1})];
+const SIGN=[F('signRole','Signed by','Who signs it?',{opts:['Company Secretary','Director'],def:'Company Secretary'}),F('signName','Signatory name','Name of the signatory?'),F('signId','Membership no. / DIN','ICSI membership no. (ACS / FCS) — or DIN if a Director signs?'),F('place','Place','Place?',{ph:'e.g. New Delhi'})];
+const MDATE=[F('mDate','Meeting date','Date of the meeting?',{type:'date'}),F('mTime','Meeting time','Time of the meeting?',{opts:['11:00 AM','3:00 PM','4:00 PM']})];
+const mtg=(v,body)=>{ const no=v.meetingNo?esc(v.meetingNo):''; return no?(/meeting/i.test(no)?no+' of the '+esc(body):no+' meeting of the '+esc(body)):'meeting of the '+esc(body); };
+const art=t=>/^[aeiou]/i.test(t)?'an':'a';
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function coHelpers(s,h){
+  const v=s.v;
+  const raw=(id,k)=>{ const key='x_'+id+'_'+k; return v[key]!=null?v[key]:(s.tpl.fields.some(f=>f.k===k)?v[k]:undefined); };
+  const g=id=>k=>{ const it=libItem(id); const vd=(it.vars||[]).find(x=>x.k===k)||{}; const key='x_'+id+'_'+k;
+    const val=raw(id,k); if(val==null||String(val).trim()==='') return '<span class="ph-x">['+esc(vd.l||k)+']</span>';
+    if(vd.type==='money'&&parseMoney(val)!=null) return esc(rupees(parseMoney(val)));
+    if(vd.type==='date'){ const p=parseDate(val); return esc(p?fmtDate(p):val); }
+    return esc(val).replace(/\n/g,'<br>'); };
+  const day=k=>{ const p=parseDate(v[k]); return p?DAYS[p.getDay()]+', '+fmtDate(p):h.d(k); };
+  const ids=k=>String(v[k]||'').split(',').filter(Boolean).filter(libItem);
+  const res=id=>{ const it=libItem(id); const rw=k=>raw(id,k); return it.r(g(id),rw,h); };
+  const lh='<div class="lh"><b>'+h.x('coName').toUpperCase()+'</b><div>'+(v.cin?'CIN: '+esc(v.cin)+' &middot; ':'')+'Regd. Office: '+h.x('roAddr')+(v.coContact?' &middot; '+esc(v.coContact):'')+'</div></div>';
+  const sign=(lead)=>'<div class="sig">'+(lead?lead+'<br>':'')+'For <b>'+h.x('coName')+'</b><br><br><br><b>'+h.x('signName')+'</b><br>'+esc(v.signRole||'Company Secretary')+'<br>'+(/director/i.test(v.signRole||'')?'DIN':'Membership No.')+': '+h.x('signId')+'<br>Place: '+h.x('place')+'<br>Date: '+h.d('date')+'</div>';
+  return {raw,g,day,ids,res,lh,sign};
+}
+function venueText(v,h){ const m=v.mMode||''; if(/^through|vc|video|oavm/i.test(m)&&!/with/i.test(m)) return 'through video conferencing / other audio-visual means'; if(/with/i.test(m)) return 'at '+h.x('venue')+', with the facility to participate through video conferencing'; return 'at '+h.x('venue'); }
+
+/* ---- 1. Notice of Board / Committee meeting ---- */
+add({id:'board_notice',corp:1,group:'Board & committee meetings',icon:'bi-calendar2-check',n:'Notice of Board / Committee meeting',law:'Section 173(3), Companies Act, 2013 · SS-1',
+ d:'Notice to directors with agenda, notes on agenda and draft resolutions — signed by the CS.',
+ kw:/(notice|convene|call|calling|convening|schedule).{0,25}(board|committee) meeting|board meeting|committee meeting|agenda/i,
+ fields:[...CO,F('meetingOf','Meeting of','Meeting of which body?',{opts:['Board of Directors','Audit Committee','Nomination and Remuneration Committee','Stakeholders Relationship Committee','CSR Committee'],def:'Board of Directors'}),
+  F('meetingNo','Meeting serial','Serial number of the meeting?',{ph:'e.g. 3rd meeting of FY 2026-27',opt:1}),...MDATE,
+  F('mMode','Mode','How will the meeting be held?',{opts:['In person','Through video conferencing','In person with VC option'],def:'In person'}),
+  F('venue','Venue','Venue of the meeting?',{when:v=>!/^through/i.test(v.mMode||''),def:'the registered office of the Company'}),
+  F('prevDate','Previous meeting','Date of the previous meeting (for confirming minutes)?',{type:'date',opt:1}),
+  F('agenda','Agenda items','Which business items are on the agenda? Pick all that apply, then click Done.',{type:'pick',lib:'B'}),
+  F('toList','Addressed to','Addressed to (directors\' names, one per line)?',{multi:1,opt:1,def:'All the Directors of the Company'}),...SIGN],
+ warn(v){ const n=parseDate(v.date),m=parseDate(v.mDate); if(!n||!m) return ''; const d=Math.round((m-n)/864e5); return d<7?'Only '+d+' day'+(d===1?'':'s')+' between the notice ('+fmtDate(n)+') and the meeting. Section 173(3) requires at least 7 days\' notice; a shorter-notice meeting may transact only urgent business, with at least one independent director (if any) present — otherwise its decisions are final only on ratification by at least one independent director.':''; },
+ title:(v,h)=>'Notice of the '+mtg(v,v.meetingOf||'Board of Directors'),
+ render(s,h,c){ const v=s.v, body=v.meetingOf||'Board of Directors', isB=/^board/i.test(body), ids=c.ids('agenda'), who=isB?'Directors':'Members of the Committee';
+  let o=c.lh+'<p style="text-align:right">Date: '+h.d('date')+'</p>';
+  o+='<p>To,<br>'+(v.toList?esc(v.toList).replace(/\n/g,'<br>'):'All the '+who+' of the '+(isB?'Company':'Committee'))+'</p>';
+  o+='<p class="subj">Subject: Notice of the '+mtg(v,body)+'</p><p>Dear Sir / Madam,</p>';
+  o+='<p>NOTICE is hereby given, pursuant to Section 173(3) of the Companies Act, 2013 and Secretarial Standard-1 on Meetings of the Board of Directors, that the '+mtg(v,body)+' of '+h.x('coName')+' will be held on <b>'+c.day('mDate')+'</b> at <b>'+h.x('mTime')+'</b> '+venueText(v,h)+', to transact the business set out in the agenda below.</p>';
+  o+='<p>The notes on agenda and the draft resolutions are enclosed. You are requested to make it convenient to attend the meeting. If you are unable to attend, kindly inform the Company so that leave of absence may be granted.'+(/video/i.test(v.mMode||'')?' The link and login details for participation through video conferencing will be sent separately; a Director intending to participate through video conferencing is requested to inform the Company in advance.':'')+'</p>';
+  const ag=['To grant leave of absence, if any.','To confirm the minutes of the previous meeting'+(v.prevDate?' held on '+h.d('prevDate'):'')+'.'];
+  if(isB) ag.push('To take note of the minutes of the meetings of the Committees of the Board held since the last meeting, if any.');
+  const start=ag.length; ids.forEach(id=>{ const it=libItem(id); ag.push('To consider and approve: '+esc(itemTitle(it,k=>c.raw(id,k)))+(it.sec?' ('+esc(it.sec)+')':'')+'.'); });
+  ag.push('Any other business with the permission of the Chairperson.');
+  o+='<p style="text-align:center;margin-top:14px"><b>AGENDA</b></p><table><tr><td style="width:10%"><b>Item</b></td><td><b>Particulars</b></td></tr>'+ag.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>'+a+'</td></tr>').join('')+'</table>';
+  o+=c.sign('Yours faithfully,');
+  if(ids.length){ o+='<p style="text-align:center;margin-top:26px;page-break-before:always"><b>NOTES ON AGENDA AND DRAFT RESOLUTIONS</b></p>';
+   ids.forEach((id,i)=>{ const it=libItem(id); o+='<p><b>Item No. '+(start+i+1)+': '+esc(itemTitle(it,k=>c.raw(id,k)))+'</b></p><p>The '+(isB?'Board':'Committee')+' is requested to consider and, if thought fit, to pass the following resolution:</p>'+c.res(id).map(p=>'<p style="margin-left:24px">'+p+'</p>').join(''); }); }
+  return o; },
+ notes:['Notice of at least <b>7 days</b> in writing to every director at the address registered with the Company — by hand, post or electronic means (s.173(3)).','Shorter notice: only for urgent business; at least one independent director (if any) must be present, failing which decisions are final only on ratification by at least one independent director (proviso to s.173(3)).','At least <b>4 Board meetings</b> a year, with not more than <b>120 days</b> between two meetings (s.173(1)); OPC, small, dormant companies — one meeting in each half of the calendar year, at least 90 days apart (s.173(5)).','Quorum: one-third of the total strength or two directors, whichever is higher; VC participation counts (s.174).','SS-1: notes on agenda to be sent at least 7 days before the meeting; draft minutes to be circulated within 15 days; minutes signed within 30 days.','Matters under s.179(3) and Rule 8 (borrowing, loans / investments, financial statements, issue of securities, appointment of KMP, internal / secretarial auditor etc.) must be passed at a meeting — not by circulation.']});
+
+/* ---- 2. Circular resolution ---- */
+add({id:'circular',corp:1,group:'Board & committee meetings',icon:'bi-arrow-repeat',n:'Circular resolution (draft + assent sheet)',law:'Section 175, Companies Act, 2013 · SS-1',
+ d:'Draft resolution(s) circulated to directors with a cover note and assent / dissent sheet.',
+ kw:/circular resolution|by circulation|section 175|circulat/i,
+ fields:[...CO,F('circNo','Circular serial','Serial number of the circular resolution? (optional)',{opt:1,ph:'e.g. CR-03/2026-27'}),
+  F('items','Resolutions','Which resolution(s) are being circulated? Pick, then click Done.',{type:'pick',lib:'B'}),
+  F('lastDate','Last date for reply','Last date by which directors must respond? (SS-1: not more than 7 days from circulation)',{type:'date'}),
+  F('directors','Directors','Directors to whom it is circulated (name — DIN, one per line)?',{multi:1}),...SIGN],
+ warn(v){ const bad=String(v.items||'').split(',').filter(id=>{const it=libItem(id);return it&&it.meetOnly;}).map(id=>libItem(id).n); const n=parseDate(v.date),l=parseDate(v.lastDate); let w=''; if(bad.length) w+='These items must be passed at a Board meeting, not by circulation (s.179(3) / Rule 8 / s.186 / s.188): '+bad.join(', ')+'. '; if(n&&l&&(l-n)/864e5>7) w+='SS-1 allows a response period of not more than 7 days from circulation.'; return w.trim(); },
+ title:(v,h)=>'Circular resolution'+(v.circNo?' '+esc(v.circNo):''),
+ render(s,h,c){ const v=s.v, ids=c.ids('items');
+  let o=c.lh+'<div class="row"><div>'+(v.circNo?'Circular Resolution No.: '+esc(v.circNo):'')+'</div><div>Date of circulation: '+h.d('date')+'</div></div>';
+  o+='<p>To,<br>All the Directors of '+h.x('coName')+'</p><p class="subj">Subject: Resolution(s) proposed to be passed by circulation under Section 175 of the Companies Act, 2013</p><p>Dear Sir / Madam,</p>';
+  o+='<p>The draft resolution(s) set out below, together with the necessary papers, are being circulated to all the Directors of the Company in accordance with Section 175 of the Companies Act, 2013 and Secretarial Standard-1, for approval by circulation.</p>';
+  o+='<p>You are requested to signify your assent or dissent by signing the sheet below and returning it to the undersigned (by hand, post, courier or email) on or before <b>'+h.d('lastDate')+'</b>. If no response is received by that date, it will be presumed that you have abstained from voting. If not less than one-third of the total number of Directors require that the resolution(s) be decided at a meeting, the Chairperson shall put the resolution(s) to be decided at a meeting of the Board.</p>';
+  ids.forEach((id,i)=>{ const it=libItem(id); o+='<p><b>Resolution '+(i+1)+': '+esc(itemTitle(it,k=>c.raw(id,k)))+'</b></p>'+c.res(id).map(p=>'<p style="margin-left:24px">'+p+'</p>').join(''); });
+  o+=c.sign('Yours faithfully,');
+  const dirs=String(v.directors||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  o+='<p style="text-align:center;margin-top:24px"><b>ASSENT / DISSENT SHEET</b></p><table><tr><td><b>Name of Director &amp; DIN</b></td>'+ids.map((_,i)=>'<td><b>Res. '+(i+1)+'<br>Assent / Dissent</b></td>').join('')+'<td><b>Signature</b></td><td><b>Date</b></td></tr>'+(dirs.length?dirs:['','','']).map(d=>'<tr><td style="height:34px">'+(d?esc(d):'')+'</td>'+ids.map(()=>'<td></td>').join('')+'<td></td><td></td></tr>').join('')+'</table>';
+  return o; },
+ notes:['Draft and necessary papers must go to <b>all</b> directors at their registered addresses — by hand, post, courier or email (s.175(1)).','Passed when approved by a <b>majority of the directors entitled to vote</b> on it (s.175(1)).','If at least <b>one-third</b> of the total directors require it, the Chairperson must put it to a meeting (proviso to s.175(1)).','The resolution must be noted at the next Board meeting and recorded in its minutes (s.175(2)).','SS-1: response period of not more than <b>7 days</b> from circulation; the resolution is passed on the last day fixed for response or earlier when the requisite majority assents.','Cannot be used for matters that must be decided at a meeting — s.179(3) & Rule 8 matters, s.186 (unanimous resolution at a meeting) and s.188 approvals.']});
+
+/* ---- 3. Certified true copy — Board resolution ---- */
+add({id:'board_ctc',corp:1,group:'Resolutions',icon:'bi-patch-check',n:'Board resolution — certified true copy',law:'Companies Act, 2013 · SS-1',
+ d:'CTC of resolution(s) passed at a Board meeting — for banks, ROC filings, auditors and third parties.',
+ kw:/board resolution|resolution of the board|certified true copy|\bctc\b/i,
+ fields:[...CO,F('meetingOf','Passed by','Passed by which body?',{opts:['Board of Directors','Audit Committee','Nomination and Remuneration Committee','CSR Committee'],def:'Board of Directors'}),...MDATE,
+  F('venue','Venue','Where was the meeting held?',{def:'the registered office of the Company',opts:['the registered office of the Company','through video conferencing']}),
+  F('items','Resolutions','Which resolution(s)? Pick, then click Done.',{type:'pick',lib:'B'}),...SIGN],
+ title:(v,h)=>{ const id=String(v.items||'').split(',').filter(libItem)[0]; return 'Certified true copy of '+(/^board/i.test(v.meetingOf||'Board')?'Board':'Committee')+' resolution'+(id?' — '+esc(libItem(id).n):''); },
+ render(s,h,c){ const v=s.v, ids=c.ids('items');
+  let o=c.lh+'<p style="text-align:center;margin-top:10px"><b>CERTIFIED TRUE COPY OF THE RESOLUTION'+(ids.length>1?'S':'')+' PASSED BY THE '+esc((v.meetingOf||'Board of Directors').toUpperCase())+' OF '+h.x('coName').toUpperCase()+' AT ITS MEETING HELD ON '+c.day('mDate').toUpperCase()+' AT '+h.x('mTime')+' AT '+(v.venue?esc(v.venue).toUpperCase():'<span class="ph-x">[Venue]</span>')+'</b></p>';
+  ids.forEach(id=>{ const it=libItem(id); o+='<p style="margin-top:14px"><b><u>'+esc(itemTitle(it,k=>c.raw(id,k)))+'</u></b></p>'+c.res(id).map(p=>'<p>'+p+'</p>').join(''); });
+  if(!ids.length) o+='<p><span class="ph-x">[Resolution text]</span></p>';
+  o+='<p style="margin-top:16px"><b>Certified to be a true copy</b></p>'+c.sign('');
+  return o; },
+ notes:['A certified true copy is signed by the Company Secretary (or a Director if there is no CS), usually on the company letterhead.','Resolutions that must be filed in <b>Form MGT-14</b> within 30 days include Board resolutions under s.179(3) (borrowing, investments, loans, financial statements, issue of securities etc.) — private companies are exempt from filing s.179(3) resolutions (Notification G.S.R. 464(E), 5 June 2015).','Appointment / resignation of directors and KMP: Form DIR-12 within 30 days.','Keep the signed minutes as the source; the CTC must match the minutes word for word.']});
+
+/* ---- 4. Notice of AGM ---- */
+const GM_NOTES=(v,h,isAgm,anySpecial)=>{ const vc=/vc|oavm|video/i.test(v.mMode||''); const n=[];
+  n.push(vc?'The meeting is being held through video conferencing / other audio-visual means as permitted by the circulars issued by the Ministry of Corporate Affairs. Physical attendance of members is dispensed with, and accordingly the facility for appointment of proxies is not available for this meeting. Corporate members are requested to send a certified copy of the Board resolution under Section 113 authorising their representative to attend and vote.':'A member entitled to attend and vote at the meeting is entitled to appoint a proxy to attend and vote instead of himself / herself, and the proxy need not be a member of the Company. A person can act as proxy on behalf of not more than fifty members holding in aggregate not more than ten per cent of the total share capital of the Company carrying voting rights. The instrument of proxy (Form MGT-11), to be effective, must be deposited at the registered office of the Company not less than forty-eight hours before the commencement of the meeting.');
+  if(!vc) n.push('Corporate members intending to send their authorised representatives are requested to send a certified copy of the Board resolution under Section 113 of the Companies Act, 2013. Members, proxies and authorised representatives are requested to bring the attendance slip duly filled in. The route map of the venue is annexed.');
+  if(anySpecial) n.push('The explanatory statement pursuant to Section 102 of the Companies Act, 2013, setting out the material facts concerning the special business, is annexed to this notice.');
+  n.push('The relevant documents referred to in this notice and the explanatory statement are open for inspection by the members at the registered office of the Company on all working days during business hours up to the date of the meeting.');
+  if(isAgm) n.push('The details of the directors seeking appointment / re-appointment, as required by Secretarial Standard-2, are annexed.');
+  n.push('Members are requested to notify any change in their address, email address or bank details to the Company (for physical holdings) or to their depository participant (for demat holdings).');
+  return '<p style="margin-top:18px"><b>NOTES:</b></p><ol>'+n.map(x=>'<li>'+x+'</li>').join('')+'</ol>'; };
+function gmRender(s,h,c,isAgm){ const v=s.v; const ord=isAgm?c.ids('ordItems'):[]; const sp=c.ids('spItems');
+  let o=c.lh+'<p style="text-align:center;margin-top:10px"><b>NOTICE OF '+(isAgm?(v.agmNo?esc(v.agmNo).toUpperCase()+' ':'')+'ANNUAL GENERAL MEETING':'EXTRA-ORDINARY GENERAL MEETING')+'</b></p>';
+  o+='<p>NOTICE is hereby given that the '+(isAgm?(v.agmNo?esc(v.agmNo)+' ':'')+'Annual General Meeting':'Extra-ordinary General Meeting')+' of the members of <b>'+h.x('coName')+'</b> will be held on <b>'+c.day('mDate')+'</b> at <b>'+h.x('mTime')+'</b> '+venueText(v,h)+', to transact the following business:</p>';
+  let n=0;
+  if(isAgm){ o+='<p><b><u>ORDINARY BUSINESS</u></b></p>'; ord.forEach(id=>{ const it=libItem(id); n++; o+='<p>'+n+'. '+(it.item?it.item(c.g(id)):esc(it.n))+'</p>'; if(id==='m_aud') o+=c.res(id).map(p=>'<p style="margin-left:24px">'+p+'</p>').join(''); }); }
+  if(sp.length){ o+='<p><b><u>SPECIAL BUSINESS</u></b></p>'; sp.forEach(id=>{ const it=libItem(id); n++; const rw=k=>c.raw(id,k); o+='<p>'+n+'. <b>'+esc(itemTitle(it,rw))+'</b> — To consider and, if thought fit, to pass the following resolution as '+art(itemType(it,rw))+' <b>'+esc(itemType(it,rw))+' Resolution</b>:</p>'+c.res(id).map(p=>'<p style="margin-left:24px">'+p+'</p>').join(''); }); }
+  o+=c.sign('By order of the Board of Directors');
+  o+=GM_NOTES(v,h,isAgm,sp.length>0);
+  if(sp.length){ o+='<p style="text-align:center;margin-top:24px;page-break-before:always"><b>EXPLANATORY STATEMENT PURSUANT TO SECTION 102 OF THE COMPANIES ACT, 2013</b></p>';
+   let k=isAgm?ord.length:0; sp.forEach(id=>{ const it=libItem(id); k++; const rw=x=>c.raw(id,x); const es=it.es?it.es(c.g(id),rw,h):['[Material facts]'];
+    o+='<p><b>Item No. '+k+': '+esc(itemTitle(it,rw))+'</b></p>'+es.map(p=>'<p>'+p+'</p>').join('')+(it.noStd?'':'<p>'+NOINT+'</p>')+'<p>The Board recommends the resolution set out at Item No. '+k+' of the notice for approval of the members as '+art(itemType(it,rw))+' '+esc(itemType(it,rw))+' Resolution.</p>'; }); }
+  return o; }
+const GM_FIELDS=(isAgm)=>[...CO,
+  ...(isAgm?[F('agmNo','AGM number','Which AGM is this?',{ph:'e.g. 12th'}),F('fy','Financial year ended','Financial year ended?',{ph:'e.g. 31 March 2026'})]:[]),
+  ...MDATE,F('mMode','Mode','How will the meeting be held?',{opts:['At a physical venue','Through VC / OAVM'],def:'At a physical venue'}),
+  F('venue','Venue','Venue of the meeting?',{when:v=>!/vc|oavm/i.test(v.mMode||''),def:'the registered office of the Company'}),
+  ...(isAgm?[F('ordItems','Ordinary business','Ordinary business items? Pick, then click Done.',{type:'pick',lib:'M',filter:'ord',pre:['m_fs']})]:[]),
+  F('spItems','Special business','Special business items? Pick, then click Done'+(isAgm?' (or Done with none).':'.'),{type:'pick',lib:'M',filter:'sp',opt:isAgm?1:0}),...SIGN];
+add({id:'agm',corp:1,group:'General meetings',icon:'bi-people',n:'Notice of Annual General Meeting',law:'Sections 96, 101, 102, Companies Act, 2013 · SS-2',
+ d:'AGM notice with ordinary & special business, notes and the s.102 explanatory statement.',
+ kw:/\bagm\b|annual general meeting/i,fields:GM_FIELDS(true),
+ warn(v){ const n=parseDate(v.date),m=parseDate(v.mDate); if(!n||!m) return ''; const d=Math.round((m-n)/864e5); return d<22?'Only '+d+' days between notice and meeting. Section 101(1) requires at least 21 clear days\' notice (excluding the day of service and the day of the meeting; add 48 hours if served by post — Rule 35(6)); a shorter notice needs the consent of at least 95% of the members entitled to vote (use the "Consent for shorter notice" template).':''; },
+ title:(v,h)=>'Notice of '+(v.agmNo?esc(v.agmNo)+' ':'')+'Annual General Meeting',render:(s,h,c)=>gmRender(s,h,c,true),
+ notes:['AGM within <b>6 months</b> of the end of the financial year and not later than 15 months from the previous AGM (s.96(1)); first AGM within 9 months of the end of the first FY.','Notice of at least <b>21 clear days</b> to every member, legal representative of a deceased member, assignee of an insolvent member, auditors and directors (s.101).','Shorter notice for an AGM: consent of at least <b>95%</b> of the members entitled to vote (proviso to s.101(1)).','Ordinary business = financial statements, reports, dividend, rotational directors, auditors; everything else is special business needing a <b>s.102</b> explanatory statement.','VC / OAVM AGMs are permitted under MCA circulars (latest extension: General Circular 03/2025, until further orders) — check the current circular before issuing.','After the meeting: MGT-14 for special resolutions within 30 days (s.117); ADT-1 within 15 days of auditor appointment; AOC-4 within 30 days and MGT-7 / 7A within 60 days of the AGM.']});
+
+/* ---- 5. Notice of EGM ---- */
+add({id:'egm',corp:1,group:'General meetings',icon:'bi-people-fill',n:'Notice of Extra-ordinary General Meeting',law:'Sections 100, 101, 102, Companies Act, 2013 · SS-2',
+ d:'EGM notice with special business and the s.102 explanatory statement.',
+ kw:/\begm\b|extra.?ordinary general meeting/i,fields:GM_FIELDS(false),
+ warn(v){ const n=parseDate(v.date),m=parseDate(v.mDate); if(!n||!m) return ''; const d=Math.round((m-n)/864e5); return d<22?'Only '+d+' days between notice and meeting. Section 101(1) requires 21 clear days; a shorter notice needs the consent of a majority in number of members entitled to vote who hold at least 95% of the paid-up share capital carrying voting rights.':''; },
+ title:(v,h)=>'Notice of Extra-ordinary General Meeting',render:(s,h,c)=>gmRender(s,h,c,false),
+ notes:['The Board may call an EGM at any time; members holding at least one-tenth of the paid-up voting capital may requisition one, and the Board must call it within 21 days to be held within 45 days (s.100(2)–(4)).','Notice of at least <b>21 clear days</b> (s.101(1)); shorter notice with consent of a majority in number holding at least <b>95%</b> of the paid-up voting capital.','All business at an EGM is special business — attach the <b>s.102</b> explanatory statement.','Special resolutions: votes in favour at least three times the votes against (s.114(2)); file MGT-14 within 30 days (s.117).']});
+
+/* ---- 6. Certified true copy — members' resolution ---- */
+add({id:'members_ctc',corp:1,group:'Resolutions',icon:'bi-patch-check-fill',n:'Members\' resolution — certified true copy',law:'Sections 114 & 117, Companies Act, 2013',
+ d:'CTC of ordinary / special resolution(s) passed at an AGM, EGM or by postal ballot.',
+ kw:/special resolution|ordinary resolution|members'? resolution|shareholders'? resolution/i,
+ fields:[...CO,F('meeting','Passed at','Passed at which meeting?',{opts:['Annual General Meeting','Extra-ordinary General Meeting','postal ballot']}),F('mDate','Meeting date','Date of the meeting (or date of declaring the postal ballot result)?',{type:'date'}),
+  F('venue','Venue','Venue of the meeting?',{when:v=>!/postal/i.test(v.meeting||''),def:'the registered office of the Company',opts:['the registered office of the Company','through video conferencing / OAVM']}),
+  F('items','Resolutions','Which resolution(s)? Pick, then click Done.',{type:'pick',lib:'M'}),...SIGN],
+ title:(v,h)=>{ const id=String(v.items||'').split(',').filter(libItem)[0]; return 'Certified true copy of members\' resolution'+(id?' — '+esc(libItem(id).n):''); },
+ render(s,h,c){ const v=s.v, ids=c.ids('items'); const pb=/postal/i.test(v.meeting||'');
+  let o=c.lh+'<p style="text-align:center;margin-top:10px"><b>CERTIFIED TRUE COPY OF THE RESOLUTION'+(ids.length>1?'S':'')+' PASSED BY THE MEMBERS OF '+h.x('coName').toUpperCase()+(pb?' BY POSTAL BALLOT, THE RESULT OF WHICH WAS DECLARED ON '+c.day('mDate').toUpperCase():' AT THE '+esc((v.meeting||'General Meeting').toUpperCase())+' HELD ON '+c.day('mDate').toUpperCase()+' AT '+(v.venue?esc(v.venue).toUpperCase():'<span class="ph-x">[VENUE]</span>'))+'</b></p>';
+  ids.forEach(id=>{ const it=libItem(id); const rw=k=>c.raw(id,k); o+='<p style="margin-top:14px"><b><u>'+esc(itemTitle(it,rw))+' — '+esc(itemType(it,rw))+' Resolution</u></b></p>'+c.res(id).map(p=>'<p>'+p+'</p>').join(''); });
+  if(!ids.length) o+='<p><span class="ph-x">[Resolution text]</span></p>';
+  o+='<p style="margin-top:16px"><b>Certified to be a true copy</b></p>'+c.sign('');
+  return o; },
+ notes:['Ordinary resolution: votes in favour exceed votes against; special resolution: votes in favour at least <b>three times</b> the votes against, and the notice must state the intention to propose it as a special resolution (s.114).','File <b>MGT-14</b> within 30 days for special resolutions and other resolutions listed in s.117(3).','Capital increase: SH-7 within 30 days (s.64); change of name: INC-24; auditor appointment: ADT-1 within 15 days.']});
+
+/* ---- 7. Consent for shorter notice ---- */
+add({id:'shortnotice',corp:1,group:'General meetings',icon:'bi-hourglass-split',n:'Consent for shorter notice (member)',law:'Section 101(1), Companies Act, 2013',
+ d:'Member\'s consent to hold an AGM / EGM at shorter notice.',
+ kw:/short(er)? notice/i,
+ fields:[...CO,F('meeting','Meeting','For which meeting?',{opts:['Annual General Meeting','Extra-ordinary General Meeting']}),F('mDate','Meeting date','Date of the meeting?',{type:'date'}),
+  F('member','Member','Name of the member giving consent?'),F('shares','Shares held','Number of equity shares held?',{type:'num'}),F('folio','Folio / DP-Client ID','Folio no. or DP ID / Client ID?',{opt:1})],
+ title:(v,h)=>'Consent for shorter notice — '+esc(v.meeting||'General Meeting'),
+ render(s,h,c){ const v=s.v;
+  let o='<p>To,<br>The Board of Directors<br><b>'+h.x('coName')+'</b><br>'+h.x('roAddr')+'</p>';
+  o+='<p class="subj">Subject: Consent for holding the '+esc(v.meeting||'General Meeting')+' at a shorter notice</p><p>Dear Sirs,</p>';
+  o+='<p>I / We, <b>'+h.x('member')+'</b>, holding '+h.x('shares')+' equity shares of the Company'+(v.folio?' under folio / DP-Client ID '+esc(v.folio):'')+', being a member entitled to vote at the meeting, hereby give my / our consent, pursuant to the proviso to Section 101(1) of the Companies Act, 2013, to the holding of the '+esc(v.meeting||'General Meeting')+' of the Company on <b>'+c.day('mDate')+'</b> at a notice shorter than twenty-one clear days.</p>';
+  o+='<div class="sig">Yours faithfully,<br><br><br><b>'+h.x('member')+'</b><br>(Signature of the member)<br>Date: '+h.d('date')+'</div>';
+  return o; },
+ notes:['AGM: consent of at least <b>95% of the members</b> entitled to vote (proviso to s.101(1)(a)).','Other general meetings: consent of a <b>majority in number</b> of members entitled to vote who hold at least <b>95%</b> of the paid-up share capital carrying voting rights (proviso to s.101(1)(b)).','Collect the consents before the meeting and keep them with the minutes; mention the shorter-notice consent in the notice and minutes.']});
+
+T.forEach(t=>{ if(!t.group) t.group=/Compan/.test(t.law)?'Legal notices — Companies Act':'Other legal notices'; });
+const GROUPS=['Board & committee meetings','Resolutions','General meetings','Legal notices — Companies Act','Other legal notices'];
+const TBY=Object.fromEntries(T.map(t=>[t.id,t]));
+
+/* ---------- state ---------- */
+let mode='ask';
+let S=null;       // current drafting session {tpl, v, i (index into queue), done, html, edited}
+let lastDraft=null;
+function newSession(tpl){ S={tpl,v:{},done:false,html:'',edited:false,id:'n'+Date.now()}; EXTRA.filter(f=>!tpl.corp||f.k==='date').forEach(f=>{ if(f.def!=null) S.v[f.k]=f.def; }); S.v._defs=new Set(Object.keys(S.v)); return S; }
+const allFields=t=>t.corp?[...t.fields]:[...PRE,...t.fields,...POST];
+function queue(){ const out=[]; allFields(S.tpl).forEach(f=>{ if(f.when&&!f.when(S.v,S.tpl)) return; out.push(f);
+  if(f.type==='pick'&&S.v[f.k]) String(S.v[f.k]).split(',').forEach(id=>{ const it=libItem(id); if(!it) return; (it.vars||[]).forEach(vd=>{ if(S.tpl.fields.some(x=>x.k===vd.k)) return; const key='x_'+id+'_'+vd.k; if(out.some(x=>x.k===key)) return;
+    out.push(F(key,it.n+' — '+vd.l,vd.l+'?',{ph:vd.ph,type:vd.type,opts:vd.opts,def:vd.def,multi:vd.multi,opt:vd.opt,item:it.n})); }); }); });
+  return out; }
+
+/* ---------- chat ui ---------- */
+const log=$('log');
+function emptyState(){ log.innerHTML='<div class="empty" id="empty"><div class="bub"><i class="bi bi-chat-square-text"></i></div><h2>Start a conversation</h2><p>Tell me what you need in a line — <i>“board meeting notice to approve accounts and open a bank account”</i>, <i>“AGM notice with increase in authorised capital”</i>, <i>“board resolution for appointment of additional director”</i> or <i>“cheque of ₹5 lakh from ABC Pvt Ltd bounced”</i>. I ask only what is missing, then draft it on the company letterhead, signed as Company Secretary — ready to edit, save, print or email.</p></div>'; }
+function say(who,html){ const e=$('empty'); if(e) e.remove(); const d=document.createElement('div'); d.className='msg '+who; d.innerHTML='<div class="b">'+html+'</div>'; log.appendChild(d); log.scrollTop=log.scrollHeight; return d.querySelector('.b'); }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function bot(html){ const b=say('a','<span class="typing"><i></i><i></i><i></i></span>'); await sleep(260); b.innerHTML=html; wire(b); log.scrollTop=log.scrollHeight; return b; }
+function wire(b){
+  b.querySelectorAll('[data-say]').forEach(x=>x.onclick=()=>userSays(x.dataset.say));
+  b.querySelectorAll('[data-tpl]').forEach(x=>x.onclick=()=>{ setMode('ask'); startTpl(x.dataset.tpl,true,null,x.dataset.pre); });
+  b.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>openPanel('doc'));
+  b.querySelectorAll('[data-saved]').forEach(x=>x.onclick=()=>openSaved(x.dataset.saved));
+  b.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>delSaved(x.dataset.del,x));
+  b.querySelectorAll('[data-mail]').forEach(x=>x.onclick=()=>{ if(x.dataset.mail) openSaved(x.dataset.mail,true); else emailDraft(); });
+  b.querySelectorAll('[data-act]').forEach(x=>x.onclick=()=>chipAct(x.dataset.act));
+  b.querySelectorAll('.chk').forEach(x=>x.onclick=()=>x.classList.toggle('open'));
+}
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* ---------- understanding the user's description ---------- */
+function detect(q){
+  const dispute=/(not|non|un)[- ]?paid|failed to|has not|refus|default|bounc|legal notice|recover/i.test(q)&&!/resolution|agenda|board meeting|circular|notice of (the )?(agm|egm|annual|extra)/i.test(q);
+  if(!dispute&&/resolution|meeting|\bagm\b|\begm\b|agenda|circular|short(er)? notice/i.test(q)){ const order=['shortnotice','circular','members_ctc','board_notice','agm','egm','board_ctc']; for(const id of order) if(TBY[id].kw.test(q)) return TBY[id]; if(/resolution/i.test(q)) return (MLIB.some(it=>it.kw.test(q)&&!BLIB.some(b=>b.kw.test(q)))||/members|shareholders|special|ordinary/i.test(q))?TBY.members_ctc:TBY.board_ctc; }
+  let best=null,bs=0; T.forEach(t=>{ const m=q.match(new RegExp(t.kw.source,'gi')); const s=m?m.length:0; if(s>bs){bs=s;best=t;} });
+  if(/cheque|check/i.test(q)&&/bounc|dishono|return/i.test(q)) best=TBY.cheque;
+  if(/\bibc\b|insolven|form 3|section 8\b|cirp/i.test(q)) best=TBY.ibc;
+  if(/dividend/i.test(q)) best=TBY.dividend;
+  if(/reply|respond to/i.test(q)&&/notice/i.test(q)) best=TBY.reply;
+  return best;
+}
+function extract(q,t){
+  const v={};
+  const am=q.match(/(?:rs\.?|inr|₹)\s*[\d,]+(?:\.\d+)?\s*(?:crores?|cr\b|lakhs?|lacs?|k\b)?|[\d.]+\s*(?:crores?|lakhs?|lacs?)\b/i);
+  if(am){ const n=parseMoney(am[0]); const f=t.fields.find(f=>f.type==='money'); if(n&&f) v[f.k]=String(n); }
+  const cq=q.match(/cheque\s*(?:no\.?|number|#)?\s*(\d{6})\b/i); if(cq&&t.id==='cheque') v.chqNo=cq[1];
+  const co=q.match(/\b(?:to|against|from|by|of|on)\s+((?:[Mm]\/[Ss]\.?\s*)?(?:[A-Z0-9][\w&.'\-]*\s+){1,6}?(?:[Pp]rivate [Ll]imited|[Pp]vt\.? [Ll]td\.?|[Ll]imited|[Ll]td\.?|LLP)(?![\w]))/);
+  if(co) v.toName=co[1].trim();
+  const cin=q.match(/\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b/i); if(cin) v.cin=cin[0].toUpperCase();
+  const din=q.match(/\bDIN\s*[:\-]?\s*(\d{8})\b/i); if(din) v.din=din[1];
+  if(/\bmsme|udyam|micro|small enterprise/i.test(q)) v.msme='Yes';
+  const rs=q.match(/(funds? insufficient|insufficient funds?|exceeds arrangement|account closed|payment stopped|signature differ)/i);
+  if(rs&&t.id==='cheque') v.reason=/insuff/i.test(rs[1])?'Funds Insufficient':/exceed/i.test(rs[1])?'Exceeds Arrangement':/closed/i.test(rs[1])?'Account Closed':/stop/i.test(rs[1])?'Payment Stopped by Drawer':'Drawer\'s Signature Differs';
+  return v;
+}
+function prePick(q,t){ if(!t.corp) return; const pf=t.fields.find(f=>f.type==='pick'&&!f.pre); if(!pf) return; const ids=pickList(pf).filter(it=>it.kw.source!=='^$'&&it.kw.test(q)).map(it=>it.id); if(ids.length){ S.pick=S.pick||{}; S.pick[pf.k]=ids; } }
+
+/* ---------- conversation flow ---------- */
+async function userSays(text){
+  text=String(text).trim(); if(!text) return;
+  say('u',esc(text)); $('chips').style.display='none';
+  if(mode==='search') return doSearch(text);
+  if(/^(restart|start over|new|reset)$/i.test(text)){ S=null; return bot('<p>Okay, starting fresh. What notice do you need?</p>'+typeMenu()); }
+  if(S&&!S.done){
+    if(/^(draft|draft now|generate)( now)?$/i.test(text)||(/^(done|finish)$/i.test(text)&&!(queue().find(x=>x.k===S.cur)||{}).lib)){ if(S.pick) Object.keys(S.pick).forEach(k=>{ if(S.v[k]==null&&S.pick[k].length) S.v[k]=S.pick[k].join(','); }); return finish(); }
+    if(/^(back|previous|undo)$/i.test(text)){ const qd=queue(); const i=qd.findIndex(f=>f.k===S.cur); const pf=qd[i-1]; if(pf){ delete S.v[pf.k]; S.v._defs.delete(pf.k); if(S.skipped) S.skipped.delete(pf.k); } return ask(); }
+    return answer(text);
+  }
+  if(S&&S.done&&/^(edit|change|modify)\b/i.test(text)){ openPanel('det'); return bot('<p>I opened the <b>Details</b> tab — change any answer there and click <b>Update notice</b>.</p>'); }
+  if(/^(hi|hello|hey|namaste)\b/i.test(text)&&text.length<15) return bot('<p>Hello! Tell me what happened — who owes what, or what went wrong — and I will draft the legal notice.</p>'+typeMenu());
+  if(/^(thanks?|thank you|ok|okay)\b/i.test(text)&&text.length<15) return bot('<p>You are welcome. Need another notice? Just describe it.</p>');
+  const t=detect(text);
+  if(!t) return bot('<p>I can draft that. Which kind of notice is closest?</p>'+typeMenu()+'<p class="hint" style="margin-top:8px">Not listed? Pick <b>Other legal notice (custom)</b> and I will build it from your facts.</p>');
+  startTpl(t.id,false,text);
+}
+function typeMenu(){ return GROUPS.map(g=>'<div class="qn" style="margin-top:10px">'+esc(g)+'</div><div class="opts" style="margin-top:4px">'+T.filter(t=>t.group===g).map(t=>'<button class="opt" data-tpl="'+t.id+'"><i class="bi '+t.icon+'"></i> '+esc(t.n)+'</button>').join('')+'</div>').join(''); }
+async function startTpl(id,fromMenu,text,pre){
+  const t=TBY[id]; newSession(t); if(pre){ const pf=t.fields.find(f=>f.type==='pick'&&!f.pre); if(pf) S.pick={[pf.k]:[pre]}; }
+  let got={}; if(text){ got=t.corp?{}:extract(text,t); Object.assign(S.v,got); Object.keys(got).forEach(k=>S.v._defs.delete(k)); prePick(text,t); }
+  const n=queue().length;
+  let h='<div class="chk"><i class="bi bi-check2"></i> Understood the request<div class="sum"><table><tr><td>Notice type</td><td><b>'+esc(t.n)+'</b></td></tr><tr><td>Law</td><td>'+esc(t.law)+'</td></tr>'+Object.keys(got).map(k=>'<tr><td>'+esc(label(k))+'</td><td>'+esc(show(k,got[k]))+'</td></tr>').join('')+'</table></div></div>';
+  if(S.pick){ const pk=Object.values(S.pick)[0]||[]; if(pk.length) h+='<p class="hint">Pre-selected from your message: '+pk.map(id=>'<b>'+esc(libItem(id).n)+'</b>').join(', ')+'.</p>'; }
+  h+='<p>I will draft your <b>'+esc(t.n)+'</b> ('+esc(t.law)+')'+(t.corp?', signed as Company Secretary':'')+'. '+(Object.keys(got).length?'I picked up '+Object.keys(got).map(k=>'<b>'+esc(label(k).toLowerCase())+'</b>').join(', ')+' from your message. ':'')+'I need about '+n+' short answers — type <i>skip</i> for anything you don\'t have (it becomes a highlighted blank), or <i>draft now</i> at any time.</p>';
+  await bot(h); ask();
+}
+function label(k){ const f=[...PRE,...POST,...EXTRA,...(S?S.tpl.fields:[]),...(S?queue():[])].find(f=>f.k===k); return f?f.l:k; }
+function show(k,val){ const f=[...PRE,...POST,...EXTRA,...(S?queue():[])].find(f=>f.k===k); if(f&&f.type==='pick') return String(val).split(',').map(id=>(libItem(id)||{}).n||id).join('; '); return f&&f.type==='money'&&parseMoney(val)!=null?'₹'+inr(parseMoney(val)):val; }
+function nextField(){ return queue().find(f=>S.v[f.k]==null && !(S.skipped&&S.skipped.has(f.k))); }
+async function ask(){
+  const f=nextField(); if(!f) return finish();
+  S.cur=f.k; const qd=queue(); const idx=qd.indexOf(f)+1;
+  if(f.type==='pick') return askPick(f,idx,qd.length);
+  let o='<div class="opts">';
+  (f.opts||[]).forEach(x=>o+='<button class="opt'+(x===f.def?' pri':'')+'" data-say="'+esc(x)+'">'+esc(x)+'</button>');
+  if(f.type==='date') ['Today','Yesterday'].forEach(x=>o+='<button class="opt" data-say="'+x+'">'+x+'</button>');
+  o+='<button class="opt gh" data-say="skip">Skip</button>'+(idx>3?'<button class="opt gh" data-say="draft now">Draft now</button>':'')+'</div>';
+  await bot('<div class="qn">Question '+idx+' of '+qd.length+' · '+esc(f.item?f.item:f.l)+'</div><div class="q">'+esc(f.q)+'</div>'+(f.ph?'<div class="hint">'+esc(f.ph)+'</div>':'')+(f.def&&!f.opts?'<div class="hint">Suggested: '+esc(f.def)+' — <a href="#" data-say="'+esc(f.def)+'">use this</a></div>':'')+o);
+  const a=log.querySelector('.msg:last-child a[data-say]'); if(a) a.onclick=e=>{e.preventDefault();userSays(a.dataset.say);};
+  $('q').placeholder=f.multi?'Type your answer (Shift+Enter for a new line)…':'Type your answer…';
+}
+function pickList(f){ return LIBS[f.lib].filter(it=>!f.filter||(f.filter==='ord'?it.ord:!it.ord)); }
+async function askPick(f,idx,total,note){
+  S.pick=S.pick||{}; const cur=S.pick[f.k]||(S.pick[f.k]=(f.pre||[]).slice());
+  const list=pickList(f);
+  let o='<div class="opts">'+list.map(it=>'<button class="opt'+(cur.includes(it.id)?' pri':'')+'" data-say="'+esc(it.n)+'">'+(cur.includes(it.id)?'✓ ':'')+esc(it.n)+'</button>').join('')+'</div>';
+  o+='<div class="opts"><button class="opt pri" data-say="done"><i class="bi bi-check2"></i> Done'+(cur.length?' ('+cur.length+' selected)':'')+'</button>'+(f.opt?'<button class="opt gh" data-say="skip">None / skip</button>':'')+'</div>';
+  await bot((note?'<div class="okn">'+note+'</div>':'')+'<div class="qn">Question '+idx+' of '+total+' · '+esc(f.l)+'</div><div class="q">'+esc(f.q)+'</div><div class="hint">Click items to select or unselect, or type a name or number. Selected: '+(cur.length?cur.map(id=>'<b>'+esc(libItem(id).n)+'</b>').join(', '):'none yet')+'</div>'+o);
+}
+function matchItem(f,text){ const list=pickList(f); const t=text.trim().toLowerCase().replace(/^✓\s*/,'');
+  const n=parseInt(t,10); if(String(n)===t&&list[n-1]) return list[n-1];
+  return list.find(it=>it.n.toLowerCase()===t)||list.find(it=>it.kw.test(text))||list.find(it=>it.n.toLowerCase().includes(t)&&t.length>3); }
+async function answerPick(f,text){
+  const cur=S.pick[f.k]; const qd=queue(); const idx=qd.indexOf(f)+1;
+  if(/^(skip|none|na|n\/a)$/i.test(text)&&f.opt){ (S.skipped=S.skipped||new Set()).add(f.k); return ask(); }
+  if(/^(done|finish|next|ok|that'?s all|no more)$/i.test(text)){
+    if(!cur.length){ if(f.opt){ (S.skipped=S.skipped||new Set()).add(f.k); return ask(); } return askPick(f,idx,qd.length,'Select at least one item first.'); }
+    S.v[f.k]=cur.join(','); S.v._defs.delete(f.k);
+    if(S.tpl.warn&&f.k==='items'){ const w=S.tpl.warn(S.v); if(w&&/meeting/.test(w)) await bot('<div class="warn"><i class="bi bi-exclamation-triangle"></i> '+esc(w)+'</div>'); }
+    const extra=queue().length-qd.length; if(extra>0) await bot('<p>Good — I need <b>'+extra+'</b> detail'+(extra>1?'s':'')+' for the selected item'+(cur.length>1?'s':'')+'.</p>');
+    return ask(); }
+  const parts=text.split(/\s*[,;]\s*|\s+and\s+/).filter(Boolean); let changed=[];
+  for(const p of (parts.length>1?parts:[text])){ const it=matchItem(f,p); if(it){ const i=cur.indexOf(it.id); if(i>=0) cur.splice(i,1); else cur.push(it.id); changed.push((i>=0?'Removed ':'Added ')+it.n); } }
+  if(!changed.length) return askPick(f,idx,qd.length,'I could not match “'+esc(text)+'”. Pick from the list, or choose <b>'+esc(pickList(f).slice(-1)[0].n)+'</b> to type your own.');
+  return askPick(f,idx,qd.length,esc(changed.join(' · ')));
+}
+async function answer(text){
+  const f=queue().find(x=>x.k===S.cur); if(!f) return finish();
+  if(f.type==='pick') return answerPick(f,text);
+  if(/^(skip|na|n\/a|not known|don'?t know|-|none|nil)$/i.test(text)){ (S.skipped=S.skipped||new Set()).add(f.k); return ask(); }
+  let val=text;
+  if(f.type==='money'){ const n=parseMoney(text); if(n==null||n<=0) return bot('<p>I could not read an amount in that. Please type a number like <i>250000</i>, <i>2.5 lakh</i> or <i>1.2 crore</i>, or <i>skip</i>.</p>'); val=String(n); }
+  if(f.type==='num'){ const n=parseInt(String(text).replace(/,/g,''),10); if(isNaN(n)||n<=0) return bot('<p>Please type a number, or <i>skip</i>.</p>'); val=String(n); }
+  if(f.type==='date'){ const d=parseDate(text); if(d) val=fmtDate(d); }
+  if(f.type==='email'&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text)) return bot('<p>That doesn\'t look like an email address. Type it again, or <i>skip</i>.</p>');
+  S.v[f.k]=val; S.v._defs.delete(f.k);
+  if(f.type==='money'&&f.k==='amount'&&S.tpl.id==='ibc'){ const w=S.tpl.warn(S.v); if(w) await bot('<div class="warn"><i class="bi bi-exclamation-triangle"></i> '+esc(w)+'</div>'); }
+  if(f.k==='memoDate'||f.k==='declDate'||(S.tpl.corp&&f.k==='mDate')||f.k==='lastDate'){ const w=S.tpl.warn?S.tpl.warn(S.v):''; if(w) await bot('<div class="'+(/lost|Only|SS-1|must/.test(w)?'warn':'okn')+'"><i class="bi bi-'+(/lost|Only|SS-1|must/.test(w)?'exclamation-triangle':'clock')+'"></i> '+esc(w)+'</div>'); }
+  ask();
+}
+async function finish(){
+  queue().forEach(f=>{ if(S.v[f.k]==null&&f.def!=null&&!(S.skipped&&S.skipped.has(f.k))) S.v[f.k]=f.def; });
+  S.done=true; S.cur=null; S.html=render(S); S.edited=false; lastDraft=S;
+  const vals=queue().filter(f=>S.v[f.k]!=null).map(f=>'<tr><td>'+esc(f.l)+'</td><td>'+esc(show(f.k,S.v[f.k]))+'</td></tr>').join('');
+  const blanks=(S.html.match(/class="ph-x"/g)||[]).length;
+  const w=S.tpl.warn?S.tpl.warn(S.v):'';
+  const plain=htmlToText(S.html).split('\n').filter(Boolean).slice(0,8).map(esc).join('<br>');
+  await bot('<div class="chk"><i class="bi bi-check2"></i> Checked the details<div class="sum"><table>'+vals+'</table></div></div>'+
+   (w?'<div class="warn"><i class="bi bi-exclamation-triangle"></i> '+esc(w)+'</div>':'')+
+   '<p>Your <b>'+esc(S.tpl.n)+'</b> is ready'+(blanks?' — <b>'+blanks+'</b> blank'+(blanks>1?'s are':' is')+' highlighted in yellow for you to fill':'')+'. You can edit the text directly in the preview.</p>'+
+   '<div class="dcard"><div class="dh"><i class="bi bi-file-earmark-text"></i><div><b>'+esc(subjText(S))+'</b><span>'+esc(S.v.toName||S.v.coName||'Recipient')+' · '+esc(S.v.date||TODAY)+'</span></div></div><div class="dp">'+plain+'</div>'+
+   '<div class="da"><button class="btn pri" data-open="1"><i class="bi bi-eye"></i>Open &amp; edit</button><button class="btn gold" data-act="savecur"><i class="bi bi-archive"></i>Save</button><button class="btn" data-mail=""><i class="bi bi-envelope"></i>Email</button><button class="btn" data-act="wordcur"><i class="bi bi-file-earmark-word"></i>Word</button></div></div>'+
+   '<p class="hint" style="margin-top:8px">Type <i>edit</i> to change any answer, or describe another notice to start a new one.</p>');
+  $('q').placeholder='Describe the notice or resolution you need...';
+  openPanel('doc');
+}
+
+/* ---------- rendering the notice ---------- */
+function helpers(s){
+  const v=s.v, adv=v.by==='Advocate', cs=!adv&&v.by!=='Party itself';
+  const ph=k=>'<span class="ph-x">['+esc(label(k))+']</span>';
+  const x=k=>v[k]!=null&&String(v[k]).trim()!==''?esc(v[k]).replace(/\n/g,'<br>'):ph(k);
+  const m=k=>{ const n=parseMoney(v[k]); return n!=null&&v[k]!=null?'₹'+inr(n)+'/-':ph(k); };
+  const mw=k=>{ const n=parseMoney(v[k]); return n!=null&&v[k]!=null?esc(rupees(n)):ph(k); };
+  const d=k=>{ if(v[k]==null) return ph(k); const p=parseDate(v[k]); return esc(p?fmtDate(p):v[k]); };
+  const days=s.tpl.fixedDays||parseInt(v.period,10)||15;
+  return {x,m,mw,d,adv,cs,days,cl:adv?'my client':cs?'the Company':'the undersigned',Cl:adv?'My client':cs?'The Company':'The undersigned'};
+}
+function subjText(s){ const t=document.createElement('div'); t.innerHTML=s.tpl.corp?s.tpl.title(s.v,helpers(s)):s.tpl.build(s.v,helpers(s)).subj; return t.textContent; }
+function render(s){
+  if(s.tpl.corp){ const h=helpers(s); return s.tpl.render(s,h,coHelpers(s,h)); }
+  const v=s.v,h=helpers(s),t=s.tpl,b=t.build(v,h);
+  const co=isCo(v.toName);
+  let out='';
+  if(h.adv){ const lines=String(v.adv||'').split(/\n|,\s(?=\D)/).map(x=>x.trim()).filter(Boolean);
+    out+='<div class="lh"><b>'+(lines[0]?esc(lines[0]).toUpperCase():'<span class="ph-x">[Advocate name]</span>')+'</b><div>'+(lines.length>1?lines.slice(1).map(esc).join(' &middot; '):'Advocate')+'</div></div>'; }
+  else out+='<div class="lh"><b>'+h.x('fromName').toUpperCase()+'</b><div>'+(h.cs?'Regd. Office: ':'')+h.x('fromAddr')+'</div></div>';
+  out+='<div class="row"><div>Ref.: '+(v.ref?esc(v.ref):'<span class="ph-x">[Ref. no.]</span>')+'</div><div>Date: '+h.d('date')+'</div></div>';
+  out+='<p style="margin-top:12px"><b>BY '+esc((v.mode||'Registered Post A.D.').toUpperCase())+'</b></p>';
+  out+='<p>To,<br><b>'+h.x('toName')+'</b><br>'+(co&&!b.ibc?CO_DIRS+'<br>':'')+h.x('toAddr')+(v.toEmail?'<br>Email: '+esc(v.toEmail):'')+'</p>';
+  if(b.ibc){
+    out+='<p style="text-align:center;margin:14px 0 4px"><b>FORM 3</b><br><span style="font-size:13px">[See clause (a) of sub-rule (1) of Rule 5 of the Insolvency and Bankruptcy Board of India (Application to Adjudicating Authority) Rules, 2016]</span></p>';
+    out+='<p class="subj">Subject: '+b.subj+'</p><p>Madam / Sir,</p>';
+    out+='<p>1. '+b.intro+'</p><table>'+b.table.map((r,i)=>'<tr><td style="width:6%">'+(i+1)+'</td><td style="width:42%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</table>';
+    b.after.forEach((p,i)=>out+='<p>'+(i+2)+'. '+p+'</p>');
+    out+='<div class="sig">Yours sincerely,<br><br><br>Signature of person authorised to act on behalf of the operational creditor<br>Name in block letters: '+h.x('authName')+'<br>Address: '+h.x('fromAddr')+'<br>Place: '+h.x('place')+'</div>';
+    out+='<p style="margin-top:18px;font-size:13px">Enclosures: '+h.x('docs')+'</p>';
+    return out;
+  }
+  out+='<p class="subj">Subject: '+b.subj+'</p>';
+  out+='<p>'+(co?'Sir / Madam':'Dear Sir / Madam')+',</p>';
+  out+='<p>'+(h.adv?'Under instructions from and on behalf of my client, <b>'+h.x('fromName')+'</b>, '+h.x('fromAddr')+' (hereinafter &ldquo;my client&rdquo;), I hereby serve upon you the following '+(b.reply?'reply':'legal notice')+':':h.cs?'On behalf of and under the authority of the Board of Directors of <b>'+h.x('fromName')+'</b>, having its registered office at '+h.x('fromAddr')+' (hereinafter &ldquo;the Company&rdquo;), I, the Company Secretary of the Company, hereby serve upon you the following '+(b.reply?'reply':'notice')+':':'I / We, <b>'+h.x('fromName')+'</b>, '+h.x('fromAddr')+' (hereinafter &ldquo;the undersigned&rdquo;), hereby serve upon you the following '+(b.reply?'reply':'legal notice')+':')+'</p>';
+  out+='<ol>'+b.paras.map(p=>'<li>'+p+'</li>').join('');
+  out+='<li>'+(h.adv?'I, therefore, by this notice call upon you':h.cs?'The Company, therefore, calls upon you':'The undersigned, therefore, calls upon you')+' to '+b.demand+', failing which '+h.cl+' shall be constrained to initiate '+b.cons+', entirely at your risk as to costs and consequences, without any further notice.</li>';
+  if(v.fee&&parseMoney(v.fee)) out+='<li>You are also liable to pay '+h.m('fee')+' towards the cost of this notice.</li>';
+  out+='<li>This notice is issued without prejudice to all other rights and remedies available to '+h.cl+' in law and equity, all of which are expressly reserved.</li></ol>';
+  out+=h.adv?'<p>A copy of this notice has been retained in my office for record and further action.</p>':'';
+  out+='<div class="sig">'+(h.cs?'Yours faithfully,<br>For <b>'+h.x('fromName')+'</b><br><br><br><b>'+h.x('csName')+'</b><br>Company Secretary<br>Membership No.: '+h.x('csMem'):h.adv?'Yours faithfully,<br><br><br><b>'+(String(v.adv||'').split(/\n|,/)[0].trim()?esc(String(v.adv).split(/\n|,/)[0].trim()):'<span class="ph-x">[Advocate]</span>')+'</b><br>Advocate for '+h.x('fromName'):'Yours faithfully,<br>For '+h.x('fromName')+'<br><br><br><b>'+(isCo(v.fromName)?h.x('signName'):h.x('fromName'))+'</b>')+'<br>Place: '+h.x('place')+'</div>';
+  return out;
+}
+function htmlToText(html){
+  const d=document.createElement('div'); d.innerHTML=html.replace(/<br\s*\/?>/gi,'\n').replace(/<div/gi,'\n<div').replace(/<\/(p|div|li|tr|h\d)>/gi,'$&\n');
+  d.querySelectorAll('ol').forEach(ol=>[...ol.children].forEach((li,i)=>li.insertAdjacentText('afterbegin',(i+1)+'. ')));
+  d.querySelectorAll('td').forEach(td=>td.insertAdjacentText('beforeend',' | '));
+  return d.textContent.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+/* ---------- preview panel ---------- */
+let ptab='doc';
+function openPanel(tab){ if(!S||!S.done) return; document.body.classList.add('split'); setPTab(tab||'doc'); }
+function closePanel(){ syncEdit(); document.body.classList.remove('split'); }
+function syncEdit(){ const p=$('paper'); if(p&&S&&S.done&&p.innerHTML!==S.html){ S.html=p.innerHTML; S.edited=true; } }
+function setPTab(t){
+  syncEdit(); ptab=t; document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.pt===t));
+  $('pTitle').textContent=subjText(S);
+  const pb=$('pbody');
+  if(t==='doc'){ pb.innerHTML='<div class="paper" id="paper" contenteditable="true" spellcheck="true">'+S.html+'</div>'; $('paper').addEventListener('input',()=>{S.edited=true;}); }
+  else if(t==='det'){
+    const fs=[...queue(),...EXTRA.filter(f=>!S.tpl.corp||f.k==='date')];
+    pb.innerHTML='<div class="form"><div class="hint">Change any detail and click <b>Update notice</b>. '+(S.edited?'<b style="color:var(--err)">This will replace the edits you typed in the notice.</b>':'')+'</div><div class="g2">'+
+      fs.map(f=>'<div'+(f.multi||f.type==='pick'?' style="grid-column:1/-1"':'')+'><label for="f_'+f.k+'">'+esc(f.l)+'</label>'+(f.type==='pick'?'<div data-pk="'+f.k+'" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 10px;font-size:13px">'+pickList(f).map(it=>'<label style="font-weight:500;margin:2px 0"><input type="checkbox" value="'+it.id+'" style="width:auto;margin-right:6px"'+(String(S.v[f.k]||'').split(',').includes(it.id)?' checked':'')+'>'+esc(it.n)+'</label>').join('')+'</div>':f.opts&&!f.multi?'<select id="f_'+f.k+'" data-k="'+f.k+'"><option value="">—</option>'+f.opts.map(o=>'<option'+(S.v[f.k]===o?' selected':'')+'>'+esc(o)+'</option>').join('')+(S.v[f.k]&&!f.opts.includes(S.v[f.k])?'<option selected>'+esc(S.v[f.k])+'</option>':'')+'</select>':f.multi?'<textarea id="f_'+f.k+'" data-k="'+f.k+'">'+esc(S.v[f.k]||'')+'</textarea>':'<input id="f_'+f.k+'" data-k="'+f.k+'" value="'+esc(f.type==='money'&&S.v[f.k]?inr(parseMoney(S.v[f.k])):(S.v[f.k]||''))+'">')+'</div>').join('')+
+      '</div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn pri" id="fApply" type="button"><i class="bi bi-arrow-repeat"></i>Update notice</button></div></div>';
+    $('fApply').onclick=()=>{ pb.querySelectorAll('[data-pk]').forEach(e=>{ const ids=[...e.querySelectorAll('input:checked')].map(x=>x.value); if(ids.length) S.v[e.dataset.pk]=ids.join(','); else delete S.v[e.dataset.pk]; }); pb.querySelectorAll('[data-k]').forEach(e=>{ const k=e.dataset.k,val=e.value.trim(); if(val) S.v[k]=val; else delete S.v[k]; }); queue(); S.html=render(S); S.edited=false; setPTab('doc'); toast('Notice updated'); };
+  } else {
+    const w=S.tpl.warn?S.tpl.warn(S.v):'';
+    pb.innerHTML='<div class="notes"><h4>'+esc(S.tpl.n)+'</h4><div class="hint" style="margin-bottom:10px">'+esc(S.tpl.law)+'</div>'+(w?'<div class="warn">'+esc(w)+'</div>':'')+'<ul>'+S.tpl.notes.map(n=>'<li>'+n+'</li>').join('')+'</ul>'+
+    '<h4 style="margin-top:14px">Before you send</h4><ul><li>Fill every yellow blank and check names, amounts and dates against the documents.</li><li>Sign every page (advocate / authorised signatory) and keep a copy.</li><li>Send by Registered Post A.D. / Speed Post to every address on record (and email if known); keep receipts and tracking printouts as proof of service.</li><li>Verify the law at the time of sending — this is a drafting aid, not legal advice.</li></ul>'+
+    '<p class="hint">Open the provisions in the  or ask .</p></div>';
+  }
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setPTab(b.dataset.pt));
+$('pClose').onclick=closePanel;
+
+/* ---------- save / store ---------- */
+const KEY='rk:legalnotices:v1';
+const store=()=>LS.get(KEY,[]);
+function saveCur(){ if(!S||!S.done) return toast('Draft a notice first'); syncEdit(); const all=store().filter(x=>x.id!==S.id);
+  const vv={...S.v}; delete vv._defs; all.unshift({id:S.id,tpl:S.tpl.id,title:subjText(S),to:S.v.toName||S.v.coName||'',date:S.v.date||TODAY,v:vv,html:S.html,edited:S.edited,saved:Date.now()}); LS.set(KEY,all.slice(0,200)); toast('Saved to Stored notices'); }
+function openSaved(id,mail){ const r=store().find(x=>x.id===id); if(!r) return toast('Not found'); S={tpl:TBY[r.tpl]||TBY.general,v:{...r.v,_defs:new Set()},done:true,html:r.html,edited:r.edited,id:r.id}; lastDraft=S; openPanel('doc'); if(mail) emailDraft(); }
+function delSaved(id,btn){ if(!confirm('Delete this saved notice?')) return; LS.set(KEY,store().filter(x=>x.id!==id)); const row=btn.closest('.saved'); if(row) row.remove(); toast('Deleted'); }
+function savedList(forMail){ const all=store(); if(!all.length) return '<p>No notices stored yet. Draft one and click <b>Save</b> — it stays on this computer.</p>';
+  return all.map(r=>'<div class="saved"><i class="bi bi-file-earmark-text" style="font-size:20px;color:var(--navy)"></i><div class="t"><b>'+esc(r.title)+'</b><span>'+esc(r.to||'—')+' · '+esc(r.date)+' · '+esc((TBY[r.tpl]||{}).n||'')+'</span></div>'+(forMail?'<button class="btn pri" data-mail="'+r.id+'"><i class="bi bi-envelope"></i>Email</button>':'<button class="btn" data-saved="'+r.id+'">Open</button><button class="btn" data-mail="'+r.id+'" title="Email"><i class="bi bi-envelope"></i></button><button class="btn" data-del="'+r.id+'" title="Delete"><i class="bi bi-trash"></i></button>')+'</div>').join(''); }
+
+/* ---------- export ---------- */
+function curHtml(){ syncEdit(); return S.html; }
+const docCss='body{font-family:"Times New Roman",Georgia,serif;font-size:12pt;line-height:1.5;color:#000}.lh{text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:12px}.lh b{font-size:16pt}.row{display:flex;justify-content:space-between}.subj{font-weight:bold;text-decoration:underline}p,li{text-align:justify}table{border-collapse:collapse;width:100%}td{border:1px solid #000;padding:5px;vertical-align:top}.ph-x{background:#ffff00}.sig{margin-top:24pt}';
+function fileName(ext){ return (subjText(S).replace(/[^\w\- ]+/g,'').slice(0,70).trim()||'Legal notice')+'.'+ext; }
+function downloadWord(){ if(!S||!S.done) return toast('Draft a notice first');
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Legal notice</title><style>'+docCss+'.row{display:block}</style></head><body>'+curHtml().replace(/<div class="row"><div>(.*?)<\/div><div>(.*?)<\/div><\/div>/,'<table style="border:0"><tr><td style="border:0">$1</td><td style="border:0;text-align:right">$2</td></tr></table>')+'</body></html>';
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿',html],{type:'application/msword'})); a.download=fileName('doc'); document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); toast('Word file downloaded'); }
+function printDoc(){ if(!S||!S.done) return; const w=window.open('','_blank'); if(!w){ window.print(); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(subjText(S))+'</title><style>'+docCss+'@page{margin:20mm}.ph-x{background:none;border-bottom:1px dotted #000}</style></head><body>'+curHtml()+'<script>setTimeout(function(){window.print()},300)<\/script></body></html>'); w.document.close(); }
+async function copyText(){ const t=htmlToText(curHtml()); try{ await navigator.clipboard.writeText(t); toast('Notice copied'); return true; }catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(_){} ta.remove(); toast('Notice copied'); return true; } }
+function emailDraft(){ if(!S||!S.done){ return bot('<p>There is no draft open yet. Draft a notice first, or pick a stored one:</p>'+savedList(true)); }
+  $('mTo').value=S.v.toEmail||''; $('mCc').value=''; $('mSub').value=subjText(S); $('mailModal').classList.add('show'); copyText(); }
+function mailBody(){ const t=htmlToText(curHtml()); return t.length>1800?'Please find our legal notice below.\n\n[The full notice has been copied — paste it here (Ctrl+V) and attach the signed copy.]':t; }
+$('mCancel').onclick=()=>$('mailModal').classList.remove('show');
+$('mailModal').onclick=e=>{ if(e.target.id==='mailModal') $('mailModal').classList.remove('show'); };
+$('mWord').onclick=downloadWord;
+$('mApp').onclick=()=>{ const u='mailto:'+encodeURIComponent($('mTo').value.trim())+'?subject='+encodeURIComponent($('mSub').value)+($('mCc').value.trim()?'&cc='+encodeURIComponent($('mCc').value.trim()):'')+'&body='+encodeURIComponent(mailBody()); window.location.href=u; $('mailModal').classList.remove('show'); };
+$('mGmail').onclick=()=>{ const t=htmlToText(curHtml()); const u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent($('mTo').value.trim())+'&cc='+encodeURIComponent($('mCc').value.trim())+'&su='+encodeURIComponent($('mSub').value)+'&body='+encodeURIComponent(t.length>6000?mailBody():t); window.open(u,'_blank','noopener'); $('mailModal').classList.remove('show'); };
+$('pSave').onclick=saveCur; $('pCopy').onclick=copyText; $('pWord').onclick=downloadWord; $('pPrint').onclick=printDoc; $('pMail').onclick=emailDraft;
+
+/* ---------- search mode ---------- */
+function doSearch(q){
+  const s=q.toLowerCase().split(/\s+/).filter(Boolean);
+  const hit=t=>{ const hay=(t.n+' '+t.law+' '+t.d+' '+t.id+' '+t.group).toLowerCase(); return s.every(w=>hay.includes(w))||(t.kw.source!=='^$'&&t.kw.test(q)); };
+  const libHits=[...BLIB.map(x=>[x,'board_ctc','Board resolution']),...MLIB.map(x=>[x,'members_ctc','Members\' resolution'])].filter(([x])=>x.kw.source!=='^$'&&(s.every(w=>(x.n+' '+(x.sec||'')).toLowerCase().includes(w))||x.kw.test(q)));
+  const tl=T.filter(hit);
+  const sv=store().filter(r=>s.every(w=>(r.title+' '+r.to+' '+r.date).toLowerCase().includes(w)));
+  bot((tl.length?'<p><b>'+tl.length+'</b> template'+(tl.length>1?'s':'')+' match <i>'+esc(q)+'</i>:</p>'+tcards(tl):libHits.length?'':'<p>No template matches <i>'+esc(q)+'</i>. Try <i>cheque</i>, <i>dividend</i>, <i>IBC</i>, <i>rent</i> — or use <b>Other legal notice (custom)</b>.</p>'+tcards([TBY.general]))+
+   (libHits.length?'<p style="margin-top:12px"><b>Resolutions</b> matching:</p><div class="opts">'+libHits.slice(0,12).map(([x,tp,lb])=>'<button class="opt" data-tpl="'+tp+'" data-pre="'+x.id+'">'+esc(lb)+': '+esc(x.n)+'</button>').join('')+'</div>':'')+
+   (sv.length?'<p style="margin-top:12px"><b>Stored notices</b> matching:</p>'+sv.slice(0,8).map(r=>'<div class="saved"><i class="bi bi-file-earmark-text"></i><div class="t"><b>'+esc(r.title)+'</b><span>'+esc(r.to)+' · '+esc(r.date)+'</span></div><button class="btn" data-saved="'+r.id+'">Open</button></div>').join(''):''));
+}
+const tcards=list=>GROUPS.filter(g=>list.some(t=>t.group===g)).map(g=>'<div class="qn" style="margin-top:12px">'+esc(g)+'</div>'+tcards1(list.filter(t=>t.group===g))).join('');
+const tcards1=list=>'<div class="tcards">'+list.map(t=>'<button class="tc" data-tpl="'+t.id+'"><i class="bi '+t.icon+'"></i><span><b>'+esc(t.n)+'</b><span>'+esc(t.d)+'</span><span style="margin-top:3px;color:#8a6d12">'+esc(t.law)+'</span></span></button>').join('')+'</div>';
+function setMode(m){ mode=m; $('mSearch').classList.toggle('on',m==='search'); $('mAsk').classList.toggle('on',m==='ask'); $('q').placeholder=m==='search'?'Search templates and stored notices… e.g. cheque, dividend, IBC':'Describe the notice or resolution you need...'; }
+$('mSearch').onclick=()=>{ setMode('search'); $('q').focus(); };
+$('mAsk').onclick=()=>{ setMode('ask'); $('q').focus(); };
+
+/* ---------- starter chips ---------- */
+function chipAct(a){
+  $('chips').style.display='none';
+  if(a.startsWith('t:')){ setMode('ask'); say('u',esc(TBY[a.slice(2)].n)); return startTpl(a.slice(2),true); }
+  if(a==='gm'){ setMode('ask'); say('u','AGM / EGM Notice'); return bot('<p>Which general meeting document?</p>'+tcards1(T.filter(t=>t.group==='General meetings'))+'<p class="hint" style="margin-top:8px">For the certified copy of a resolution passed at the meeting, use <a href="#" data-tpl="members_ctc">Members\' resolution — certified true copy</a>.</p>'); }
+  if(a==='generate'){ setMode('ask'); say('u','Generate Legal Notice'); S=null; return bot('<p>Sure. Describe the matter in a line (who, what, how much), or pick the type of notice:</p>'+typeMenu()); }
+  if(a==='templates'){ setMode('search'); say('u','Find Legal Templates'); return bot('<p>Here are all <b>'+T.length+'</b> templates. Click one to start, or type in the box to search.</p>'+tcards(T)); }
+  if(a==='email'){ say('u','Send Legal Notice via Email'); if(S&&S.done) { bot('<p>Opening the email options for your current draft. The full notice is copied to your clipboard.</p>'); return emailDraft(); } return bot(store().length?'<p>Which notice should I email?</p>'+savedList(true):'<p>There is nothing to email yet. Describe a notice and I will draft it first.</p>'); }
+  if(a==='stored'){ say('u','Store Legal Notices'); if(S&&S.done){ saveCur(); } return bot((S&&S.done?'<div class="okn"><i class="bi bi-check2"></i> Current draft saved.</div>':'')+'<p><b>Stored notices</b> (kept on this computer):</p>'+savedList(false)); }
+  if(a==='savecur') return saveCur();
+  if(a==='wordcur') return downloadWord();
+}
+document.querySelectorAll('#chips .chip').forEach(c=>c.onclick=()=>chipAct(c.dataset.act));
+
+/* ---------- input ---------- */
+const qi=$('q');
+const grow=()=>{ qi.style.height='auto'; qi.style.height=Math.min(qi.scrollHeight,140)+'px'; $('sendBtn').disabled=!qi.value.trim(); };
+qi.addEventListener('input',grow);
+qi.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); $('inbar').requestSubmit(); } });
+$('inbar').onsubmit=e=>{ e.preventDefault(); const t=qi.value; qi.value=''; grow(); userSays(t); };
+$('newChat').onclick=()=>{ S=null; closePanel(); emptyState(); $('chips').style.display=''; setMode('ask'); qi.focus(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('mailModal').classList.contains('show')) $('mailModal').classList.remove('show'); } if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&S&&S.done){ e.preventDefault(); saveCur(); } });
+window.addEventListener('beforeunload',syncEdit);
+
+/* deep links: ?type=cheque  ·  ?q=describe… */
+emptyState();
+(function(){ const p=new URLSearchParams(location.search); const ty=p.get('type'); const q=p.get('q');
+  if(ty&&TBY[ty]){ $('chips').style.display='none'; startTpl(ty,true); } else if(q) userSays(q); })();
+qi.focus({preventScroll:true});
+</script>
+
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

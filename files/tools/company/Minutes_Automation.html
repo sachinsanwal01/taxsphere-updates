@@ -1,0 +1,2510 @@
+<!DOCTYPE html>
+<!-- saved from url=(0066)file:///C:/Users/Sachin.Sanwal/Downloads/Minutes_Automation_4.html -->
+<html lang="en"><head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minutes Automation | Board &amp; General Meetings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1b2a38;
+  --ink-2:#28394a;
+  --brass:#9c7a34;
+  --brass-light:#c9a256;
+  --paper:#fbfaf6;
+  --paper-line:#e2dcc9;
+  --canvas:#eef1f2;
+  --line:#d6dde2;
+  --text:#232b31;
+  --muted:#66727b;
+  --accent-red:#7a2734;
+  --focus:#2f6f8f;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Inter',system-ui,Arial,sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, #26445c22, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #9c7a3422, transparent 55%),
+    var(--canvas);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.45;
+}
+header.top{
+  background:linear-gradient(120deg,#04070c 0%,#081a30 30%,#0e2c52 55%,#13437a 78%,#1b5fa6 100%);
+  background-size:240% 240%;
+  animation:gflow 16s ease infinite;
+  color:#fff;
+  padding:22px 28px 20px;
+  box-shadow:0 14px 30px -14px rgba(0,0,0,.65), inset 0 -1px 0 rgba(255,255,255,.06);
+  position:relative;
+  z-index:5;
+}
+@keyframes gflow{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+header.top .crest{display:flex;align-items:center;gap:14px;}
+header.top .mark{
+  width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(155deg,#0f2340 0%,#020509 70%);
+  border:1px solid rgba(70,150,220,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Source Serif 4',serif;font-weight:700;font-size:18px;color:#6cb2ea;
+  flex:0 0 auto;
+  box-shadow:
+    0 10px 18px -8px rgba(0,0,0,.65),
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -6px 10px rgba(0,0,0,.5),
+    0 0 14px -4px rgba(40,120,200,.55);
+  transform-style:preserve-3d;
+  transition:transform .35s ease;
+}
+header.top .crest:hover .mark{ transform:rotateY(14deg) rotateX(6deg) translateZ(2px); }
+header.top h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px;text-shadow:0 1px 0 rgba(0,0,0,.25);}
+header.top p.tag{margin:3px 0 0;font-size:12.5px;color:#c8d2da;}
+header.top .disclaimer{
+  margin-top:14px;font-size:12px;color:#dbe3e8;
+  border-top:1px solid rgba(255,255,255,.15);padding-top:10px;
+}
+
+.app{
+  max-width:1360px;margin:26px auto 60px;padding:0 20px;
+  display:grid;grid-template-columns:minmax(340px,460px) 1fr;gap:24px;
+  align-items:flex-start;
+  perspective:1800px;
+}
+.app.hide{display:none;}
+@media (max-width: 980px){ .app{grid-template-columns:1fr;} }
+
+.toptabs{
+  background:linear-gradient(180deg,#0d1721,#0a141d);
+  display:flex;gap:2px;padding:0 24px;
+  box-shadow:0 6px 16px -10px rgba(0,0,0,.6);
+  position:relative;z-index:4;
+}
+.toptabs button{
+  appearance:none;border:none;background:transparent;
+  color:rgba(255,255,255,.6);padding:12px 18px;font-size:13px;font-weight:700;
+  cursor:pointer;border-bottom:3px solid transparent;font-family:inherit;
+  transition:color .2s ease, border-color .2s ease;
+}
+.toptabs button:hover{ color:#fff; }
+.toptabs button.active{ color:#fff;border-bottom-color:#1b5fa6;background:rgba(255,255,255,.04); }
+
+.guide-wrap{max-width:1080px;margin:26px auto 60px;padding:0 20px;display:none;}
+.guide-wrap.show{display:block;}
+.guide-card{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:28px 32px 36px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+}
+.guide-card .g-title{font-size:19px;font-weight:700;color:var(--ink);margin:0 0 4px;}
+.guide-card .g-sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;font-style:italic;}
+.guide-note{
+  background:linear-gradient(180deg,#eef7fb,#e2f0f6);border:1px solid #bcdcea;color:#1c5578;
+  border-radius:7px;padding:12px 16px;font-size:12.5px;margin-bottom:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+}
+.guide-note a{color:#123a54;font-weight:700;}
+.note-inline{
+  background:#fbf7ee;border:1px solid #ecd396;border-radius:6px;
+  padding:9px 12px;font-size:12.6px;color:#6b4c00;margin:-4px 0 16px;
+}
+.guide-card h2{
+  background:linear-gradient(120deg,#0e2c52,#04070c);
+  color:#fff;padding:9px 14px;border-radius:6px;font-size:14px;letter-spacing:.3px;
+  margin:30px 0 14px;
+  box-shadow:0 6px 14px -8px rgba(10,20,35,.5);
+}
+.guide-card h2:first-of-type{margin-top:4px;}
+.guide-card h4{
+  color:var(--ink);background:#eef4f8;border-left:4px solid var(--focus);
+  padding:6px 10px;font-size:13px;margin:20px 0 10px;border-radius:3px;
+}
+.guide-card p{font-size:13.3px;line-height:1.6;margin:0 0 12px;color:#2b333a;}
+.guide-card ul{font-size:13.3px;line-height:1.6;margin:0 0 14px 20px;padding:0;color:#2b333a;}
+.guide-card li{margin-bottom:5px;}
+.gtable-wrap{overflow-x:auto;margin:10px 0 20px;}
+table.gtable{border-collapse:collapse;width:100%;font-size:12.6px;min-width:520px;}
+table.gtable th{ background:var(--ink);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11.8px;border:1px solid #0a141d; }
+table.gtable td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;background:#fff;}
+table.gtable td.b{font-weight:700;background:#f5f7f8;}
+.guide-foot{font-size:11.5px;color:var(--muted);margin-top:20px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+  transition:box-shadow .3s ease, transform .3s ease;
+}
+.panel-form{padding:22px 22px 26px;}
+.panel-form:hover{ box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 26px 46px -22px rgba(20,30,45,.4), 0 6px 14px -6px rgba(20,30,45,.2); }
+.panel-preview{
+  position:sticky; top:20px;
+  padding:0; overflow:hidden;
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 40px);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 30px 55px -24px rgba(20,30,45,.45), 0 8px 18px -8px rgba(20,30,45,.22);
+}
+.preview-head{
+  padding:14px 20px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,#fbfaf7,#f2f1ec);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+  gap:10px;flex-wrap:wrap;
+}
+.preview-head span.lbl{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.preview-head span.fmt{font-size:11.5px;color:var(--muted);}
+.preview-tools{display:flex;align-items:center;gap:10px;}
+.autosave-status{ font-size:11px;color:#3a7a4e;font-weight:600;display:flex;align-items:center;gap:5px; }
+.autosave-status::before{ content:'';width:7px;height:7px;border-radius:50%;background:#3a7a4e;box-shadow:0 0 0 3px rgba(58,122,78,.18); }
+.autosave-status.saving{color:#8a6d1f;}
+.autosave-status.saving::before{background:#c9a256;box-shadow:0 0 0 3px rgba(201,162,86,.22);}
+.edit-toggle{
+  border:1px solid var(--focus);background:linear-gradient(180deg,#eef7fb,#dff0f7);
+  color:#1c5578;font-size:12px;font-weight:700;padding:7px 13px;border-radius:7px;cursor:pointer;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 3px 8px -4px rgba(47,111,143,.4);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.edit-toggle:hover{ filter:brightness(1.03); }
+.edit-toggle:active{ transform:translateY(1px); }
+.edit-toggle.active{ background:linear-gradient(180deg,#1c5578,#123a54);color:#fff;border-color:#123a54; }
+.edit-banner{
+  display:none;
+  background:linear-gradient(180deg,#eef7fb,#e2f0f6);
+  border-bottom:1px solid #bcdcea;
+  color:#1c5578;font-size:12px;padding:9px 20px;
+  align-items:center;gap:10px;flex-wrap:wrap;
+}
+.edit-banner.show{display:flex;}
+.edit-banner button{ border:none;border-radius:6px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer;background:#1c5578;color:#fff; }
+.edit-banner button.ghostlink{ background:transparent;color:#1c5578;text-decoration:underline;padding:5px 4px;font-weight:600; }
+.preview-scroll{
+  overflow-y:auto;padding:34px 26px;
+  background:
+    radial-gradient(700px 260px at 50% 0%, rgba(20,30,45,.05), transparent 65%),
+    var(--canvas);
+}
+
+.cert-copy{
+  background:linear-gradient(180deg,#fffdf9 0%, var(--paper) 100%);
+  border:1px solid var(--paper-line);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 2px 3px rgba(20,30,40,.05), 0 18px 34px -16px rgba(20,30,40,.35), 0 40px 60px -30px rgba(20,30,40,.25);
+  max-width:740px;margin:0 auto;
+  padding:46px 50px 54px;
+  font-family:'Source Serif 4',Georgia,serif;
+  transform:rotateX(0.5deg);
+  transition:transform .12s ease-out, box-shadow .45s ease;
+  transform-style:preserve-3d;
+  color:#20272c;
+}
+.cert-copy:hover{
+  transform:rotateX(0deg) translateY(-2px);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 2px 3px rgba(20,30,40,.05), 0 24px 44px -16px rgba(20,30,40,.4), 0 54px 70px -30px rgba(20,30,40,.3);
+}
+.cert-copy[contenteditable="true"]{ outline:2px dashed #7fb2d1;outline-offset:10px;cursor:text;background:linear-gradient(180deg,#fffef9 0%, #fefcf5 100%); }
+.cert-copy[contenteditable="true"]:focus{ outline-color:#2f6f8f; }
+.cert-copy .co-name{font-size:17px;font-weight:700;text-align:center;letter-spacing:.3px;}
+.cert-copy .co-meta{font-size:12.5px;text-align:center;color:#4a5158;margin-top:3px;}
+.cert-copy .rule{border:none;border-top:2px solid var(--brass);margin:16px 0 18px;}
+.cert-copy .cert-title{ text-align:center;font-size:12.5px;letter-spacing:.4px;color:#3a414a;margin-bottom:4px; }
+.cert-copy .meeting-line{font-size:13.5px;margin:14px 0 4px;}
+.cert-copy .present-label{font-size:13px;font-weight:600;margin:14px 0 4px;}
+.cert-copy ul.present-list{margin:0 0 10px 20px;padding:0;font-size:13.5px;}
+.cert-copy ul.present-list li{margin-bottom:2px;}
+.cert-copy .chair-line{font-size:13px;font-style:italic;color:#3a414a;margin-bottom:16px;}
+.cert-copy .item-title{
+  font-weight:700;font-size:13.6px;letter-spacing:.2px;
+  margin:24px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--paper-line);
+}
+.cert-copy .item-tag{font-size:10.8px;font-weight:700;color:var(--focus);text-transform:uppercase;letter-spacing:.5px;margin-right:8px;}
+.cert-copy .res-body p{font-size:13.8px;margin:0 0 13px;text-align:justify;}
+.cert-copy .res-body p.resolved::first-letter{font-weight:700;}
+.cert-copy .expl-heading{ font-weight:700;font-size:12px;letter-spacing:.4px;color:#3a414a;margin:12px 0 6px;text-transform:uppercase; }
+.cert-copy .sign-block{margin-top:40px;font-size:13.5px;}
+.cert-copy .sign-block .for-co{margin-bottom:46px;}
+.cert-copy .sign-line{border-top:1px solid #444;width:230px;margin-bottom:6px;}
+.cert-copy .sign-meta{font-size:12.5px;color:#4a5158;}
+.cert-copy .placement-row{display:flex;justify-content:space-between;margin-top:26px;font-size:12.5px;color:#4a5158;}
+.ph{color:#a9917e;font-style:italic;}
+
+fieldset.grp{
+  border:1px solid var(--line);border-radius:9px;
+  padding:14px 16px 16px;margin:0 0 16px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfbfa 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 8px 16px -12px rgba(20,30,45,.22), 0 1px 2px rgba(20,30,45,.04);
+  transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+}
+fieldset.grp:focus-within,fieldset.grp:hover{
+  transform:translateY(-2px);border-color:#c7d0d7;
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 16px 26px -14px rgba(20,30,45,.3), 0 2px 4px rgba(20,30,45,.06);
+}
+fieldset.grp legend{ font-size:12px;font-weight:700;color:var(--ink);padding:0 6px;letter-spacing:.3px; }
+.frow{display:flex;flex-wrap:wrap;gap:12px 14px;margin-bottom:10px;}
+.frow:last-child{margin-bottom:0;}
+.fitem{flex:1 1 200px;display:flex;flex-direction:column;gap:4px;}
+.fitem.full{flex-basis:100%;}
+.fitem label{font-size:12px;font-weight:600;color:#374149;}
+.fitem .hint{font-size:11px;color:var(--muted);font-weight:400;}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  border:1px solid var(--line);border-radius:6px;
+  padding:8px 9px;font-size:13px;font-family:inherit;color:var(--text);width:100%;
+  background:#fdfdfc;
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), inset 0 -1px 0 rgba(255,255,255,.6);
+  transition:box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+textarea{resize:vertical;min-height:52px;font-family:inherit;}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--focus);
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), 0 0 0 3px rgba(47,111,143,.16);
+  transform:translateY(-1px);
+}
+.note-box{
+  font-size:12px;color:#6b4c00;background:linear-gradient(180deg,#fffaf0,#fff3d9);
+  border:1px solid #ecd396;border-radius:6px;padding:8px 10px;margin-top:4px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 3px 6px -3px rgba(140,100,0,.2);
+}
+
+.cond-section{display:none;}
+.cond-section.show{display:block;}
+.frow.cond-section.show{display:flex;}
+
+.level-tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;background:#eef1f3;padding:4px;border-radius:8px;
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.12);
+}
+.level-tab{
+  border:none;border-radius:6px;padding:9px 6px;font-size:11.6px;font-weight:700;line-height:1.25;
+  cursor:pointer;font-family:inherit;background:transparent;color:#5a6672;
+  transition:background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.level-tab:hover{ color:var(--ink); }
+.level-tab.active{ background:linear-gradient(180deg,#ffffff,#f4f6f7);color:var(--ink);box-shadow:0 2px 6px -2px rgba(20,30,45,.3), 0 1px 0 rgba(255,255,255,.8) inset; }
+.level-hint{ font-size:11.5px;color:var(--muted);margin:0 0 16px;padding:0 2px;font-style:italic; }
+
+/* ---- Agenda item checklist ---- */
+.agenda-group{margin-bottom:6px;}
+.agenda-group-title{
+  font-size:11px;font-weight:700;color:var(--focus);text-transform:uppercase;letter-spacing:.5px;
+  margin:14px 0 6px;
+}
+.agenda-group:first-child .agenda-group-title{margin-top:0;}
+.agenda-check{
+  display:flex;align-items:flex-start;gap:9px;padding:8px 9px;border-radius:7px;
+  cursor:pointer;transition:background .15s ease;
+}
+.agenda-check:hover{ background:#f2f6f5; }
+.agenda-check input{ margin-top:2px;flex:0 0 auto;width:auto; }
+.agenda-check span{font-size:12.8px;color:var(--text);line-height:1.4;}
+.agenda-detail{
+  display:none;margin:2px 0 12px 30px;padding:12px 14px;border-radius:8px;
+  background:#f7f9f8;border:1px solid #dfe7e4;
+}
+.agenda-detail.show{display:block;}
+
+.actions{ display:flex;flex-wrap:wrap;gap:9px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line); }
+.btn{ border:none;border-radius:8px;padding:11px 17px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;position:relative;transition:transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+.btn:hover{ filter:brightness(1.04); }
+.btn:active{ transform:translateY(2px); }
+.btn-primary{
+  background:linear-gradient(180deg,#2e4256,var(--ink) 60%,#152029);
+  color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 1px 0 rgba(255,255,255,.06), 0 8px 16px -6px rgba(10,16,22,.55), 0 3px 0 #0d151c;
+}
+.btn-primary:active{ box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px -2px rgba(10,16,22,.5), 0 1px 0 #0d151c; }
+.btn-outline{
+  background:linear-gradient(180deg,#ffffff,#f4f5f6);
+  border:1px solid var(--line);color:var(--text);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(20,30,45,.3), 0 2px 0 #cfd6db;
+}
+.btn-outline:active{ box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px -1px rgba(20,30,45,.3); }
+.btn-brass{
+  background:linear-gradient(180deg,#fffaf0,#fbf1da);
+  border:1px solid var(--brass);color:#7d611f;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(156,122,52,.4), 0 2px 0 #b9944c;
+}
+.btn-brass:active{ box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px -1px rgba(156,122,52,.4); }
+.btn-danger{
+  background:linear-gradient(180deg,#fff5f5,#fbe9ea);
+  border:1px solid var(--accent-red);color:var(--accent-red);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(122,39,52,.35), 0 2px 0 #c98d95;
+}
+.btn-danger:active{ box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px -1px rgba(122,39,52,.35); }
+
+.foot-note{ font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5; }
+
+.app-footer{
+  margin-top:40px;
+  background:linear-gradient(120deg,#000000 0%,#050912 28%,#0a1830 52%,#123a6b 76%,#1a4fa8 100%);
+  background-size:240% 240%;
+  animation:gflow 18s ease infinite;
+  color:#dce8ff;
+  padding:26px 28px 18px;
+  box-shadow:0 -14px 30px -18px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06);
+  position:relative;
+  z-index:5;
+}
+.app-footer .foot-wrap{
+  max-width:1360px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:22px;
+}
+.app-footer h3{
+  margin:0 0 6px;
+  font-family:'Source Serif 4',serif;
+  font-size:19px;font-weight:700;letter-spacing:.3px;
+  color:#a9c8ff;
+  text-shadow:
+    1px 1px 0 #04122a,
+    2px 2px 0 #04122a,
+    3px 3px 0 #020a1a,
+    4px 4px 0 #000,
+    5px 5px 8px rgba(0,0,0,.6);
+}
+.app-footer p.foot-tag{margin:0;font-size:12.5px;color:#93aed6;max-width:540px;line-height:1.55;}
+.app-footer .foot-badges{display:flex;gap:12px;flex-wrap:wrap;}
+.app-footer .foot-badge{
+  display:inline-flex;align-items:center;
+  background:linear-gradient(155deg,#12356b 0%,#040a14 75%);
+  border:1px solid rgba(90,150,255,.35);
+  border-radius:8px;
+  padding:9px 15px;
+  font-weight:600;font-size:12px;color:#cfe0ff;
+  box-shadow:0 4px 0 #000, 0 9px 16px -6px rgba(0,10,40,.7), inset 0 1px 0 rgba(255,255,255,.12);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.app-footer .foot-badge:hover{ transform:translateY(-2px); box-shadow:0 6px 0 #000, 0 14px 22px -8px rgba(0,10,40,.75), inset 0 1px 0 rgba(255,255,255,.15); }
+.app-footer .foot-bottom{
+  max-width:1360px;margin:20px auto 0;padding-top:14px;
+  border-top:1px solid rgba(90,150,255,.2);
+  font-size:11.5px;color:#7590bd;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+}
+.app-footer .foot-signature{
+  max-width:1360px;margin:16px auto 0;
+  display:flex;justify-content:center;
+}
+.app-footer .foot-mark{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(155deg,#0f2340 0%,#020509 70%);
+  border:1px solid rgba(70,150,220,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Source Serif 4',serif;font-weight:700;font-size:11px;letter-spacing:.2px;color:#6cb2ea;
+  box-shadow:
+    0 6px 12px -6px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -4px 8px rgba(0,0,0,.5),
+    0 0 10px -3px rgba(40,120,200,.55);
+  transition:transform .25s ease;
+}
+.app-footer .foot-mark:hover{ transform:translateY(-2px) scale(1.05); }
+
+@media print{
+  header.top,.panel-form,.preview-head,.actions,.foot-note,.edit-banner,.toptabs,.guide-wrap,.app-footer{display:none !important;}
+  body{background:#fff;}
+  .app{display:block;max-width:none;margin:0;padding:0;}
+  .panel-preview{position:static;box-shadow:none;border:none;max-height:none;}
+  .preview-scroll{padding:0;background:#fff;}
+  .cert-copy{box-shadow:none;border:none;max-width:none;margin:0;padding:14mm 16mm;transform:none;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="crest">
+    <div class="mark">MM</div>
+    <div>
+      <h1>Minutes Automation</h1>
+      <p class="tag">Board · Committee · General (AGM/EGM) · Class · Postal Ballot · Circulation · OPC — all under the Companies Act, 2013</p>
+    </div>
+  </div>
+  <div class="disclaimer">
+    Pick the meeting type, tick the agenda items that were taken up, fill in the details on the left, and the minutes
+    preview on the right updates as you type. Free template for general convenience — not a substitute for
+    professional advice. Minutes must be entered in the Minutes Book within 30 days of the meeting under Section 118
+    of the Companies Act, 2013, in accordance with Secretarial Standard‑1 (board meetings) / Secretarial
+    Standard‑2 (general meetings), and signed by the Chairperson. Have the draft vetted by a company secretary
+    before it is entered in the Minutes Book.
+  </div>
+</header>
+
+<nav class="toptabs">
+  <button type="button" class="active" id="tabBtnGenerator" onclick="showTopTab(&#39;generator&#39;)">Minutes Generator</button>
+  <button type="button" id="tabBtnGuide" onclick="showTopTab(&#39;guide&#39;)">Compliance Guide</button>
+</nav>
+
+<div class="app" id="appGenerator">
+
+  <!-- ============ FORM PANEL ============ -->
+  <div class="panel panel-form" id="formPanel">
+
+    <div class="level-tabs" id="levelTabs">
+      <button type="button" class="level-tab" data-level="board" onclick="setResLevel(&#39;board&#39;)">Board Meeting</button>
+      <button type="button" class="level-tab" data-level="committee" onclick="setResLevel(&#39;committee&#39;)">Committee Meeting</button>
+      <button type="button" class="level-tab" data-level="general" onclick="setResLevel(&#39;general&#39;)">General Meeting (AGM/EGM)</button>
+      <button type="button" class="level-tab active" data-level="class" onclick="setResLevel(&#39;class&#39;)">Class Meeting</button>
+      <button type="button" class="level-tab" data-level="postal" onclick="setResLevel(&#39;postal&#39;)">Postal Ballot</button>
+      <button type="button" class="level-tab" data-level="circular" onclick="setResLevel(&#39;circular&#39;)">Resolution by Circulation</button>
+      <button type="button" class="level-tab" data-level="opc" onclick="setResLevel(&#39;opc&#39;)">OPC Resolution</button>
+    </div>
+    <p class="level-hint" id="levelHint">Minutes of a separate meeting of the holders of a class of shares, held to vary class rights under Section 48 and SS-2.</p>
+
+    <fieldset class="grp">
+      <legend>Company</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Company name (in full)</label><input type="text" id="companyName" placeholder="ABC Private Limited"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>CIN</label><input type="text" id="cin" placeholder="U74999DL2015PTC280001"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Registered office</label><textarea id="regOffice" rows="2" placeholder="301, Tech Park, Baner Road, Pune, Maharashtra – 411045"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp cond-section show" data-level-section="board,committee,general,class" id="meetingFieldset">
+      <legend id="meetingLegend">Class Meeting</legend>
+      <div class="frow cond-section" data-level-section="committee" id="committeeTypeRow">
+        <div class="fitem full">
+          <label>Committee</label>
+          <select id="committeeType">
+            <option value="Audit Committee">Audit Committee (s.177)</option>
+            <option value="Nomination and Remuneration Committee">Nomination and Remuneration Committee (s.178)</option>
+            <option value="Stakeholders Relationship Committee">Stakeholders Relationship Committee (s.178)</option>
+            <option value="Corporate Social Responsibility Committee">Corporate Social Responsibility Committee (s.135)</option>
+            <option value="Other">Other Board committee</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow cond-section" data-level-section="general" id="gmTypeRow">
+        <div class="fitem full">
+          <label id="gmTypeLabel">Type of general meeting</label>
+          <select id="gmType">
+            <option value="Annual General Meeting">Annual General Meeting (AGM)</option>
+            <option value="Extra-Ordinary General Meeting">Extra-Ordinary General Meeting (EGM)</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow cond-section show" data-level-section="class" id="classNameRow">
+        <div class="fitem full">
+          <label>Class of shares / class of members</label>
+          <input type="text" id="className" placeholder="8% Non-Cumulative Redeemable Preference Shares">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label id="meetDescLabel">Meeting description</label><input type="text" id="meetDesc" placeholder="Separate meeting of the holders of the class of shares"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Meeting No.</label><input type="text" id="meetNo" placeholder="04/2025-26"></div>
+        <div class="fitem"><label>Date</label><input type="date" id="meetDate"></div>
+        <div class="fitem"><label>Time</label><input type="time" id="meetTime"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Venue</label><input type="text" id="meetVenue" placeholder="Registered Office of the Company"></div>
+      </div>
+      <div class="frow cond-section show" data-level-section="general,class" id="noticeDateRow">
+        <div class="fitem">
+          <label>Notice of meeting dated</label>
+          <input type="date" id="noticeDate">
+          <span class="hint">21 clear days before an AGM/EGM, unless shorter notice is consented to</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label id="attendeesLabel">Class members present / represented (one per line)</label><textarea id="directorsPresent" rows="3" placeholder="Mr. Ramesh Kumar Sharma, Preference Shareholder – in person"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>In attendance (invitees, statutory auditor, company secretary – optional)</label><textarea id="inAttendance" rows="2" placeholder="Mr. K. Sample, Statutory Auditor
+Ms. Priya Rao, Company Secretary (by invitation)"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label id="leaveLabel">Leave of absence granted to (optional)</label><textarea id="leaveAbsence" rows="2" placeholder="Mr. Suresh Iyer, Director"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label id="chairmanLabel">Chairman of the meeting</label><input type="text" id="chairman" placeholder="Mr. Ramesh Kumar Sharma"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp cond-section show" data-level-section="general,class,postal" id="votesFieldset">
+      <legend>Voting results</legend>
+      <div class="frow">
+        <div class="fitem"><label>Votes cast in favour (default, per item)</label><input type="number" id="votesFor" placeholder="9500"></div>
+        <div class="fitem"><label>Votes cast against (default, per item)</label><input type="number" id="votesAgainst" placeholder="0"></div>
+        <div class="fitem full"><span class="hint">Used as the default for every resolution below. If individual items were voted differently, switch to “Edit directly” on the preview and adjust the figures for that item.</span></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp cond-section show" data-level-section="board,committee,general,class" id="openingFieldset">
+      <legend>Opening of the meeting</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:0;">
+            <input type="checkbox" id="chkQuorum" checked="" onchange="renderPreview();scheduleSave();">
+            <span>Record that the requisite quorum was present throughout the meeting</span>
+          </label>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:0;">
+            <input type="checkbox" id="chkConfirmMin" checked="" onchange="toggleDetail(&#39;confirmMinDetail&#39;, this.checked);renderPreview();scheduleSave();">
+            <span>Confirmation of the Minutes of the previous meeting</span>
+          </label>
+        </div>
+      </div>
+      <div class="agenda-detail show" id="confirmMinDetail">
+        <div class="frow">
+          <div class="fitem"><label id="prevMeetLabel">Previous meeting of this class held on</label><input type="date" id="prevMeetDate"></div>
+        </div>
+      </div>
+      <div class="frow cond-section" data-level-section="board,committee" id="disclosureRow">
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:0;">
+            <input type="checkbox" id="chkDisclosure" onchange="renderPreview();scheduleSave();">
+            <span>Record directors’ disclosure of concern/interest (Section 184)</span>
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp cond-section" data-level-section="postal" id="postalFieldset">
+      <legend>Postal Ballot details (Section 110)</legend>
+      <div class="frow">
+        <div class="fitem"><label>Notice of postal ballot dated</label><input type="date" id="pbNoticeDate"></div>
+        <div class="fitem"><label>Last date for receipt of postal ballot / e-voting</label><input type="date" id="pbLastDate"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Scrutinizer appointed</label><input type="text" id="pbScrutinizer" placeholder="Mr. A. K. Rao, Practising Company Secretary"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Result declared on</label><input type="date" id="pbResultDate"></div>
+        <div class="fitem"><label>Result declared at</label><input type="text" id="pbResultPlace" placeholder="Registered Office of the Company"></div>
+      </div>
+      <div class="note-box">A postal ballot is not a meeting – there is no quorum, chairman or physical assembly of members. The scrutinizer's report and the result are what get entered in the Minutes Book within 30 days.</div>
+    </fieldset>
+
+    <fieldset class="grp cond-section" data-level-section="circular" id="circularFieldset">
+      <legend>Resolution by Circulation – details (Section 175)</legend>
+      <div class="frow">
+        <div class="fitem"><label>Draft resolution circulated on</label><input type="date" id="crCircDate"></div>
+        <div class="fitem"><label>No. of directors entitled to vote</label><input type="number" id="crDirectorsEntitled" placeholder="5"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Directors who approved (one per line)</label><textarea id="crApproved" rows="2" placeholder="Mr. Ramesh Kumar Sharma – Director
+Ms. Anita Desai – Director"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Directors who did not respond / dissented (optional)</label><textarea id="crDissented" rows="2"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Last response received on</label><input type="date" id="crResponseBy"></div>
+        <div class="fitem"><label>Resolution deemed passed on</label><input type="date" id="crPassedOn"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Noted at the next Board meeting held on</label><input type="date" id="crNotedAt"></div>
+      </div>
+      <div class="note-box">Under the proviso to Section 175(1), if not less than one-third of the total number of directors require it, the resolution must instead be decided at a meeting. The checklist below already leaves out matters this tool treats as meeting-only under Section 179(3) (e.g. issue of securities, buy-back, borrowing) and under Rule 8 of the Companies (Meetings of Board and its Powers) Rules, 2014 (e.g. appointment/removal of KMP, political contributions, appointment of internal/secretarial auditor) – the Compliance Guide has the fuller list. Always verify the current restricted list with a practising Company Secretary before relying on this route.</div>
+    </fieldset>
+
+    <fieldset class="grp cond-section" data-level-section="opc" id="opcFieldset">
+      <legend>OPC Resolution – details (Section 122)</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Resolution of the</label>
+          <select id="opcActorType" onchange="onOpcActorChange();">
+            <option value="member">Sole Member of the Company – s.122(3)</option>
+            <option value="director">Sole Director of the Company – s.122(4)</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label id="opcActorNameLabel">Name of sole member</label><input type="text" id="opcActorName" placeholder="Mr. Ramesh Kumar Sharma"></div>
+        <div class="fitem"><label id="opcActorIdLabel">DIN / PAN</label><input type="text" id="opcDinPan" placeholder="01234567"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Resolution communicated / passed on</label><input type="date" id="opcResolutionDate"></div>
+        <div class="fitem"><label>Entered in the Minutes Book on</label><input type="date" id="opcEntryDate"></div>
+      </div>
+      <div class="note-box" id="opcNote">In a One Person Company, a resolution of the sole member on a matter otherwise requiring a general meeting is entered in the minutes book, dated and signed by the member; it is deemed to have been passed at a meeting of the members (s.122(3)). OPCs are exempt from Sections 98 and 100 to 111 of the Act (s.122(1)).</div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend id="agendaLegend">Resolution(s) taken up at this class meeting</legend>
+      <div id="agendaChecklist"><div class="agenda-group"><div class="agenda-group-title">Class rights</div><label class="agenda-check"><input type="checkbox" id="chk_class_vary_rights" onchange="onItemToggle(&#39;class_vary_rights&#39;)"><span>Variation of rights attached to a class of shares (s.48)</span></label></div></div>
+    </fieldset>
+
+    <div id="itemFieldSections"></div>
+
+    <fieldset class="grp cond-section show" data-level-section="board,committee,general,class" id="aobFieldset">
+      <legend>
+        <label class="agenda-check" style="padding:0;">
+          <input type="checkbox" id="chkAob" onchange="toggleDetail(&#39;aobDetail&#39;, this.checked);renderPreview();scheduleSave();">
+          <span>Any other business</span>
+        </label>
+      </legend>
+      <div class="agenda-detail" id="aobDetail">
+        <div class="frow">
+          <div class="fitem full"><label>Item heading</label><input type="text" id="aobTitle" placeholder="Update on the Company&#39;s compliance calendar"></div>
+        </div>
+        <div class="frow">
+          <div class="fitem full"><label>Discussion</label><textarea id="aobDiscussion" rows="2" placeholder="The Company Secretary briefed the Board on the compliance calendar for the ensuing quarter."></textarea></div>
+        </div>
+        <div class="frow">
+          <div class="fitem full"><label>Resolution, if any (optional – leave blank if the item was only noted)</label><textarea id="aobResolution" rows="2" placeholder="RESOLVED THAT the compliance calendar placed before the Board be and is hereby noted."></textarea></div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp cond-section show" data-level-section="board,committee,general,class" id="closingFieldset">
+      <legend>Closing</legend>
+      <div class="frow">
+        <div class="fitem"><label>Meeting concluded at</label><input type="time" id="meetEndTime"></div>
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:0;">
+            <input type="checkbox" id="chkThanks" checked="" onchange="renderPreview();scheduleSave();">
+            <span>Close with a vote of thanks to the Chair</span>
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend id="certLegend">Signed as a correct record by</legend>
+      <div class="frow">
+        <div class="fitem"><label>Name</label><input type="text" id="certName" placeholder="Mr. Ramesh Kumar Sharma"></div>
+        <div class="fitem"><label>Designation</label><input type="text" id="certDesignation" placeholder="Chairman"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>DIN / PAN</label><input type="text" id="certDinPan" placeholder="01234567"></div>
+        <div class="fitem"><label>Signed on</label><input type="date" id="certDate"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Place</label><input type="text" id="certPlace" placeholder="Pune"></div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" onclick="safePrint()">Download PDF</button>
+      <button type="button" class="btn btn-outline" onclick="safePrint()">Print</button>
+      <button type="button" class="btn btn-brass" onclick="downloadWord()">Download Word (.doc)</button>
+      <button type="button" class="btn btn-outline" onclick="copyResolutionText()">Copy Text</button>
+      <button type="button" class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+      <button type="button" class="btn btn-danger" onclick="clearForm()">Clear form</button>
+    </div>
+    <p class="foot-note" id="dlHelpNote">In the print dialog, choose “Save as PDF” to download, or a printer to print. Best printed and bound into the company's Minutes Book. <strong>If a download button doesn't respond,</strong> you're probably viewing this inside an embedded preview — open the saved HTML file directly in a browser tab (Chrome/Edge/Safari) and try again, or use “Copy Text” as a fallback.</p>
+  </div>
+
+  <!-- ============ PREVIEW PANEL ============ -->
+  <div class="panel panel-preview">
+    <div class="preview-head">
+      <div>
+        <span class="lbl">Live preview</span>
+        <span class="fmt">· Minutes of Meeting · A4</span>
+      </div>
+      <div class="preview-tools">
+        <span class="autosave-status" id="autosaveStatus">Saved 11:17</span>
+        <button type="button" class="edit-toggle" id="editToggleBtn" onclick="toggleEditMode()">Edit directly</button>
+      </div>
+    </div>
+    <div class="edit-banner" id="editBanner">
+      You're editing the document directly — type anywhere below like a word processor. Changes autosave automatically.
+      <button type="button" onclick="exitEditMode()">Done editing</button>
+      <button type="button" class="ghostlink" onclick="regenerateFromForm()">Regenerate from form instead</button>
+    </div>
+    <div class="preview-scroll">
+      <div class="cert-copy" id="previewContent" style=""><div class="co-name">Sample Ventures Private Limited</div><div class="co-meta">CIN: U74999DL2015PTC280001</div><div class="co-meta">301, Tech Park, Baner Road, Pune, Maharashtra – 411045</div><hr class="rule"><div class="cert-title">MINUTES OF THE SEPARATE MEETING OF THE HOLDERS OF 8% NON-CUMULATIVE REDEEMABLE PREFERENCE SHARES OF THE COMPANY</div><p class="meeting-line">held at the <span class="ph">Separate meeting of the holders of 8% Non-Cumulative Redeemable Preference Shares</span> (Meeting No. 04/2025-26) on 15/09/2025 at 11:00 at Registered Office of the Company, notice whereof was duly given on 25/08/2025.</p><div class="present-label">Present:</div><ul class="present-list"><li>Mr. Ramesh Kumar Sharma – Director, DIN 01234567</li><li>Ms. Anita Desai – Director, DIN 03344556</li></ul><div class="present-label">In attendance:</div><ul class="present-list"><li>Mr. K. Sample, Statutory Auditor (by invitation)</li></ul><div class="chair-line">Mr. Ramesh Kumar Sharma chaired the meeting and it was noted that the requisite quorum was present throughout the meeting.</div><div class="item-title">Item No. 1: Confirmation of Minutes</div><div class="res-body"><p>The Minutes of the previous meeting of this class held on 10/06/2025 were tabled before the meeting.</p><p class="resolved">RESOLVED THAT the Minutes of the previous meeting of this class held on 10/06/2025, having been circulated, be and are hereby confirmed and signed.</p></div><div class="res-body"><p>There being no other business, the meeting concluded at 12:15 with a vote of thanks to the Chair.</p></div><div class="sign-block"><div class="for-co">Confirmed and signed as a true record of the proceedings.</div><div class="sign-line"></div><div class="sign-meta">Mr. Ramesh Kumar Sharma<br><span class="ph">Chairman</span><br>DIN/PAN: 01234567</div><div class="placement-row"><span>Place: Pune</span><span>Date: 15/09/2025</span></div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ COMPLIANCE GUIDE TAB ============ -->
+<div class="guide-wrap" id="appGuide">
+  <div class="guide-card">
+    <p class="g-title">Minutes of Meeting — Compliance Guide</p>
+    <p class="g-sub">What Section 118 and the Secretarial Standards require, and what tends to go wrong — read this before entering any minutes drafted in the Generator tab into the Minutes Book.</p>
+
+    <div class="guide-note">
+      <strong>Scope note:</strong> This guide summarises the standing law under Section 118 of the Companies Act, 2013, the
+      Companies (Management and Administration) Rules, 2014, and Secretarial Standard‑1 (board/committee meetings) and
+      Secretarial Standard‑2 (general meetings) issued by the ICSI. Provisions, formats and penalty amounts are amended
+      from time to time — always verify the current position on
+      <a href="https://www.mca.gov.in/" target="_blank" rel="noopener">mca.gov.in</a> or with a practising Company Secretary
+      before relying on any figure below.
+    </div>
+
+    <h2>1. What Minutes Are, and Why They Matter</h2>
+    <p>
+      Minutes are the official, written record of what a meeting of the Board (or of the members, in a general meeting)
+      actually decided. They are distinct from a resolution: a resolution is the operative decision text, while minutes are
+      the fuller record — who attended, what was tabled, what was discussed, and what was resolved, item by item, in
+      the order the meeting took it up.
+    </p>
+    <p>
+      Under <strong>Section 118(6)</strong>, minutes kept in accordance with the section are <strong>evidence of the
+      proceedings recorded</strong> in them, and the meeting itself is presumed to have been duly called and held, and every
+      resolution passed presumed validly passed, unless the contrary is proved. That evidentiary weight is exactly why the
+      drafting, timing and signing of minutes is treated as a statutory obligation rather than a formality — a poorly
+      kept Minutes Book can undermine the very decisions it is meant to record.
+    </p>
+
+    <h2>2. Timeline &amp; Signing (Section 118(1)–(2))</h2>
+    <div class="gtable-wrap">
+      <table class="gtable">
+        <thead><tr><th>Requirement</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td class="b">Entry in the Minutes Book</td><td>Within <strong>30 days</strong> of the conclusion of the meeting (or, for a resolution passed by circulation, within 30 days of the resolution being passed)</td></tr>
+          <tr><td class="b">Numbering</td><td>Pages of the Minutes Book must be <strong>consecutively numbered</strong>; nothing may be pasted in, and no entry may be altered once made</td></tr>
+          <tr><td class="b">Who signs — Board/committee meeting</td><td>The Chairman of that meeting, or, if he is not available, the Chairman of the next succeeding meeting, within 30 days of the meeting (SS‑1)</td></tr>
+          <tr><td class="b">Who signs — general meeting</td><td>The Chairman of that meeting, or, if he has died or become incapable, any director duly authorised for the purpose, within 30 days</td></tr>
+          <tr><td class="b">Each page</td><td>Every page of the minutes should be initialled or signed, and the last page signed and dated by the Chairman with the date and place recorded</td></tr>
+          <tr><td class="b">Separate books</td><td>Minutes of Board meetings, committee meetings, and general meetings must be kept in <strong>separate</strong> Minutes Books</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>3. What the Minutes Must Contain</h2>
+    <p>
+      Section 118(10) requires every company to observe the applicable Secretarial Standards (SS‑1 for Board and
+      committee meetings, SS‑2 for general meetings). Together with Section 118 itself, the minutes should be a
+      <strong>fair and correct summary</strong> of the proceedings, and should ordinarily record:
+    </p>
+    <ul>
+      <li>The kind of meeting, the company's name, the day, date, time and venue.</li>
+      <li>The names of directors/members present (and, for a Board meeting, the mode of participation — physical or by video conferencing), and of those granted leave of absence.</li>
+      <li>The names of persons in attendance by invitation (auditors, professional advisors, the company secretary).</li>
+      <li>A record that the requisite quorum was present, and who chaired the meeting.</li>
+      <li>Confirmation of the minutes of the preceding meeting.</li>
+      <li>All appointments made at the meeting.</li>
+      <li>The exact text of every resolution passed, with the majority by which, or the manner in which, it was passed.</li>
+      <li>Where a director has recorded dissent or wishes a statement entered, that fact and, if requested, the text of the dissent.</li>
+      <li>The time at which the meeting commenced and concluded.</li>
+    </ul>
+
+    <h2>4. What Should Be Left Out</h2>
+    <p>
+      Section 118(5) gives the Chairman discretion, exercised reasonably, to <strong>exclude</strong> from the minutes any
+      matter that in the Chairman's opinion is:
+    </p>
+    <ul>
+      <li>defamatory of any person; or</li>
+      <li>irrelevant or immaterial to the proceedings; or</li>
+      <li>detrimental to the interests of the company.</li>
+    </ul>
+    <p class="note-inline">
+      In practice, minutes record <em>decisions</em>, not a verbatim transcript of debate. SS‑1/SS‑2 both favour
+      a concise summary of the discussion leading to each resolution over a blow-by-blow account of who said what —
+      partly for exactly this reason, and partly because an overly detailed record can itself become a liability.
+    </p>
+
+    <h2>5. Minutes of Committee Meetings (Audit / NRC / SRC / CSR Committee)</h2>
+    <p>
+      Section 118(1) applies Section 118 to a meeting of <strong>any committee of the Board</strong> exactly as it applies
+      to a Board meeting, and SS‑1 governs committee minutes on the same footing as Board minutes (separate Minutes
+      Book, signature within 30 days, permanent preservation). The Act constitutes several committees by name — the
+      Audit Committee and the Nomination &amp; Remuneration Committee (Section 178), and the Corporate Social
+      Responsibility Committee (Section 135) for companies that cross the applicable thresholds; the Board may also
+      constitute a Stakeholders Relationship Committee where the company has more than 1,000 holders of shares,
+      debentures or other securities (proviso to Section 178(5)).
+    </p>
+    <p class="note-inline">
+      A committee ordinarily <em>recommends</em> to the Board rather than finally deciding — e.g. the Audit
+      Committee recommends financial statements and related-party transactions, the NRC recommends appointments and
+      remuneration. Minute the recommendation and, separately, the Board's own resolution acting on it at its next
+      meeting.
+    </p>
+
+    <h2>6. Class Meetings — Variation of Class Rights (Section 48)</h2>
+    <p>
+      Where a company has issued shares in different classes, the rights attached to any one class can only be varied
+      with the consent of that class itself. Section 48(1) permits variation either by (a) obtaining the
+      <strong>consent in writing of three-fourths</strong> of the issued shares of that class, or (b) a
+      <strong>special resolution passed at a separate meeting</strong> of the holders of the issued shares of that
+      class — the route this tool's "Class Meeting" tab drafts minutes for.
+    </p>
+    <p>
+      Section 48(2) gives shareholders holding not less than <strong>10% of the issued shares</strong> of the class, who
+      did not consent to or vote in favour of the variation, the right to apply to the <strong>National Company Law
+      Tribunal</strong> to have the variation cancelled, within <strong>21 days</strong> of the consent being given or
+      the resolution being passed. The variation does not take effect until confirmed by the Tribunal if such an
+      application is made. Section 48(5) applies the provisions of Sections 100 to 111 (notice, quorum, proxy, etc.) to
+      a class meeting as they apply to a general meeting.
+    </p>
+
+    <h2>7. Postal Ballot (Section 110)</h2>
+    <p>
+      A postal ballot lets members vote on a resolution by post or electronically (remote e-voting), <strong>without a
+      physical meeting</strong> being held. Section 110(1) empowers the Central Government to prescribe the class of
+      companies that must transact specified business only by postal ballot; every other company may choose to transact
+      any business by postal ballot except ordinary business and business where directors or auditors have a right to be
+      heard. A postal ballot record has no quorum, chairman, or "present/attendance" concept — the minutes
+      generated by this tool instead record the notice date, the last date for receipt of votes, the Scrutinizer
+      appointed, and the result declared, together with the vote count for each resolution.
+    </p>
+    <p class="note-inline">
+      Under Section 110(1), a resolution passed by postal ballot is, for all purposes, treated as if it had been passed
+      at a general meeting convened for that purpose — which is why it is still an Ordinary or Special Resolution
+      depending on the majority obtained, and still needs Form MGT‑14 where a special resolution is involved.
+    </p>
+
+    <h2>8. Resolution by Circulation (Section 175)</h2>
+    <p>
+      Section 175(1) allows the Board (or a committee) to pass a resolution without a meeting: the draft, with the
+      necessary papers, is circulated to all directors (or committee members) entitled to vote, at their registered
+      addresses in India, and the resolution is passed if approved by a <strong>majority</strong> of those entitled to
+      vote on it. The proviso to Section 175(1) is an important check: if <strong>not less than one-third</strong> of
+      the total number of directors require that the resolution be decided only at a meeting, the Chairperson must put
+      it to a meeting instead of circulation.
+    </p>
+    <p>
+      Section 175(2) requires that a resolution passed by circulation be <strong>noted at the Board's next meeting</strong>
+      and recorded in the minutes of that meeting, together with the date of circulation, the date each director's
+      response was received, and the date the resolution was deemed passed — the "Noted at the next Board meeting"
+      field in this tool's Circulation tab captures that.
+    </p>
+    <div class="gtable-wrap">
+      <table class="gtable">
+        <thead><tr><th>Matter</th><th>Can it be passed by circulation?</th></tr></thead>
+        <tbody>
+          <tr><td class="b">Issue of securities (allotment, rights issue, private placement etc.)</td><td>No — reserved for a Board meeting under Section 179(3)</td></tr>
+          <tr><td class="b">Authorising a buy-back of securities</td><td>No — reserved for a Board meeting under Section 179(3)</td></tr>
+          <tr><td class="b">Borrowing money / granting a loan, guarantee or security</td><td>No — reserved for a Board meeting under Section 179(3)</td></tr>
+          <tr><td class="b">Approval of financial statements and the Board’s Report</td><td>No — reserved for a Board meeting under Section 179(3)</td></tr>
+          <tr><td class="b">Diversification of business; amalgamation/merger/reconstruction; takeover of another company</td><td>No — reserved for a Board meeting under Section 179(3)</td></tr>
+          <tr><td class="b">Appointment or removal of Key Managerial Personnel</td><td>No — per Rule 8, Companies (Meetings of Board and its Powers) Rules, 2014</td></tr>
+          <tr><td class="b">Political contributions</td><td>No — per Rule 8 of the said Rules</td></tr>
+          <tr><td class="b">Appointment of internal auditor / secretarial auditor</td><td>No — per Rule 8 of the said Rules</td></tr>
+          <tr><td class="b">Matters any one-third of directors insist be taken at a meeting</td><td>No — proviso to Section 175(1)</td></tr>
+          <tr><td class="b">Routine banking, authorisation, DSC, charge-related and similar administrative matters</td><td>Generally yes, subject to the above</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note-inline">
+      This table is a working guide, not an exhaustive statutory list — the restricted-matters rule is amended
+      from time to time. Always check the current text of Rule 8 (and any company-specific Board-approved list of
+      matters reserved for meetings) before routing a resolution through circulation instead of a meeting.
+    </p>
+
+    <h2>9. One Person Company (OPC) Resolutions (Section 122)</h2>
+    <p>
+      Section 122(1) exempts an OPC from Section 98 and Sections 100 to 111 of the Act — in other words, an OPC is
+      not required to hold an Annual General Meeting, an Extraordinary General Meeting, or to comply with the usual
+      notice/quorum/proxy machinery for general meetings at all.
+    </p>
+    <p>
+      In their place, <strong>Section 122(3)</strong> provides that where the Act requires a resolution to be passed by
+      the members of a company in general meeting, it is sufficient for the resolution to be <strong>communicated by
+      the sole member to the company and entered in the minutes book</strong> required under Section 118, signed and
+      dated by the member — such a resolution is deemed to have been passed at a general meeting.
+      <strong>Section 122(4)</strong> applies the same mechanism where the company has only one director: a resolution
+      required to be passed by the Board is sufficient if communicated by that sole director to the company and entered
+      in the minutes book, signed and dated, and it is deemed to have been passed at a Board meeting duly convened and
+      held.
+    </p>
+    <p class="note-inline">
+      Both routes are still subject to the general Section 118 timeline — entry in the minutes book within 30
+      days — which is why this tool's OPC tab asks for both the date the resolution was passed/communicated and
+      the date it was entered in the minutes book.
+    </p>
+
+    <h2>10. Preservation &amp; Inspection</h2>
+    <div class="gtable-wrap">
+      <table class="gtable">
+        <thead><tr><th>Aspect</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td class="b">Preservation period</td><td>Minutes of general meetings, class meetings, and of resolutions passed by postal ballot, must be preserved <strong>permanently</strong>, kept in the custody of the Company Secretary or a director authorised by the Board</td></tr>
+          <tr><td class="b">Board/committee minutes</td><td>Also required to be preserved permanently, in accordance with SS‑1</td></tr>
+          <tr><td class="b">Circular resolutions / OPC minutes book</td><td>Form part of the relevant Minutes Book and are preserved on the same basis</td></tr>
+          <tr><td class="b">Location</td><td>Ordinarily at the registered office of the Company, unless the Board decides on another approved place</td></tr>
+          <tr><td class="b">Directors' inspection right</td><td>Every director may inspect the minutes of any Board or committee meeting, without charge</td></tr>
+          <tr><td class="b">Members' inspection right</td><td>A member may inspect the minutes of any general meeting free of cost, and obtain copies on payment of the prescribed fee, within the time prescribed under Section 119</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>11. Penalty for Default</h2>
+    <p>
+      Under <strong>Section 118(11)</strong>, if a company fails to comply with the requirements of Section 118 regarding
+      the keeping and signing of minutes, the company is liable to a penalty of <strong>₹25,000</strong>, and every
+      officer of the company who is in default is liable to a penalty of <strong>₹5,000</strong>. These are civil
+      penalties (as recast after decriminalisation of several Companies Act provisions), and are separate from the
+      criminal offence discussed below. This applies equally to Board, committee, general, and class meeting minutes,
+      and to the minutes book maintained for postal ballot, circular and OPC resolutions.
+    </p>
+    <h4>Tampering with minutes — a distinct, more serious offence</h4>
+    <p>
+      Section 118(12) treats any person found guilty of tampering with the minutes of proceedings much more seriously
+      — punishable with imprisonment for a term which may extend to <strong>two years</strong>, and with a fine of
+      not less than <strong>₹25,000</strong>, extending up to <strong>₹1,00,000</strong>. This underscores why
+      minutes, once entered and signed, are not to be altered.
+    </p>
+
+    <h2>12. Types of Minutes at a Glance — Companies Act, 2013</h2>
+    <div class="gtable-wrap">
+      <table class="gtable">
+        <thead><tr><th>Type</th><th>Key provision</th><th>Who is recorded present</th><th>Voting record</th></tr></thead>
+        <tbody>
+          <tr><td class="b">Board Meeting</td><td>s.118, SS‑1</td><td>Directors, and invitees in attendance</td><td>Simple record that the resolution was passed; dissent, if any, noted</td></tr>
+          <tr><td class="b">Committee Meeting</td><td>s.118(1), s.177/178/135, SS‑1</td><td>Committee members, and invitees</td><td>Same as Board; committee usually recommends to the Board</td></tr>
+          <tr><td class="b">General Meeting (AGM/EGM)</td><td>s.118, SS‑2</td><td>Members present/by proxy, and the quorum computation</td><td>Votes for/against recorded; Ordinary or Special Resolution per s.114; explanatory statement per s.102 for special business</td></tr>
+          <tr><td class="b">Class Meeting</td><td>s.48, SS‑2 (applied via s.48(5))</td><td>Members of the class present/represented</td><td>Special resolution of the class, or 3/4 written consent in lieu of a meeting</td></tr>
+          <tr><td class="b">Postal Ballot</td><td>s.110</td><td>Not applicable — no meeting; Scrutinizer's report instead</td><td>Result declared by the Scrutinizer; treated as passed at a general meeting</td></tr>
+          <tr><td class="b">Resolution by Circulation</td><td>s.175</td><td>Not applicable — directors circulated the draft</td><td>Majority of directors entitled to vote; noted at next Board meeting</td></tr>
+          <tr><td class="b">OPC Resolution</td><td>s.122(3)/(4)</td><td>Not applicable — sole member/director</td><td>No voting; resolution entered and signed in the minutes book</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="guide-foot">
+      This guide is provided for general awareness alongside the minutes drafted in the Generator tab. It does not
+      constitute legal advice, and it does not replace a proper reading of Section 118, the Rules, and SS‑1/SS‑2
+      for your company's specific facts. Have any minutes with real legal consequence reviewed by a practising Company
+      Secretary before they are entered in the Minutes Book and signed.
+    </p>
+  </div>
+</div>
+
+<footer class="app-footer">
+  <div class="foot-wrap">
+    <div>
+      <h3>Minutes Automation</h3>
+    </div>
+    <div class="foot-badges">
+      <span class="foot-badge">Section 118 &amp; SS‑1 / SS‑2</span>
+      <span class="foot-badge">Companies Act, 2013</span>
+      <span class="foot-badge">Draft-only — nothing leaves your browser</span>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© <span id="footYear">2026</span> Minutes Automation — for general awareness only, not legal advice.</span>
+    <span>Have every minute vetted by a practising Company Secretary before signature.</span>
+  </div>
+  <div class="foot-signature">
+    <span class="foot-mark" title="S.S">S.S</span>
+  </div>
+</footer>
+
+<script>
+/* ================= Helpers ================= */
+function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function v(val, placeholder) {
+  if (val === undefined || val === null || String(val).trim() === '') return '<span class="ph">' + esc(placeholder) + '</span>';
+  return esc(val);
+}
+function vd(dateStr) {
+  if (!dateStr) return '<span class="ph">[Date]</span>';
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) return esc(dateStr);
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+function vt(t){ return t ? esc(t) : '<span class="ph">[Time]</span>'; }
+function p(text) { return '<p class="resolved">' + text + '</p>'; }
+function plainP(text) { return '<p>' + text + '</p>'; }
+function list(items) {
+  if (!items.length) return '<ul class="present-list"><li><span class="ph">[Add names, one per line]</span></li></ul>';
+  return '<ul class="present-list">' + items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>';
+}
+function splitLines(text) {
+  if (!text) return [];
+  return text.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+}
+function fieldVal(id) {
+  var el = document.getElementById(id);
+  if (!el) return '';
+  return el.value;
+}
+function toggleDetail(id, show) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle('show', !!show);
+}
+
+/* ================= Agenda item library (mirrors Board Resolution Automation) ================= */
+var GROUP_LEAD = {
+  'Director': 'The Chairman placed before the meeting the proposal relating to {t}. After deliberation, the following resolution was passed:',
+  'Auditor': 'The Board took up for consideration the matter of {t}. After discussion, it was resolved as follows:',
+  'Registered office': 'The Board discussed the proposal for {t}. After deliberation, the following resolution was passed:',
+  'Banking': 'The Chairman apprised the Board of the requirement for {t}. The Board considered the matter and resolved as follows:',
+  'Authorisations': 'The Board discussed the need for {t}. After consideration, it was resolved as follows:',
+  'Capital & funding': 'The Board considered the proposal relating to {t}. After deliberation, the following resolution was passed:',
+  'Constitutional changes': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Capital & securities': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Borrowing & investment': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Other': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Annual business': 'The following item of ordinary business was taken up:',
+  'Committee business': 'The Committee took up for consideration the matter of {t}. After deliberation, the following resolution was passed:',
+  'Class rights': 'The Chairman placed before the meeting the proposal relating to {t}. After deliberation, the following resolution was passed:',
+  'Key Managerial Personnel': 'The Chairman placed before the meeting the proposal relating to {t}. After deliberation, the following resolution was passed:',
+  'Finance & Dividend': 'The Board considered the matter of {t}. After discussion, it was resolved as follows:',
+  'Related Party Transactions': 'The Board took up for consideration the matter of {t}. After discussion, and the interested Director(s), if any, having not participated in the discussion, it was resolved as follows:',
+  'Capital Alteration': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Director Matters': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Related Party Matters': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:',
+  'Auditor Matters': 'The Chairman placed before the meeting the proposal for {t}, together with the explanatory statement annexed to the notice. The members considered the matter, and the following resolution was put to vote:'
+};
+var POSTAL_LEAD = 'The following item, together with the explanatory statement annexed to the postal ballot notice, was put to the vote of the members by way of postal ballot in terms of Section 110 of the Companies Act, 2013:';
+var CIRCULAR_LEAD = 'The following resolution was circulated in draft to all the Directors of the Company, and approved by a majority of the Directors entitled to vote thereon, in terms of Section 175(1) of the Companies Act, 2013:';
+var OPC_MEMBER_LEAD = 'The following matter, which would otherwise require approval of the members in general meeting, was resolved by the sole member of the Company and entered in the minutes book in terms of Section 122(3) of the Companies Act, 2013:';
+var OPC_DIRECTOR_LEAD = 'The following matter was resolved by the sole Director of the Company, communicated to the Company and entered in the minutes book in terms of Section 122(4) of the Companies Act, 2013:';
+
+var AGENDA_ITEMS = {
+  add_director: {
+    group: 'Director', label: 'Appointment of Additional Director (s.161)', title: 'Appointment of Additional Director',
+    sections: ['director_appointed'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to the provisions of Section 161(1) of the Companies Act, 2013 and the Articles of Association of the Company, and subject to such other approvals as may be necessary, ' + v(f.apName, '[Name of Director]') + ', holding Director Identification Number (DIN) ' + v(f.apDin, '[DIN]') + ', be and is hereby appointed as an Additional Director of the Company with effect from ' + vd(f.apEffFrom) + ', to hold office up to the date of the ensuing Annual General Meeting of the Company or the last date on which the Annual General Meeting should have been held, whichever is earlier.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to file the requisite e-form(s) (including Form DIR-12) with the Registrar of Companies, and to do all such acts, deeds and things as may be necessary or expedient to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  resign_director: {
+    group: 'Director', label: 'Resignation of Director (s.168)', title: 'Resignation of Director',
+    sections: ['director_resigning'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT the resignation of ' + v(f.resName, '[Name of Director]') + ' (DIN: ' + v(f.resDin, '[DIN]') + ') from the office of Director of the Company, tendered vide letter dated ' + vd(f.resLetterDate) + ' and effective from ' + vd(f.resEffFrom) + ', be and is hereby noted and taken on record.'),
+        p('RESOLVED FURTHER THAT the Board places on record its appreciation of the valuable services rendered by ' + v(f.resName, '[Name of Director]') + ' during the tenure of office as Director of the Company.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to file Form DIR-12 with the Registrar of Companies within the time prescribed under the Act, and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  first_auditor: {
+    group: 'Auditor', label: 'Appointment of First Auditor (s.139(6))', title: 'Appointment of First Auditor',
+    sections: ['auditor_details'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to the provisions of Section 139(6) of the Companies Act, 2013, ' + v(f.audFirm, '[Name of Auditor / Firm]') + ', Chartered Accountants (Firm Registration No. ' + v(f.audFrn, '[FRN]') + '), be and are hereby appointed as the First Auditors of the Company, to hold office from the conclusion of this meeting until the conclusion of the first Annual General Meeting of the Company, on such remuneration as may be mutually agreed between the Board and the Auditors.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to issue the letter of appointment to the Auditors, obtain their written consent and eligibility certificate under Section 141 of the Companies Act, 2013, and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  casual_vacancy: {
+    group: 'Auditor', label: 'Auditor – filling Casual Vacancy (s.139(8))', title: 'Appointment of Auditor to fill Casual Vacancy',
+    sections: ['casual_vacancy', 'auditor_details'],
+    resolution: function (f) {
+      var reasonMap = { resignation: 'the resignation', death: 'the death', disqualification: 'the disqualification' };
+      var reasonText = reasonMap[f.cvReason] || 'the resignation';
+      var clauses = [ p('RESOLVED THAT consequent upon the casual vacancy caused in the office of Auditor of the Company by reason of ' + reasonText + ' of ' + v(f.cvOutgoing, '[Outgoing Auditor]') + ', and pursuant to the provisions of Section 139(8) of the Companies Act, 2013, ' + v(f.audFirm, '[Name of Auditor / Firm]') + ', Chartered Accountants (Firm Registration No. ' + v(f.audFrn, '[FRN]') + '), be and are hereby appointed as Auditors of the Company to fill the said casual vacancy, to hold office until the conclusion of the next Annual General Meeting of the Company.') ];
+      if (f.cvReason === 'resignation') { clauses.push(p('RESOLVED FURTHER THAT the above appointment be placed before the members of the Company at a General Meeting for their approval within three months of the recommendation of the Board, as required under the proviso to Section 139(8)(i) of the Companies Act, 2013.')); }
+      clauses.push(p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to issue the letter of appointment, obtain the Auditors’ written consent and eligibility certificate under Section 141 of the Companies Act, 2013, and to do all such acts, deeds and things as may be necessary to give effect to this resolution.'));
+      return clauses.join('');
+    }
+  },
+  reg_office_change: {
+    group: 'Registered office', label: 'Change of registered office (within same city)', title: 'Change of Registered Office',
+    sections: ['reg_office_change'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT the Registered Office of the Company be shifted from ' + v(f.roExisting, '[Existing Address]') + ' to ' + v(f.roNew, '[New Address]') + ', both being within the local limits of the same city/town, with effect from ' + vd(f.roEffFrom) + '.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to file the requisite e-form (Form INC-22) with the Registrar of Companies within the time prescribed under the Act, to update the Company’s records, stationery and statutory registers accordingly, and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  bank_open: {
+    group: 'Banking', label: 'Opening a bank account', title: 'Opening of Bank Account',
+    sections: ['bank_open'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT a ' + v(f.boType, '[Account Type]') + ' be and is hereby opened in the name of the Company with ' + v(f.boBank, '[Bank Name]') + ', ' + v(f.boBranch, '[Branch]') + ' Branch, and that the said account be operated ' + v(f.boMode, 'jointly by any two of them') + ' by the following authorised signatories:'),
+        list(splitLines(f.boSignatories)),
+        p('RESOLVED FURTHER THAT the Bank be and is hereby authorised to honour cheques, bills of exchange, promissory notes and other instruments drawn, accepted or made on behalf of the Company by the above authorised signatories in accordance with the mandate given herein, and to act upon instructions given by the said signatories in relation to the operation of the account.'),
+        p('RESOLVED FURTHER THAT a certified copy of this resolution be furnished to the Bank, and that the Bank be entitled to act on it until written notice of any change is received by the Bank.')
+      ].join('');
+    }
+  },
+  bank_close: {
+    group: 'Banking', label: 'Closing a bank account', title: 'Closure of Bank Account',
+    sections: ['bank_close'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT the ' + v(f.bcType, '[Account Type]') + ' No. ' + v(f.bcAccNo, '[Account Number]') + ' maintained by the Company with ' + v(f.bcBank, '[Bank Name]') + ', ' + v(f.bcBranch, '[Branch]') + ' Branch, be and is hereby closed with immediate effect.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to sign and submit the account closure request, surrender any unused cheque book(s) and debit/ATM card(s) relating to the said account, obtain a closure confirmation and final account statement from the Bank, and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  bank_signatory_change: {
+    group: 'Banking', label: 'Change of bank authorised signatory', title: 'Change of Bank Authorised Signatory',
+    sections: ['bank_signatory_change'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT in respect of the Company’s account No. ' + v(f.bsAccNo, '[Account Number]') + ' maintained with ' + v(f.bsBank, '[Bank Name]') + ', ' + v(f.bsRemoved, '[Signatory Removed]') + ' be and is hereby removed as an authorised signatory to operate the said account, and ' + v(f.bsAdded, '[Signatory Added]') + ' be and is hereby added as an authorised signatory in his/her place, with effect from the date of this resolution.'),
+        p('RESOLVED FURTHER THAT the Bank be and is hereby requested to take the above change on record and to continue to act upon the operating instructions and mandate given by the Company from time to time.'),
+        p('RESOLVED FURTHER THAT a certified copy of this resolution be furnished to the Bank as authority for the above change.')
+      ].join('');
+    }
+  },
+  authorisation: {
+    group: 'Authorisations', label: 'Authorise signatory (GST / loans / contracts)', title: 'Authorisation of Signatory',
+    sections: ['authorisation'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT ' + v(f.auPerson, '[Authorised Person]') + ', ' + v(f.auDesignation, '[Designation]') + ' of the Company, be and is hereby authorised on behalf of the Company ' + v(f.auScope, '[Authority / Scope]') + ', in connection with ' + v(f.auPurpose, '[Purpose]') + '.'),
+        p('RESOLVED FURTHER THAT a certified copy of this resolution be furnished to the concerned authority/authorities as evidence of the authority granted herein, and that such authority shall remain in force until revoked by a resolution of the Board.')
+      ].join('');
+    }
+  },
+  poa: {
+    group: 'Authorisations', label: 'Grant Power of Attorney', title: 'Grant of Power of Attorney',
+    sections: ['poa'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT a Power of Attorney be and is hereby granted in favour of ' + v(f.poaName, '[Attorney Name]') + ', ' + v(f.poaDesignation, '[Designation]') + ' of the Company, authorising him/her ' + v(f.poaPowers, '[Powers Granted]') + '.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to execute the said Power of Attorney on behalf of the Company, and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  dsc: {
+    group: 'Authorisations', label: 'Apply for Digital Signature Certificate (DSC)', title: 'Application for Digital Signature Certificate',
+    sections: ['dsc'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT the Company do hereby authorise ' + v(f.dscPerson, '[Person]') + ', ' + v(f.dscDesignation, '[Designation]') + ' of the Company (DIN/PAN: ' + v(f.dscDinPan, '[DIN/PAN]') + '), to apply for and obtain a Digital Signature Certificate (DSC) in his/her name, for use on behalf of the Company for filing forms and documents with the Ministry of Corporate Affairs, Income-tax Department, GST Network and other regulatory authorities.')
+      ].join('');
+    }
+  },
+  allotment: {
+    group: 'Capital & funding', label: 'Allotment of shares', title: 'Allotment of Shares',
+    sections: ['allotment'], circRestricted: true,
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 62 and other applicable provisions, if any, of the Companies Act, 2013, and subject to the Articles of Association of the Company, ' + v(f.alQty, '[No. of Shares]') + ' ' + v(f.alKind, 'Equity') + ' shares of face value Rs. ' + v(f.alFv, '[Face Value]') + ' each, issued at a premium of Rs. ' + v(f.alPrem, '0') + ' per share, be and are hereby allotted to the following allottee(s):'),
+        list(splitLines(f.alAllottees)),
+        p('RESOLVED FURTHER THAT the Register of Members and the Register of Allotments of the Company be updated accordingly, share certificate(s) be issued to the allottee(s) within the time prescribed under the Act, and that any Director of the Company be and is hereby authorised to file the requisite e-form (Form PAS-3) with the Registrar of Companies and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  loan: {
+    group: 'Capital & funding', label: 'Avail loan / borrowing (s.179(3))', title: 'Availing of Loan / Borrowing',
+    sections: ['loan'], circRestricted: true,
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 179(3)(d) and other applicable provisions, if any, of the Companies Act, 2013, consent of the Board be and is hereby accorded to avail a ' + v(f.lnFacility, '[Facility Type]') + ' of Rs. ' + v(f.lnAmount, '[Amount]') + ' from ' + v(f.lnLender, '[Lender]') + ', secured by ' + v(f.lnSecurity, '[Security]') + ', on such terms and conditions as may be negotiated by any Director of the Company.')
+      ].join('');
+    }
+  },
+  charge: {
+    group: 'Capital & funding', label: 'Creation of charge', title: 'Creation of Charge',
+    sections: ['charge'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 179(3)(d) of the Companies Act, 2013, consent of the Board be and is hereby accorded to create a charge in favour of ' + v(f.chHolder, '[Charge Holder]') + ' over ' + v(f.chAsset, '[Asset / Property Charged]') + ' of the Company, to secure an amount of Rs. ' + v(f.chAmount, '[Amount Secured]') + '.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to file the requisite particulars of charge in Form CHG-1 with the Registrar of Companies within the time prescribed under Section 77 of the Companies Act, 2013.')
+      ].join('');
+    }
+  },
+  charge_modify: {
+    group: 'Capital & funding', label: 'Modification of charge (s.79 r/w s.77)', title: 'Modification of Charge',
+    sections: ['charge_modify'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 79 read with Section 77 of the Companies Act, 2013, consent of the Board be and is hereby accorded to modify the charge created in favour of ' + v(f.cmHolder, '[Charge Holder]') + ' over ' + v(f.cmAsset, '[Asset / Property Charged]') + ' of the Company, such modification being ' + v(f.cmNature, '[Nature of Modification]') + ', the amount secured as so modified being Rs. ' + v(f.cmAmount, '[Revised Amount Secured]') + '.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to file the requisite particulars of modification of charge in Form CHG-1 with the Registrar of Companies within the time prescribed under the Act.')
+      ].join('');
+    }
+  },
+  charge_satisfy: {
+    group: 'Capital & funding', label: 'Satisfaction / release of charge (s.82)', title: 'Satisfaction of Charge',
+    sections: ['charge_satisfy'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT it be and is hereby noted that the charge created in favour of ' + v(f.csHolder, '[Charge Holder]') + ' over ' + v(f.csAsset, '[Asset / Property Charged]') + ' of the Company stands fully satisfied and released, consequent upon repayment/satisfaction of the amount secured thereby on ' + vd(f.csPaymentDate) + '.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to file the intimation of satisfaction of charge in Form CHG-4 with the Registrar of Companies within the time prescribed under Section 82 of the Companies Act, 2013.')
+      ].join('');
+    }
+  },
+  rights_issue: {
+    group: 'Capital & funding', label: 'Rights issue of shares (s.62(1)(a))', title: 'Rights Issue of Shares',
+    sections: ['rights_issue'], circRestricted: true,
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 62(1)(a) and other applicable provisions, if any, of the Companies Act, 2013, the Board approves the offer of ' + v(f.riQty, '[No. of Shares]') + ' ' + v(f.riKind, 'Equity') + ' shares at a price of Rs. ' + v(f.riPrice, '[Price]') + ' per share, in the ratio of ' + v(f.riRatio, '[Ratio]') + ', to the existing shareholders of the Company as on the record date, ' + vd(f.riRecordDate) + ', by way of a rights issue, the offer to remain open for the period prescribed under the Act and to include a right of renunciation.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to issue the letter of offer and do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  buyback_board_limit: {
+    group: 'Capital & funding', label: 'Buy-back within Board’s limits, up to 10% (s.68(2) proviso)', title: 'Buy-back of Equity Shares (Board Approval)',
+    sections: ['buyback_board_limit'], circRestricted: true,
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to the proviso to Section 68(2) of the Companies Act, 2013, and the Companies (Share Capital and Debentures) Rules, 2014, consent of the Board be and is hereby accorded to the buy-back by the Company of up to ' + v(f.bbbQty, '[No. of Shares]') + ' fully paid-up equity shares, being ' + v(f.bbbPercent, '[%]') + '% of the total paid-up equity capital and free reserves of the Company (not exceeding the 10% limit within which the Board may approve a buy-back without member approval), at a price of Rs. ' + v(f.bbbPrice, '[Price]') + ' per share, out of ' + v(f.bbbSource, '[Source of Funds]') + '.'),
+        p('RESOLVED FURTHER THAT the Company has not undertaken any buy-back of its equity shares under this authority in the fifteen months preceding the date of this resolution.')
+      ].join('');
+    }
+  },
+  appoint_kmp: {
+    group: 'Key Managerial Personnel', label: 'Appointment of CEO / CFO / Company Secretary (s.203)', title: 'Appointment of Key Managerial Personnel',
+    sections: ['appoint_kmp'], circRestricted: true,
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 203 of the Companies Act, 2013 read with the Companies (Appointment and Remuneration of Managerial Personnel) Rules, 2014, ' + v(f.kmpAppName, '[Name]') + ' be and is hereby appointed as ' + v(f.kmpAppDesignation, '[Designation]') + ' of the Company, being a whole-time Key Managerial Personnel, with effect from ' + vd(f.kmpAppEffFrom) + ', on a remuneration of ' + v(f.kmpAppRemuneration, '[Remuneration]') + ' and on such other terms and conditions as approved by the Board.'),
+        p('RESOLVED FURTHER THAT any Director of the Company be and is hereby authorised to do all such acts, deeds and things, including making the necessary filings with the Registrar of Companies, as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  approve_financials_board: {
+    group: 'Finance & Dividend', label: 'Approval of financial statements and Board’s Report (s.134)', title: 'Approval of Financial Statements and Board’s Report',
+    sections: ['approve_financials_board'], circRestricted: true,
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT the financial statements of the Company (including the consolidated financial statements, if applicable) for the financial year ended ' + vd(f.afbYearEnd) + ', together with the Board’s Report for the said year, be and are hereby approved, pursuant to Section 134 of the Companies Act, 2013, and that the Chairman/Managing Director and at least one other Director present be and are hereby authorised to sign the financial statements and the Board’s Report on behalf of the Board.' + (f.afbNote ? ' ' + esc(f.afbNote) : '')),
+        p('RESOLVED FURTHER THAT the said financial statements and the Board’s Report be placed before the members at the ensuing Annual General Meeting of the Company for their consideration and adoption.')
+      ].join('');
+    }
+  },
+  interim_dividend: {
+    group: 'Finance & Dividend', label: 'Declaration of interim dividend (s.123(3))', title: 'Declaration of Interim Dividend',
+    sections: ['interim_dividend'],
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 123(3) and other applicable provisions, if any, of the Companies Act, 2013, an interim dividend of Rs. ' + v(f.idRate, '[Rate]') + ' per ' + v(f.idClass, 'Equity') + ' share be and is hereby declared for the financial year ' + v(f.idFy, '[Financial Year]') + ', out of the surplus in the profit and loss account/profits of the Company for the current financial year, payable to those members whose names appear in the Register of Members as on the record date to be fixed for the purpose.') ].join('');
+    }
+  },
+  related_party_board: {
+    group: 'Related Party Transactions', label: 'Approval of related party transaction (s.188)', title: 'Approval of Related Party Transaction',
+    sections: ['related_party_board'],
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT approval of the Board be and is hereby accorded, pursuant to Section 188 of the Companies Act, 2013, to the Company entering into/continuing a transaction with ' + v(f.rpbParty, '[Related Party]') + ', being ' + v(f.rpbNature, '[Nature of Transaction]') + ', for a value of Rs. ' + v(f.rpbValue, '[Value]') + ', such transaction being ' + v(f.rpbBasis, 'in the ordinary course of business and on an arm’s length basis') + '.'),
+        p('RESOLVED FURTHER THAT the interested Director(s), if any, did not participate in the discussion on, and did not vote on, this item.')
+      ].join('');
+    }
+  },
+  appoint_internal_auditor: {
+    group: 'Auditor', label: 'Appointment of Internal Auditor (s.138)', title: 'Appointment of Internal Auditor',
+    sections: ['appoint_internal_auditor'], circRestricted: true,
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 138 of the Companies Act, 2013 read with the Companies (Accounts) Rules, 2014, ' + v(f.iaName, '[Name of Internal Auditor / Firm]') + ' be and is hereby appointed as the Internal Auditor of the Company, to conduct the internal audit of the functions and activities of the Company, viz. ' + v(f.iaScope, '[Scope of Internal Audit]') + '.') ].join('');
+    }
+  },
+
+  /* SPECIAL BUSINESS (general meeting) */
+  alter_moa_objects: {
+    level: 'special', group: 'Constitutional changes', label: 'Alteration of Objects Clause (MOA) – s.13', title: 'Alteration of the Objects Clause of the Memorandum of Association',
+    sections: ['alter_moa_objects'],
+    explanatory: 'This resolution seeks the approval of members for altering the Objects Clause of the Memorandum of Association, as detailed in the resolution, in order to enable the Company to carry on the proposed activities. None of the Directors or Key Managerial Personnel of the Company, or their relatives, is concerned or interested in this resolution except to the extent of their shareholding, if any, in the Company.',
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 13 and other applicable provisions, if any, of the Companies Act, 2013, and subject to such approvals as may be necessary, the Objects Clause of the Memorandum of Association of the Company be and is hereby altered ' + v(f.moaReason, '[Reason for Alteration]') + ', so as to read as follows: "' + v(f.moaNewObject, '[New Object Clause]') + '"')
+      ].join('');
+    }
+  },
+  alter_aoa: {
+    level: 'special', group: 'Constitutional changes', label: 'Alteration of Articles (AOA) – s.14', title: 'Alteration of the Articles of Association',
+    sections: ['alter_aoa'],
+    explanatory: 'This resolution seeks the approval of members for altering the Articles of Association of the Company as detailed below. None of the Directors or Key Managerial Personnel of the Company, or their relatives, is concerned or interested in this resolution except to the extent of their shareholding, if any, in the Company.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 14 and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to alter ' + v(f.aoaArticle, '[Article(s) Affected]') + ' of the Articles of Association of the Company by ' + v(f.aoaNature, '[Nature of Alteration]') + '.') ].join('');
+    }
+  },
+  shift_office_other_state: {
+    level: 'special', group: 'Constitutional changes', label: 'Shifting of Registered Office (other than same city) – s.12/13', title: 'Shifting of the Registered Office of the Company',
+    sections: ['shift_office_other_state'],
+    explanatory: 'This resolution seeks the approval of members for shifting the registered office of the Company as detailed below. Where the shift is to a different State, the alteration of the Memorandum of Association also requires confirmation by the Central Government/Regional Director.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Sections 12 and 13 and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to shift the Registered Office of the Company from ' + v(f.soExisting, '[Existing Registered Office]') + ' to ' + v(f.soNew, '[New Registered Office]') + ', being a shift ' + v(f.soType, '[Move Type]') + ', with effect from ' + vd(f.soEffFrom) + '.') ].join('');
+    }
+  },
+  private_placement: {
+    level: 'special', group: 'Capital & securities', label: 'Private Placement of Securities – s.42', title: 'Private Placement of Securities',
+    sections: ['private_placement'],
+    explanatory: 'This resolution seeks the approval of members for the private placement of securities to the identified offerees named in the offer letter (Form PAS-4), pursuant to Section 42 of the Companies Act, 2013.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 42 and other applicable provisions, if any, of the Companies Act, 2013, read with the Companies (Prospectus and Allotment of Securities) Rules, 2014, consent of the members be and is hereby accorded to the Board to offer or invite subscription for up to ' + v(f.ppQty, '[No. of Securities]') + ' ' + v(f.ppKind, 'Equity shares') + ' of the Company at a price of Rs. ' + v(f.ppPrice, '[Price]') + ' per security, on a private placement basis, to not more than ' + v(f.ppOfferees, '[Max. Offerees]') + ' identified persons comprising ' + v(f.ppClass, '[Class of Persons]') + ', in one or more tranches.') ].join('');
+    }
+  },
+  preferential_allotment: {
+    level: 'special', group: 'Capital & securities', label: 'Preferential Allotment of Shares – s.62(1)(c)', title: 'Preferential Allotment of Shares',
+    sections: ['preferential_allotment'],
+    explanatory: 'This resolution seeks the approval of members for a preferential issue of shares to persons other than existing shareholders, pursuant to Section 62(1)(c) of the Companies Act, 2013, at a price determined on the basis of the valuation report referred to in the resolution.',
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 62(1)(c) and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to the Board to allot ' + v(f.paQty, '[No. of Shares]') + ' ' + v(f.paKind, 'Equity') + ' shares of the Company at a price of Rs. ' + v(f.paPrice, '[Issue Price]') + ' per share, determined on the basis of the valuation report of ' + v(f.paValuer, '[Valuer]') + ', on a preferential basis to the following allottee(s):'),
+        list(splitLines(f.paAllottees))
+      ].join('');
+    }
+  },
+  buyback: {
+    level: 'special', group: 'Capital & securities', label: 'Buy-back of Shares – s.68', title: 'Buy-back of Equity Shares',
+    sections: ['buyback'],
+    explanatory: 'This resolution seeks the approval of members for the buy-back of equity shares of the Company under Section 68 of the Companies Act, 2013, as the proposed buy-back exceeds the 10% limit that the Board may approve on its own in a financial year.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 68 and other applicable provisions, if any, of the Companies Act, 2013, and the Companies (Share Capital and Debentures) Rules, 2014, consent of the members be and is hereby accorded to the buy-back by the Company of up to ' + v(f.bbQty, '[No. of Shares]') + ' fully paid-up equity shares, being ' + v(f.bbPercent, '[%]') + '% of the total paid-up equity capital and free reserves of the Company, at a price of Rs. ' + v(f.bbPrice, '[Price]') + ' per share, by way of ' + v(f.bbMethod, '[Method]') + ', out of ' + v(f.bbSource, '[Source of Funds]') + '.') ].join('');
+    }
+  },
+  reduction_capital: {
+    level: 'special', group: 'Capital & securities', label: 'Reduction of Share Capital – s.66', title: 'Reduction of Share Capital',
+    sections: ['reduction_capital'],
+    explanatory: 'This resolution seeks the approval of members for the reduction of the share capital of the Company under Section 66 of the Companies Act, 2013, subject to confirmation by the National Company Law Tribunal.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 66 and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to reduce the paid-up share capital of the Company from Rs. ' + v(f.rcExisting, '[Existing Paid-up Capital]') + ' to Rs. ' + v(f.rcReduced, '[Reduced Capital]') + ', ' + v(f.rcMode, '[Mode of Reduction]') + ', subject to confirmation by the National Company Law Tribunal.') ].join('');
+    }
+  },
+  borrowing_180: {
+    level: 'special', group: 'Borrowing & investment', label: 'Borrowing Beyond Limits – s.180(1)(c)', title: 'Borrowing in Excess of Paid-up Capital and Free Reserves',
+    sections: ['borrowing_180'],
+    explanatory: 'This resolution seeks the approval of members under Section 180(1)(c) of the Companies Act, 2013, to authorise the Board to borrow money in excess of the aggregate of the Company’s paid-up share capital, free reserves and securities premium.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 180(1)(c) and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to the Board to borrow money, from time to time, for the purposes of the Company, notwithstanding that the money to be borrowed, together with the money already borrowed by the Company, may exceed the aggregate of the paid-up share capital and free reserves of the Company (presently Rs. ' + v(f.b180Existing, '[Existing Capital + Free Reserves]') + '), provided that the total amount so borrowed shall not at any time exceed Rs. ' + v(f.b180Limit, '[Proposed Limit]') + ', for ' + v(f.b180Purpose, '[Purpose / Lenders]') + '.') ].join('');
+    }
+  },
+  loan_investment_186: {
+    level: 'special', group: 'Borrowing & investment', label: 'Loan / Investment Beyond Limits – s.186(3)', title: 'Loan, Guarantee, Security or Investment Beyond Section 186 Limits',
+    sections: ['loan_investment_186'],
+    explanatory: 'This resolution seeks the approval of members under Section 186(3) of the Companies Act, 2013, as the proposed loan/investment/guarantee exceeds the limits specified in Section 186(2).',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 186 and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to the Board to give a loan to, make an investment in, or give a guarantee or provide security in connection with a loan to, ' + v(f.li186Party, '[Body Corporate / Person]') + ', up to Rs. ' + v(f.li186Amount, '[Amount]') + ', for ' + v(f.li186Purpose, '[Purpose]') + ', provided that the aggregate outstanding under this authority shall not exceed Rs. ' + v(f.li186Limit, '[Revised Overall Limit]') + ' at any time.') ].join('');
+    }
+  },
+  voluntary_strikeoff: {
+    level: 'special', group: 'Other', label: 'Voluntary Strike-off – s.248(2)', title: 'Voluntary Removal of Name of the Company from the Register of Companies',
+    sections: ['voluntary_strikeoff'],
+    explanatory: 'This resolution seeks the approval of members for making an application to the Registrar of Companies for removal of the Company’s name from the register of companies under Section 248(2) of the Companies Act, 2013.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 248(2) and other applicable provisions, if any, of the Companies Act, 2013, and the Companies (Removal of Names of Companies from the Register of Companies) Rules, 2016, consent of the members be and is hereby accorded to make an application to the Registrar of Companies in Form STK-2 for removal of the name of the Company from the register of companies, on the ground that ' + v(f.soffReason, '[Reason for Strike-off]') + ', the Company having ceased to carry on business since ' + vd(f.soffCeasedFrom) + '.') ].join('');
+    }
+  },
+  remove_auditor_early: {
+    level: 'special', group: 'Auditor Matters', label: 'Removal of Auditor before expiry of term – s.140(1)', title: 'Removal of Auditor Before Expiry of Term',
+    sections: ['remove_auditor_early'],
+    explanatory: 'This resolution seeks the approval of members for the removal of the statutory auditor before the expiry of their term, pursuant to Section 140(1) of the Companies Act, 2013, consequent upon the prior approval of the Central Government for such removal. The auditor has been given a reasonable opportunity of being heard.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 140(1) of the Companies Act, 2013, and subject to and pursuant to the approval of the Central Government dated ' + vd(f.raeCgApprovalDate) + ', ' + v(f.raeOutgoing, '[Outgoing Auditor]') + ' be and is/are hereby removed from the office of Auditor of the Company before the expiry of their term, having been given a reasonable opportunity of being heard.') ].join('');
+    }
+  },
+
+  /* ORDINARY BUSINESS (general meeting) */
+  adopt_financials: {
+    level: 'ordinary', group: 'Annual business', label: 'Adoption of Financial Statements', title: 'Adoption of Financial Statements',
+    sections: ['adopt_financials'],
+    resolution: function (f) { return [ p('RESOLVED THAT the Audited Financial Statements of the Company for the financial year ended ' + vd(f.afYearEnd) + ', together with the Reports of the Board of Directors and the Auditors thereon, ' + v(f.afNote, 'be and are hereby received, considered and adopted') + '.') ].join(''); }
+  },
+  declare_dividend: {
+    level: 'ordinary', group: 'Annual business', label: 'Declaration of Dividend', title: 'Declaration of Dividend',
+    sections: ['declare_dividend'],
+    resolution: function (f) { return [ p('RESOLVED THAT a dividend of Rs. ' + v(f.divRate, '[Rate]') + ' per ' + v(f.divClass, 'Equity') + ' share be and is hereby declared for the financial year ' + v(f.divYear, '[Financial Year]') + ', to be paid to those members whose names appear in the Register of Members as on the record date, out of the profits of the Company for the said year.') ].join(''); }
+  },
+  appoint_director_rotation: {
+    level: 'ordinary', group: 'Annual business', label: 'Re-appointment of Director Retiring by Rotation', title: 'Re-appointment of Director Retiring by Rotation',
+    sections: ['appoint_director_rotation'],
+    resolution: function (f) { return [ p('RESOLVED THAT ' + v(f.rotName, '[Director]') + ' (DIN: ' + v(f.rotDin, '[DIN]') + '), who retires by rotation at this meeting in terms of Section 152(6) of the Companies Act, 2013, and being eligible, offers himself/herself for re-appointment, be and is hereby re-appointed as a Director of the Company, liable to retire by rotation.') ].join(''); }
+  },
+  appoint_auditor_agm: {
+    level: 'ordinary', group: 'Annual business', label: 'Appointment of Auditor (at AGM)', title: 'Appointment of Statutory Auditor',
+    sections: ['appoint_auditor_agm'],
+    resolution: function (f) { return [ p('RESOLVED THAT pursuant to Section 139 and other applicable provisions, if any, of the Companies Act, 2013, ' + v(f.agmAudFirm, '[Auditor / Firm]') + ', Chartered Accountants (Firm Registration No. ' + v(f.agmAudFrn, '[FRN]') + '), be and are hereby appointed as the Statutory Auditors of the Company to hold office for a term of ' + v(f.agmAudTerm, '[Term]') + ' consecutive Annual General Meetings, on such remuneration as may be mutually agreed between the Board and the Auditors.') ].join(''); }
+  },
+  increase_auth_capital: {
+    level: 'ordinary', group: 'Capital Alteration', label: 'Increase in Authorised Share Capital (s.61)', title: 'Increase in Authorised Share Capital',
+    sections: ['increase_auth_capital'],
+    explanatory: 'This resolution seeks the approval of members for increasing the Authorised Share Capital of the Company, and the consequential alteration to the Capital Clause of the Memorandum of Association, pursuant to Section 61 of the Companies Act, 2013. None of the Directors or Key Managerial Personnel of the Company, or their relatives, is concerned or interested in this resolution except to the extent of their shareholding, if any, in the Company.',
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 61(1)(a) and other applicable provisions, if any, of the Companies Act, 2013, the Authorised Share Capital of the Company be and is hereby increased from Rs. ' + v(f.iacExisting, '[Existing Authorised Capital]') + ' to Rs. ' + v(f.iacIncreased, '[Increased Authorised Capital]') + ' by the creation of ' + v(f.iacNewShares, '[No. of New Shares]') + ' additional shares.'),
+        p('RESOLVED FURTHER THAT Clause V of the Memorandum of Association of the Company be and is hereby altered to reflect the increased Authorised Share Capital, and that any Director be and is hereby authorised to file the requisite e-forms with the Registrar of Companies and to do all such acts, deeds and things as may be necessary to give effect to this resolution.')
+      ].join('');
+    }
+  },
+  bonus_shares: {
+    level: 'ordinary', group: 'Capital Alteration', label: 'Issue of Bonus Shares (s.63)', title: 'Issue of Bonus Shares',
+    sections: ['bonus_shares'],
+    explanatory: 'This resolution seeks the approval of members for the issue of bonus shares by capitalisation of profits/reserves of the Company, pursuant to Section 63 of the Companies Act, 2013 and subject to the Articles of Association authorising such issue. None of the Directors or Key Managerial Personnel of the Company, or their relatives, is concerned or interested in this resolution except to the extent of their shareholding, if any, in the Company.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 63 and other applicable provisions, if any, of the Companies Act, 2013, and subject to the Articles of Association of the Company, consent of the members be and is hereby accorded for the issue of ' + v(f.bonQty, '[No. of Bonus Shares]') + ' fully paid-up Equity shares as bonus shares, in the ratio of ' + v(f.bonRatio, '[Ratio]') + ', to the existing shareholders of the Company as on the record date to be fixed for the purpose, by capitalising a sum of Rs. ' + v(f.bonSource, '[Amount Capitalised]') + ' out of the free reserves/securities premium account of the Company.') ].join('');
+    }
+  },
+  remove_director: {
+    level: 'ordinary', group: 'Director Matters', label: 'Removal of a Director (s.169)', title: 'Removal of Director',
+    sections: ['remove_director'],
+    explanatory: 'This resolution seeks the approval of members for the removal of a Director before the expiry of their term of office, pursuant to Section 169 of the Companies Act, 2013, consequent upon a special notice received by the Company under Section 115. The concerned Director has been given a reasonable opportunity of being heard.',
+    resolution: function (f) {
+      return [ p('RESOLVED THAT pursuant to Section 169 and other applicable provisions, if any, of the Companies Act, 2013, and pursuant to the special notice received by the Company under Section 115 dated ' + vd(f.rdNoticeDate) + ', ' + v(f.rdName, '[Name of Director]') + ' (DIN: ' + v(f.rdDin, '[DIN]') + ') be and is hereby removed from the office of Director of the Company with effect from the date of this resolution, the concerned Director having been given a reasonable opportunity of being heard.') ].join('');
+    }
+  },
+  related_party_general: {
+    level: 'ordinary', group: 'Related Party Matters', label: 'Related party transaction requiring member approval (s.188)', title: 'Approval of Related Party Transaction',
+    sections: ['related_party_general'],
+    explanatory: 'This resolution seeks the approval of members, pursuant to the proviso to Section 188(1) of the Companies Act, 2013, for a related party transaction that is either not in the ordinary course of business or not on an arm’s length basis, or both, and exceeds the prescribed threshold. No member who is a related party may vote on this resolution.',
+    resolution: function (f) {
+      return [
+        p('RESOLVED THAT pursuant to Section 188 and other applicable provisions, if any, of the Companies Act, 2013, consent of the members be and is hereby accorded to the Company entering into/continuing a contract or arrangement with ' + v(f.rpgParty, '[Related Party]') + ', being ' + v(f.rpgNature, '[Nature of Transaction]') + ', for a value of Rs. ' + v(f.rpgValue, '[Value]') + '.'),
+        p('RESOLVED FURTHER THAT no member of the Company who is a related party shall vote on this resolution to approve the said transaction, to the extent required under the proviso to Section 188(1).')
+      ].join('');
+    }
+  },
+
+  /* COMMITTEE BUSINESS (committee meeting) */
+  committee_recommend_financials: {
+    level: 'committee', group: 'Committee business', label: 'Review and recommend financial statements to the Board (s.177)', title: 'Review and Recommendation of Financial Statements',
+    sections: ['committee_financials'],
+    resolution: function (f) { return [ plainP('The Committee reviewed the financial statements of the Company for the ' + v(f.cfPeriod, '[Period]') + ', together with the auditor’s observations, if any.'), p('RESOLVED THAT the financial statements for the ' + v(f.cfPeriod, '[Period]') + ' be and are hereby recommended to the Board of Directors for approval.' + (f.cfNote ? ' ' + esc(f.cfNote) : '')) ].join(''); }
+  },
+  committee_related_party: {
+    level: 'committee', group: 'Committee business', label: 'Approval/ratification of Related Party Transaction (s.177)', title: 'Approval of Related Party Transaction',
+    sections: ['committee_rpt'],
+    resolution: function (f) { return [ p('RESOLVED THAT the Committee approves/ratifies the transaction with ' + v(f.rptParty, '[Related Party]') + ', being ' + v(f.rptNature, '[Nature of Transaction]') + ', for a value of Rs. ' + v(f.rptValue, '[Value]') + ', as a related party transaction under Section 188 of the Companies Act, 2013.') ].join(''); }
+  },
+  committee_kmp_remuneration: {
+    level: 'committee', group: 'Committee business', label: 'Recommend appointment/remuneration of Director/KMP (s.178)', title: 'Recommendation on Appointment/Remuneration',
+    sections: ['committee_kmp'],
+    resolution: function (f) { return [ p('RESOLVED THAT the Committee recommends to the Board the appointment of ' + v(f.kmpName, '[Name]') + ' as ' + v(f.kmpDesignation, '[Designation]') + ' of the Company, on a remuneration of ' + v(f.kmpRemuneration, '[Remuneration]') + ', in accordance with the Nomination and Remuneration Policy of the Company.') ].join(''); }
+  },
+  committee_csr: {
+    level: 'committee', group: 'Committee business', label: 'Approve/recommend CSR Policy and CSR spending (s.135)', title: 'Corporate Social Responsibility – Policy and Spending',
+    sections: ['committee_csr'],
+    resolution: function (f) { return [ plainP(v(f.csrPolicyNote, 'The Committee reviewed the implementation of the CSR Policy of the Company.')), p('RESOLVED THAT the Committee recommends to the Board a CSR spend of Rs. ' + v(f.csrAmount, '[Amount]') + ' towards ' + v(f.csrProjects, '[Projects/Activities]') + ', in accordance with Section 135 of the Companies Act, 2013 and the CSR Policy of the Company.') ].join(''); }
+  },
+  committee_investor_grievance: {
+    level: 'committee', group: 'Committee business', label: 'Redressal of investor/shareholder grievances (s.178)', title: 'Redressal of Investor Grievances',
+    sections: ['committee_grievance'],
+    resolution: function (f) { return [ p('RESOLVED THAT the Committee noted that ' + v(f.grievCount, '[Number]') + ' investor complaint(s) were received during the period, of which ' + v(f.grievResolved, '[Number]') + ' stand resolved and ' + v(f.grievPending, '0') + ' remain pending, and directed that the pending complaint(s), if any, be resolved expeditiously.') ].join(''); }
+  },
+
+  /* CLASS RIGHTS (class meeting) */
+  class_vary_rights: {
+    level: 'class', group: 'Class rights', label: 'Variation of rights attached to a class of shares (s.48)', title: 'Variation of Rights Attached to a Class of Shares',
+    sections: ['class_vary_rights'], skipVoteLine: true,
+    resolution: function (f) { return [ p('RESOLVED THAT the consent of the holders of ' + v(f.className, '[Class of Shares]') + ' be and is hereby accorded, pursuant to Section 48 of the Companies Act, 2013 and the Articles of Association of the Company, to vary the rights presently attached to the said class of shares, namely ' + v(f.clsExistingRights, '[Existing Rights]') + ', so as to read as follows: ' + v(f.clsProposedVariation, '[Proposed Variation]') + ', such variation being effected ' + v(f.clsConsentMode, 'by means of a special resolution passed at this separate meeting of the holders of the said class of shares') + '.') ].join(''); }
+  }
+};
+
+var GROUP_ORDER_BOARD = ['Director', 'Key Managerial Personnel', 'Auditor', 'Related Party Transactions', 'Registered office', 'Banking', 'Authorisations', 'Finance & Dividend', 'Capital & funding'];
+var GROUP_ORDER_GENERAL = ['Annual business', 'Capital Alteration', 'Director Matters', 'Related Party Matters', 'Constitutional changes', 'Capital & securities', 'Borrowing & investment', 'Auditor Matters', 'Other'];
+var GROUP_ORDER_COMMITTEE = ['Committee business'];
+var GROUP_ORDER_CLASS = ['Class rights'];
+var RES_LEVEL = 'board';
+var GROUP_ORDERS = { board: GROUP_ORDER_BOARD, committee: GROUP_ORDER_COMMITTEE, general: GROUP_ORDER_GENERAL, class: GROUP_ORDER_CLASS, postal: GROUP_ORDER_GENERAL, circular: GROUP_ORDER_BOARD };
+
+var FIELD_IDS = [
+  'companyName','cin','regOffice','meetDesc','meetNo','meetDate','meetTime','meetVenue','directorsPresent','inAttendance','leaveAbsence','chairman',
+  'gmType','noticeDate','votesFor','votesAgainst','prevMeetDate','meetEndTime',
+  'committeeType','className',
+  'pbNoticeDate','pbLastDate','pbScrutinizer','pbResultDate','pbResultPlace',
+  'crCircDate','crDirectorsEntitled','crApproved','crDissented','crResponseBy','crPassedOn','crNotedAt',
+  'opcActorType','opcActorName','opcDinPan','opcResolutionDate','opcEntryDate',
+  'cfPeriod','cfNote','rptParty','rptNature','rptValue','kmpName','kmpDesignation','kmpRemuneration',
+  'csrPolicyNote','csrAmount','csrProjects','grievCount','grievResolved','grievPending',
+  'clsExistingRights','clsProposedVariation','clsConsentMode',
+  'apName','apDin','apEffFrom','resName','resDin','resLetterDate','resEffFrom',
+  'audFirm','audFrn','cvOutgoing','cvReason',
+  'roExisting','roNew','roEffFrom',
+  'boBank','boBranch','boType','boSignatories','boMode',
+  'bcBank','bcBranch','bcType','bcAccNo',
+  'bsBank','bsAccNo','bsRemoved','bsAdded',
+  'auPurpose','auPerson','auDesignation','auScope',
+  'poaName','poaDesignation','poaPowers',
+  'dscPerson','dscDesignation','dscDinPan',
+  'alQty','alKind','alFv','alPrem','alAllottees',
+  'lnLender','lnAmount','lnFacility','lnSecurity',
+  'chHolder','chAmount','chAsset',
+  'cmHolder','cmAmount','cmAsset','cmNature',
+  'csHolder','csPaymentDate','csAsset',
+  'riQty','riKind','riPrice','riRatio','riRecordDate',
+  'bbbQty','bbbPrice','bbbPercent','bbbSource',
+  'kmpAppName','kmpAppDesignation','kmpAppEffFrom','kmpAppRemuneration',
+  'afbYearEnd','afbNote','idRate','idClass','idFy',
+  'rpbParty','rpbNature','rpbValue','rpbBasis',
+  'iaName','iaScope',
+  'iacExisting','iacIncreased','iacNewShares',
+  'bonQty','bonRatio','bonSource',
+  'rdName','rdDin','rdNoticeDate',
+  'rpgParty','rpgNature','rpgValue',
+  'raeOutgoing','raeCgApprovalDate',
+  'moaReason','moaNewObject','aoaArticle','aoaNature',
+  'soExisting','soNew','soType','soEffFrom',
+  'ppQty','ppKind','ppPrice','ppOfferees','ppClass',
+  'paQty','paKind','paPrice','paValuer','paAllottees',
+  'bbQty','bbPrice','bbPercent','bbMethod','bbSource',
+  'rcExisting','rcReduced','rcMode',
+  'b180Existing','b180Limit','b180Purpose',
+  'li186Party','li186Amount','li186Limit','li186Purpose',
+  'soffReason','soffCeasedFrom',
+  'afYearEnd','afNote','divRate','divClass','divYear',
+  'rotName','rotDin','agmAudFirm','agmAudFrn','agmAudTerm',
+  'aobTitle','aobDiscussion','aobResolution',
+  'certName','certDesignation','certDinPan','certDate','certPlace'
+];
+var CHECK_IDS = ['chkQuorum','chkConfirmMin','chkDisclosure','chkAob','chkThanks'];
+
+function collectFields() {
+  var f = {};
+  FIELD_IDS.forEach(function (id) { f[id] = fieldVal(id); });
+  return f;
+}
+
+/* ================= Build the agenda checklist UI (once, all item field sections included) ================= */
+var SECTION_HTML = {
+  director_appointed: '<fieldset class="grp"><legend>Director appointed – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Name of person appointed</label><input type="text" id="apName" placeholder="Mr. Vikram Nair"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>DIN</label><input type="text" id="apDin" placeholder="09876543"></div><div class="fitem"><label>Effective from</label><input type="date" id="apEffFrom"></div></div></fieldset>',
+  director_resigning: '<fieldset class="grp"><legend>Director resigning – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Name of director resigning</label><input type="text" id="resName" placeholder="Mr. Suresh Iyer"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>DIN</label><input type="text" id="resDin" placeholder="01122334"></div><div class="fitem"><label>Resignation letter dated</label><input type="date" id="resLetterDate"></div><div class="fitem"><label>Effective from</label><input type="date" id="resEffFrom"></div></div></fieldset>',
+  auditor_details: '<fieldset class="grp"><legend>Auditor details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Auditor / firm name</label><input type="text" id="audFirm" placeholder="M/s Sample &amp; Co., Chartered Accountants"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Firm Registration No. (FRN)</label><input type="text" id="audFrn" placeholder="012345N"></div></div></fieldset>',
+  casual_vacancy: '<fieldset class="grp"><legend>Casual vacancy details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Outgoing auditor</label><input type="text" id="cvOutgoing" placeholder="M/s Previous &amp; Co."></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Vacancy caused by</label><select id="cvReason"><option value="resignation">Resignation of the auditor</option><option value="death">Death of the auditor</option><option value="disqualification">Disqualification of the auditor</option></select></div></div>' +
+    '<div class="note-box">If by resignation, the appointment must also be approved by members within 3 months (s.139(8)).</div></fieldset>',
+  reg_office_change: '<fieldset class="grp"><legend>Registered office change – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Existing address</label><textarea id="roExisting" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>New address (within same city)</label><textarea id="roNew" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Effective from</label><input type="date" id="roEffFrom"></div></div></fieldset>',
+  bank_open: '<fieldset class="grp"><legend>Bank account to open – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Bank name</label><input type="text" id="boBank" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Branch</label><input type="text" id="boBranch" placeholder="Baner Road, Pune"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Type of account</label><input type="text" id="boType" placeholder="Current Account"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Authorised signatories (one per line)</label><textarea id="boSignatories" rows="3"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Mode of operation</label><select id="boMode"><option value="jointly by any two of them">Jointly by any two of them</option><option value="severally (any one of them)">Severally (any one of them)</option><option value="singly">Singly</option></select></div></div></fieldset>',
+  bank_close: '<fieldset class="grp"><legend>Bank account to close – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Bank name</label><input type="text" id="bcBank" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Branch</label><input type="text" id="bcBranch" placeholder="Baner Road, Pune"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Account type</label><input type="text" id="bcType" placeholder="Current Account"></div><div class="fitem"><label>Account number</label><input type="text" id="bcAccNo" placeholder="50100XXXXXXXX"></div></div></fieldset>',
+  bank_signatory_change: '<fieldset class="grp"><legend>Change of bank signatory – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Bank name</label><input type="text" id="bsBank" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Account number</label><input type="text" id="bsAccNo" placeholder="50100XXXXXXXX"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Signatory to be removed</label><input type="text" id="bsRemoved" placeholder="Mr. Suresh Iyer – Director"></div><div class="fitem"><label>Signatory to be added</label><input type="text" id="bsAdded" placeholder="Mr. Vikram Nair – Director"></div></div></fieldset>',
+  authorisation: '<fieldset class="grp"><legend>Authorisation – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Authorisation purpose</label><input type="text" id="auPurpose" placeholder="GST registration and related compliance"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Authorised person</label><input type="text" id="auPerson" placeholder="Mr. Ramesh Kumar Sharma"></div><div class="fitem"><label>Designation</label><input type="text" id="auDesignation" placeholder="Director"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Authority / scope</label><textarea id="auScope" rows="2"></textarea></div></div></fieldset>',
+  poa: '<fieldset class="grp"><legend>Power of Attorney – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Attorney name</label><input type="text" id="poaName" placeholder="Mr. Ramesh Kumar Sharma"></div><div class="fitem"><label>Designation</label><input type="text" id="poaDesignation" placeholder="Director"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Powers granted</label><textarea id="poaPowers" rows="2"></textarea></div></div></fieldset>',
+  dsc: '<fieldset class="grp"><legend>DSC application – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Person</label><input type="text" id="dscPerson" placeholder="Mr. Ramesh Kumar Sharma"></div><div class="fitem"><label>Designation</label><input type="text" id="dscDesignation" placeholder="Director"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>DIN / PAN</label><input type="text" id="dscDinPan" placeholder="01234567"></div></div></fieldset>',
+  allotment: '<fieldset class="grp"><legend>Allotment of shares – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of shares</label><input type="number" id="alQty" placeholder="10000"></div><div class="fitem"><label>Kind / class</label><input type="text" id="alKind" placeholder="Equity"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Face value / share (Rs)</label><input type="number" id="alFv" placeholder="10"></div><div class="fitem"><label>Premium / share (Rs)</label><input type="number" id="alPrem" placeholder="0"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Allottee(s)</label><textarea id="alAllottees" rows="2"></textarea></div></div></fieldset>',
+  loan: '<fieldset class="grp"><legend>Loan / borrowing – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Lender</label><input type="text" id="lnLender" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Amount (Rs)</label><input type="number" id="lnAmount" placeholder="5000000"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Facility type</label><input type="text" id="lnFacility" placeholder="Term Loan"></div><div class="fitem"><label>Security (if any)</label><input type="text" id="lnSecurity" placeholder="Hypothecation of current assets"></div></div></fieldset>',
+  charge: '<fieldset class="grp"><legend>Charge – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Charge holder</label><input type="text" id="chHolder" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Amount secured (Rs)</label><input type="number" id="chAmount" placeholder="5000000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Asset / property charged</label><input type="text" id="chAsset" placeholder="all present and future current assets of the Company"></div></div></fieldset>',
+  charge_modify: '<fieldset class="grp"><legend>Modification of charge – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Charge holder</label><input type="text" id="cmHolder" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Revised amount secured (Rs)</label><input type="number" id="cmAmount" placeholder="7500000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Asset / property charged</label><input type="text" id="cmAsset" placeholder="all present and future current assets of the Company"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Nature of modification</label><textarea id="cmNature" rows="2" placeholder="enhancement of the credit facility secured by the charge"></textarea></div></div></fieldset>',
+  charge_satisfy: '<fieldset class="grp"><legend>Satisfaction of charge – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Charge holder</label><input type="text" id="csHolder" placeholder="HDFC Bank Ltd."></div><div class="fitem"><label>Payment/satisfaction date</label><input type="date" id="csPaymentDate"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Asset / property charged</label><input type="text" id="csAsset" placeholder="all present and future current assets of the Company"></div></div>' +
+    '<div class="note-box">Form CHG-4 must be filed with the Registrar within the time prescribed under Section 82 — verify the current timeline, as it has been amended more than once.</div></fieldset>',
+  rights_issue: '<fieldset class="grp"><legend>Rights issue – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of shares</label><input type="number" id="riQty" placeholder="20000"></div><div class="fitem"><label>Kind / class</label><input type="text" id="riKind" placeholder="Equity"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Price per share (Rs)</label><input type="number" id="riPrice" placeholder="15"></div><div class="fitem"><label>Rights ratio</label><input type="text" id="riRatio" placeholder="1:5 (1 new share for every 5 held)"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Record date</label><input type="date" id="riRecordDate"></div></div></fieldset>',
+  buyback_board_limit: '<fieldset class="grp"><legend>Buy-back (Board approval) – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of shares to be bought back</label><input type="number" id="bbbQty" placeholder="5000"></div><div class="fitem"><label>Buy-back price per share (Rs)</label><input type="number" id="bbbPrice" placeholder="140"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>% of paid-up capital + free reserves</label><input type="number" id="bbbPercent" placeholder="8"></div><div class="fitem full"><label>Source of funds</label><input type="text" id="bbbSource" placeholder="free reserves of the Company"></div></div>' +
+    '<div class="note-box">Only available where the buy-back does not exceed 10% of paid-up equity capital and free reserves and the Board has not authorised a buy-back under this provision in the preceding 15 months — otherwise members must approve by special resolution (see the General Meeting tab instead).</div></fieldset>',
+  appoint_kmp: '<fieldset class="grp"><legend>Appointment of KMP – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Name</label><input type="text" id="kmpAppName" placeholder="Ms. Priya Rao"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Designation</label><select id="kmpAppDesignation"><option value="Chief Executive Officer">Chief Executive Officer</option><option value="Chief Financial Officer">Chief Financial Officer</option><option value="Company Secretary">Company Secretary</option><option value="Manager">Manager</option></select></div><div class="fitem"><label>Effective from</label><input type="date" id="kmpAppEffFrom"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Remuneration</label><input type="text" id="kmpAppRemuneration" placeholder="Rs. 24,00,000 per annum, plus perquisites as per Company policy"></div></div></fieldset>',
+  approve_financials_board: '<fieldset class="grp"><legend>Approval of financial statements – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Financial year ended</label><input type="date" id="afbYearEnd"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Note (optional)</label><textarea id="afbNote" rows="2"></textarea></div></div></fieldset>',
+  interim_dividend: '<fieldset class="grp"><legend>Interim dividend – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Rate / amount per share (Rs)</label><input type="number" id="idRate" placeholder="1.50"></div><div class="fitem"><label>Class of shares</label><input type="text" id="idClass" placeholder="Equity"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Financial year</label><input type="text" id="idFy" placeholder="2025-26"></div></div></fieldset>',
+  related_party_board: '<fieldset class="grp"><legend>Related party transaction (Board) – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Related party</label><input type="text" id="rpbParty" placeholder="XYZ Holdings Private Limited"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Nature of transaction</label><input type="text" id="rpbNature" placeholder="purchase of raw material in the ordinary course of business"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Value (Rs)</label><input type="number" id="rpbValue" placeholder="2500000"></div><div class="fitem full"><label>Basis</label><input type="text" id="rpbBasis" placeholder="in the ordinary course of business and on an arm’s length basis"></div></div>' +
+    '<div class="note-box">If the transaction is NOT in the ordinary course of business, or NOT on an arm’s length basis, and exceeds the thresholds prescribed under Rule 15 of the Companies (Meetings of Board and its Powers) Rules, 2014, it also needs member approval by ordinary resolution — use the matching item on the General Meeting tab.</div></fieldset>',
+  appoint_internal_auditor: '<fieldset class="grp"><legend>Internal Auditor – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Name of Internal Auditor / firm</label><input type="text" id="iaName" placeholder="M/s Internal Assurance &amp; Associates"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Scope of internal audit</label><textarea id="iaScope" rows="2" placeholder="review of internal financial controls and operational processes"></textarea></div></div></fieldset>',
+  alter_moa_objects: '<fieldset class="grp"><legend>Alteration of Objects (MOA) – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Reason for alteration</label><input type="text" id="moaReason" placeholder="to enable the Company to undertake real estate consultancy services"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>New / altered object clause</label><textarea id="moaNewObject" rows="2"></textarea></div></div></fieldset>',
+  alter_aoa: '<fieldset class="grp"><legend>Alteration of Articles (AOA) – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Article(s) affected</label><input type="text" id="aoaArticle" placeholder="Article 42 (Borrowing Powers)"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Nature of alteration</label><textarea id="aoaNature" rows="2"></textarea></div></div></fieldset>',
+  shift_office_other_state: '<fieldset class="grp"><legend>Shifting of Registered Office – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Existing registered office</label><textarea id="soExisting" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Proposed new registered office</label><textarea id="soNew" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Move type</label><select id="soType"><option value="outside the local limits of the city, town or village where it is presently situated, but within the same State">Outside local limits, same State</option><option value="from the State">To a different State</option></select></div><div class="fitem"><label>Effective from</label><input type="date" id="soEffFrom"></div></div></fieldset>',
+  private_placement: '<fieldset class="grp"><legend>Private Placement – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of securities</label><input type="number" id="ppQty" placeholder="50000"></div><div class="fitem"><label>Class / kind</label><input type="text" id="ppKind" placeholder="Equity shares"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Price / consideration per security (Rs)</label><input type="number" id="ppPrice" placeholder="100"></div><div class="fitem"><label>Maximum no. of identified offerees</label><input type="number" id="ppOfferees" placeholder="15"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Class of persons to whom offered</label><input type="text" id="ppClass" placeholder="select institutional and high-net-worth investors identified by the Board"></div></div></fieldset>',
+  preferential_allotment: '<fieldset class="grp"><legend>Preferential Allotment – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of shares</label><input type="number" id="paQty" placeholder="25000"></div><div class="fitem"><label>Class</label><input type="text" id="paKind" placeholder="Equity"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Issue price per share (Rs)</label><input type="number" id="paPrice" placeholder="120"></div><div class="fitem"><label>Valuation report by</label><input type="text" id="paValuer" placeholder="Registered Valuer, Mr. A. K. Rao"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Proposed allottee(s)</label><textarea id="paAllottees" rows="2"></textarea></div></div></fieldset>',
+  buyback: '<fieldset class="grp"><legend>Buy-back – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of shares to be bought back</label><input type="number" id="bbQty" placeholder="10000"></div><div class="fitem"><label>Buy-back price per share (Rs)</label><input type="number" id="bbPrice" placeholder="150"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>% of paid-up capital + free reserves</label><input type="number" id="bbPercent" placeholder="9.5"></div><div class="fitem"><label>Method</label><select id="bbMethod"><option value="odd-lot">Odd lot</option><option value="open market through the stock exchange">Open market (stock exchange)</option><option value="tender offer">Tender offer</option><option value="purchase from existing shareholders on a proportionate basis">Proportionate offer</option></select></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Source of funds</label><input type="text" id="bbSource" placeholder="free reserves and the securities premium account"></div></div></fieldset>',
+  reduction_capital: '<fieldset class="grp"><legend>Reduction of Share Capital – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Existing paid-up share capital (Rs)</label><input type="number" id="rcExisting" placeholder="10000000"></div><div class="fitem"><label>Reduced to (Rs)</label><input type="number" id="rcReduced" placeholder="6000000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Mode of reduction</label><textarea id="rcMode" rows="2"></textarea></div></div></fieldset>',
+  borrowing_180: '<fieldset class="grp"><legend>Borrowing Beyond Limits – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Existing paid-up capital + free reserves (Rs)</label><input type="number" id="b180Existing" placeholder="50000000"></div><div class="fitem"><label>Proposed overall borrowing limit (Rs)</label><input type="number" id="b180Limit" placeholder="150000000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Purpose / lender(s)</label><input type="text" id="b180Purpose" placeholder="working capital and term loan facilities"></div></div></fieldset>',
+  loan_investment_186: '<fieldset class="grp"><legend>Loan / Investment Beyond Limits – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Name of body corporate / person</label><input type="text" id="li186Party" placeholder="Sample Subsidiary Private Limited"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Amount of loan / investment / guarantee (Rs)</label><input type="number" id="li186Amount" placeholder="80000000"></div><div class="fitem"><label>Revised overall limit (Rs)</label><input type="number" id="li186Limit" placeholder="120000000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Purpose</label><input type="text" id="li186Purpose" placeholder="funding the working capital requirements of the subsidiary"></div></div></fieldset>',
+  voluntary_strikeoff: '<fieldset class="grp"><legend>Voluntary Strike-off – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Reason for strike-off</label><textarea id="soffReason" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Company ceased business operations from</label><input type="date" id="soffCeasedFrom"></div></div></fieldset>',
+  remove_auditor_early: '<fieldset class="grp"><legend>Removal of Auditor – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Outgoing auditor</label><input type="text" id="raeOutgoing" placeholder="M/s Outgoing &amp; Co., Chartered Accountants"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Central Government approval dated</label><input type="date" id="raeCgApprovalDate"></div></div>' +
+    '<div class="note-box">Prior approval of the Central Government (application in Form ADT-2) is a precondition to this resolution under Section 140(1) — obtain it before convening the meeting.</div></fieldset>',
+  adopt_financials: '<fieldset class="grp"><legend>Adoption of Financial Statements – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Financial year ended</label><input type="date" id="afYearEnd"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Note (optional)</label><textarea id="afNote" rows="2" placeholder="be and are hereby received, considered and adopted"></textarea></div></div></fieldset>',
+  declare_dividend: '<fieldset class="grp"><legend>Declaration of Dividend – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Rate / amount per share (Rs)</label><input type="number" id="divRate" placeholder="2.50"></div><div class="fitem"><label>Class of shares</label><input type="text" id="divClass" placeholder="Equity"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Financial year</label><input type="text" id="divYear" placeholder="2024-25"></div></div></fieldset>',
+  appoint_director_rotation: '<fieldset class="grp"><legend>Director Retiring by Rotation – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Director\'s name</label><input type="text" id="rotName" placeholder="Ms. Anita Desai"></div><div class="fitem"><label>DIN</label><input type="text" id="rotDin" placeholder="03344556"></div></div></fieldset>',
+  appoint_auditor_agm: '<fieldset class="grp"><legend>Appointment of Auditor (AGM) – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Auditor / firm name</label><input type="text" id="agmAudFirm" placeholder="M/s Sample &amp; Co., Chartered Accountants"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Firm Registration No. (FRN)</label><input type="text" id="agmAudFrn" placeholder="012345N"></div><div class="fitem"><label>Term (no. of AGMs)</label><input type="number" id="agmAudTerm" placeholder="5"></div></div></fieldset>',
+  increase_auth_capital: '<fieldset class="grp"><legend>Increase in Authorised Capital – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Existing authorised capital (Rs)</label><input type="number" id="iacExisting" placeholder="10000000"></div><div class="fitem"><label>Increased to (Rs)</label><input type="number" id="iacIncreased" placeholder="20000000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>No. of new shares created</label><input type="text" id="iacNewShares" placeholder="1,00,000 Equity shares of Rs. 10 each"></div></div></fieldset>',
+  bonus_shares: '<fieldset class="grp"><legend>Bonus shares – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>No. of bonus shares</label><input type="number" id="bonQty" placeholder="50000"></div><div class="fitem"><label>Ratio</label><input type="text" id="bonRatio" placeholder="1:1 (1 bonus share for every 1 held)"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Amount capitalised (Rs)</label><input type="number" id="bonSource" placeholder="500000"></div></div></fieldset>',
+  remove_director: '<fieldset class="grp"><legend>Removal of Director – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Name of Director</label><input type="text" id="rdName" placeholder="Mr. Suresh Iyer"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>DIN</label><input type="text" id="rdDin" placeholder="01122334"></div><div class="fitem"><label>Special notice (s.115) received on</label><input type="date" id="rdNoticeDate"></div></div></fieldset>',
+  related_party_general: '<fieldset class="grp"><legend>Related party transaction (member approval) – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Related party</label><input type="text" id="rpgParty" placeholder="XYZ Holdings Private Limited"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Nature of transaction</label><input type="text" id="rpgNature" placeholder="sale of immovable property not in the ordinary course of business"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Value (Rs)</label><input type="number" id="rpgValue" placeholder="15000000"></div></div></fieldset>',
+  committee_financials: '<fieldset class="grp"><legend>Review of financial statements – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Period covered</label><input type="text" id="cfPeriod" placeholder="quarter ended 30th June, 2025"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Note (optional)</label><textarea id="cfNote" rows="2"></textarea></div></div></fieldset>',
+  committee_rpt: '<fieldset class="grp"><legend>Related party transaction – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Related party</label><input type="text" id="rptParty" placeholder="XYZ Holdings Private Limited"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Nature of transaction</label><input type="text" id="rptNature" placeholder="purchase of raw material in the ordinary course of business"></div></div>' +
+    '<div class="frow"><div class="fitem"><label>Value (Rs)</label><input type="number" id="rptValue" placeholder="2500000"></div></div></fieldset>',
+  committee_kmp: '<fieldset class="grp"><legend>Appointment/remuneration – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Name</label><input type="text" id="kmpName" placeholder="Ms. Priya Rao"></div><div class="fitem"><label>Designation</label><input type="text" id="kmpDesignation" placeholder="Chief Financial Officer"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Remuneration proposed</label><input type="text" id="kmpRemuneration" placeholder="Rs. 24,00,000 per annum"></div></div></fieldset>',
+  committee_csr: '<fieldset class="grp"><legend>CSR – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Note on CSR Policy implementation (optional)</label><textarea id="csrPolicyNote" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem"><label>CSR amount recommended (Rs)</label><input type="number" id="csrAmount" placeholder="1500000"></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Projects / activities</label><input type="text" id="csrProjects" placeholder="rural education and skill development programmes"></div></div></fieldset>',
+  committee_grievance: '<fieldset class="grp"><legend>Investor grievance – details</legend>' +
+    '<div class="frow"><div class="fitem"><label>Complaints received</label><input type="number" id="grievCount" placeholder="4"></div><div class="fitem"><label>Complaints resolved</label><input type="number" id="grievResolved" placeholder="4"></div><div class="fitem"><label>Complaints pending</label><input type="number" id="grievPending" placeholder="0"></div></div></fieldset>',
+  class_vary_rights: '<fieldset class="grp"><legend>Variation of class rights – details</legend>' +
+    '<div class="frow"><div class="fitem full"><label>Existing rights attached to the class</label><textarea id="clsExistingRights" rows="2" placeholder="preferential right to a fixed cumulative dividend of 8% per annum"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Proposed variation</label><textarea id="clsProposedVariation" rows="2"></textarea></div></div>' +
+    '<div class="frow"><div class="fitem full"><label>Mode of consent</label><select id="clsConsentMode"><option value="by means of a special resolution passed at this separate meeting of the holders of the said class of shares">Special resolution at this separate class meeting</option><option value="through consent in writing of three-fourths of the holders of the issued shares of the said class">Written consent of three-fourths of the class (in lieu of a meeting)</option></select></div></div>' +
+    '<div class="note-box">Holders of not less than 10% of the issued shares of the class who did not consent to, or vote in favour of, the variation may apply to the Tribunal to have it cancelled, within 21 days of the consent being given or the resolution passed (Section 48(2)).</div></fieldset>'
+};
+
+var SECTIONS_RENDERED = {}; // data-key -> true once its fieldset has been injected into the DOM
+
+function ensureSectionInjected(key) {
+  if (SECTIONS_RENDERED[key]) return;
+  var host = document.getElementById('itemFieldSections');
+  var wrap = document.createElement('div');
+  wrap.className = 'cond-section';
+  wrap.id = 'sec_' + key;
+  wrap.innerHTML = SECTION_HTML[key] || '';
+  host.appendChild(wrap);
+  SECTIONS_RENDERED[key] = true;
+}
+
+function itemChecked(key) {
+  var el = document.getElementById('chk_' + key);
+  return !!(el && el.checked);
+}
+
+function onItemToggle(key) {
+  var item = AGENDA_ITEMS[key];
+  var checked = itemChecked(key);
+  (item.sections || []).forEach(function (secKey) {
+    ensureSectionInjected(secKey);
+    var wrap = document.getElementById('sec_' + secKey);
+    if (wrap) wrap.classList.toggle('show', checked);
+  });
+  renderPreview();
+  scheduleSave();
+}
+
+function agendaItemFilter(level) {
+  return function (k) {
+    var item = AGENDA_ITEMS[k];
+    var lvl = item.level || 'board';
+    if (level === 'general' || level === 'postal') return lvl === 'special' || lvl === 'ordinary';
+    if (level === 'circular') return lvl === 'board' && !item.circRestricted;
+    if (level === 'opc') {
+      var actorEl = document.getElementById('opcActorType');
+      var actor = actorEl ? actorEl.value : 'member';
+      return actor === 'member' ? (lvl === 'special' || lvl === 'ordinary') : lvl === 'board';
+    }
+    return lvl === level; // board, committee, class
+  };
+}
+
+function agendaSourceFor(level) {
+  if (level === 'opc') {
+    var actorEl = document.getElementById('opcActorType');
+    var actor = actorEl ? actorEl.value : 'member';
+    return { groups: actor === 'member' ? GROUP_ORDER_GENERAL : GROUP_ORDER_BOARD, filter: agendaItemFilter(level) };
+  }
+  return { groups: GROUP_ORDERS[level] || GROUP_ORDER_BOARD, filter: agendaItemFilter(level) };
+}
+
+function buildAgendaChecklist() {
+  var host = document.getElementById('agendaChecklist');
+  host.innerHTML = '';
+  /* The checklist is rebuilt from scratch with every checkbox unchecked, but the per-item detail
+     fieldsets injected into #itemFieldSections are a separate, persistent container — without this,
+     a fieldset shown for an item checked under a previous level/actor stays visible (and stale) after
+     switching to a level where that item isn't even offered. */
+  document.querySelectorAll('.cond-section[id^="sec_"]').forEach(function (el) { el.classList.remove('show'); });
+  var src = agendaSourceFor(RES_LEVEL);
+  src.groups.forEach(function (grp) {
+    var keys = Object.keys(AGENDA_ITEMS).filter(function (k) {
+      return src.filter(k) && AGENDA_ITEMS[k].group === grp;
+    });
+    if (!keys.length) return;
+    var gdiv = document.createElement('div');
+    gdiv.className = 'agenda-group';
+    var gt = document.createElement('div');
+    gt.className = 'agenda-group-title';
+    gt.textContent = grp;
+    gdiv.appendChild(gt);
+    keys.forEach(function (k) {
+      var lbl = document.createElement('label');
+      lbl.className = 'agenda-check';
+      var tagText = AGENDA_ITEMS[k].level === 'special' ? '[Special] ' : (AGENDA_ITEMS[k].level === 'ordinary' ? '[Ordinary] ' : '');
+      lbl.innerHTML = '<input type="checkbox" id="chk_' + k + '" onchange="onItemToggle(\'' + k + '\')"><span>' + tagText + esc(AGENDA_ITEMS[k].label) + '</span>';
+      gdiv.appendChild(lbl);
+    });
+    host.appendChild(gdiv);
+  });
+}
+
+/* ================= Meeting level (Board / Committee / General / Class / Postal / Circular / OPC) ================= */
+var LEVEL_META = {
+  board: {
+    hint: 'Minutes of a meeting of the Board of Directors, under Section 118 and SS-1.',
+    meetingLegend: 'Meeting', meetDescPh: 'Meeting of the Board of Directors',
+    attendeesLabel: 'Directors present (one per line)', attendeesPh: 'Mr. Ramesh Kumar Sharma – Director, DIN 01234567\nMs. Anita Desai – Director, DIN 03344556',
+    chairmanLabel: 'Chairman of the meeting', prevLabel: 'Previous Board meeting held on',
+    agendaLegend: 'Agenda items taken up at this meeting', certLegend: 'Signed as a correct record by', certDesigPh: 'Chairman'
+  },
+  committee: {
+    hint: 'Minutes of a meeting of a Committee of the Board (Audit / NRC / SRC / CSR), under Section 118 and SS-1.',
+    meetingLegend: 'Meeting', meetDescPh: 'Meeting of the Committee',
+    attendeesLabel: 'Committee members present (one per line)', attendeesPh: 'Mr. Ramesh Kumar Sharma – Chairman of the Committee, DIN 01234567\nMs. Anita Desai – Member, DIN 03344556',
+    chairmanLabel: 'Chairman of the meeting', prevLabel: 'Previous Committee meeting held on',
+    agendaLegend: 'Business taken up at this meeting', certLegend: 'Signed as a correct record by', certDesigPh: 'Chairman of the Committee'
+  },
+  general: {
+    hint: 'Minutes of a general meeting of the Members (AGM/EGM), under Section 118 and SS-2.',
+    meetingLegend: 'General Meeting', meetDescPh: 'Annual General Meeting',
+    attendeesLabel: 'Members present / represented (one per line)', attendeesPh: 'Mr. Ramesh Kumar Sharma, Member – in person\nXYZ Investments LLP, Member – by proxy',
+    chairmanLabel: 'Chairman of the meeting', prevLabel: 'Previous Annual General Meeting held on',
+    agendaLegend: 'Agenda items taken up at this meeting', certLegend: 'Signed as a correct record by', certDesigPh: 'Chairman'
+  },
+  class: {
+    hint: 'Minutes of a separate meeting of the holders of a class of shares, held to vary class rights under Section 48 and SS-2.',
+    meetingLegend: 'Class Meeting', meetDescPh: 'Separate meeting of the holders of the class of shares',
+    attendeesLabel: 'Class members present / represented (one per line)', attendeesPh: 'Mr. Ramesh Kumar Sharma, Preference Shareholder – in person',
+    chairmanLabel: 'Chairman of the meeting', prevLabel: 'Previous meeting of this class held on',
+    agendaLegend: 'Resolution(s) taken up at this class meeting', certLegend: 'Signed as a correct record by', certDesigPh: 'Chairman'
+  },
+  postal: {
+    hint: 'Record of resolution(s) passed by Postal Ballot / remote e-voting, under Section 110 and SS-2. Not a meeting — no quorum or chairman is recorded.',
+    agendaLegend: 'Resolution(s) put to postal ballot', certLegend: 'Result declared and signed by', certDesigPh: 'Scrutinizer'
+  },
+  circular: {
+    hint: 'Resolution(s) passed by circulation among the Directors, under Section 175 — to be noted at the Board’s next meeting.',
+    agendaLegend: 'Matter(s) circulated for approval', certLegend: 'Noted and confirmed by', certDesigPh: 'Chairman / Director'
+  },
+  opc: {
+    hint: 'Resolution(s) of the sole member or sole Director of a One Person Company, entered in the Minutes Book under Section 122.',
+    agendaLegend: 'Matter(s) resolved', certLegend: 'Signed by', certDesigPh: 'Sole Member / Sole Director'
+  }
+};
+var MEETING_LEVELS = ['board', 'committee', 'general', 'class'];
+
+function updateOpcLabels() {
+  var actorEl = document.getElementById('opcActorType');
+  var actor = actorEl ? actorEl.value : 'member';
+  var nameLbl = document.getElementById('opcActorNameLabel');
+  var idLbl = document.getElementById('opcActorIdLabel');
+  if (actor === 'director') {
+    if (nameLbl) nameLbl.textContent = 'Name of sole Director';
+    if (idLbl) idLbl.textContent = 'DIN';
+  } else {
+    if (nameLbl) nameLbl.textContent = 'Name of sole member';
+    if (idLbl) idLbl.textContent = 'DIN / PAN';
+  }
+}
+
+function onOpcActorChange() {
+  updateOpcLabels();
+  buildAgendaChecklist();
+  renderPreview();
+  scheduleSave();
+}
+
+function applyResLevelUI(level) {
+  RES_LEVEL = level;
+  document.querySelectorAll('.level-tab').forEach(function (btn) { btn.classList.toggle('active', btn.getAttribute('data-level') === level); });
+  var meta = LEVEL_META[level] || LEVEL_META.board;
+  document.getElementById('levelHint').textContent = meta.hint;
+  if (meta.meetingLegend !== undefined) document.getElementById('meetingLegend').textContent = meta.meetingLegend;
+  if (meta.meetDescPh !== undefined) document.getElementById('meetDesc').placeholder = meta.meetDescPh;
+  if (meta.attendeesLabel !== undefined) document.getElementById('attendeesLabel').textContent = meta.attendeesLabel;
+  if (meta.attendeesPh !== undefined) document.getElementById('directorsPresent').placeholder = meta.attendeesPh;
+  if (meta.chairmanLabel !== undefined) document.getElementById('chairmanLabel').textContent = meta.chairmanLabel;
+  if (meta.prevLabel !== undefined) document.getElementById('prevMeetLabel').textContent = meta.prevLabel;
+  document.getElementById('agendaLegend').textContent = meta.agendaLegend || 'Agenda items taken up at this meeting';
+  document.getElementById('certLegend').textContent = meta.certLegend || 'Signed as a correct record by';
+  document.getElementById('certDesignation').placeholder = meta.certDesigPh || 'Chairman';
+
+  document.querySelectorAll('[data-level-section]').forEach(function (row) {
+    var levels = row.getAttribute('data-level-section').split(',');
+    row.classList.toggle('show', levels.indexOf(level) !== -1);
+  });
+
+  if (level === 'opc') updateOpcLabels();
+
+  buildAgendaChecklist();
+}
+
+function setResLevel(level) {
+  applyResLevelUI(level);
+  if (EDIT_MODE) exitEditMode();
+  renderPreview();
+  scheduleSave();
+}
+
+/* ================= Render preview ================= */
+function companyHeaderHtml(f) {
+  return '<div class="co-name">' + v(f.companyName, '[Company Name]') + '</div>' +
+    '<div class="co-meta">CIN: ' + v(f.cin, '[CIN]') + '</div>' +
+    '<div class="co-meta">' + v(f.regOffice, '[Registered Office Address]') + '</div>' +
+    '<hr class="rule">';
+}
+function signatureBlockHtml(f, introText) {
+  var desigPh = (LEVEL_META[RES_LEVEL] && LEVEL_META[RES_LEVEL].certDesigPh) || 'Chairman';
+  return '<div class="sign-block">' +
+    '<div class="for-co">' + introText + '</div>' +
+    '<div class="sign-line"></div>' +
+    '<div class="sign-meta">' + v(f.certName, '[Signatory Name]') + '<br>' + v(f.certDesignation, desigPh) + '<br>DIN/PAN: ' + v(f.certDinPan, '[DIN/PAN]') + '</div>' +
+    '<div class="placement-row"><span>Place: ' + v(f.certPlace, '[Place]') + '</span><span>Date: ' + (f.certDate ? vd(f.certDate) : '<span class="ph">[Date]</span>') + '</span></div>' +
+    '</div>';
+}
+function passedAsPhrase(lvl) {
+  return lvl === 'special'
+    ? 'a SPECIAL RESOLUTION, in terms of Section 114(2) of the Companies Act, 2013,'
+    : 'an ORDINARY RESOLUTION, in terms of Section 114(1) of the Companies Act, 2013,';
+}
+
+function renderMeetingMinutes(f) {
+  var level = RES_LEVEL;
+  var isGeneral = level === 'general';
+  var isClass = level === 'class';
+  var isCommittee = level === 'committee';
+  var votedLevel = isGeneral || isClass;
+
+  var attendees = splitLines(f.directorsPresent);
+  var inAttendance = splitLines(f.inAttendance);
+  var leave = splitLines(f.leaveAbsence);
+  var dateLine = f.meetDate ? vd(f.meetDate) : '<span class="ph">[Date]</span>';
+
+  var html = companyHeaderHtml(f);
+
+  var gmLabel = document.getElementById('gmType') ? document.getElementById('gmType').value : 'Annual General Meeting';
+  var committeeLabel = f.committeeType || 'Committee';
+  var classLabel = f.className || '[Class of Shares]';
+
+  var titleLine;
+  if (isGeneral) titleLine = 'MINUTES OF THE ' + esc((gmLabel || 'Annual General Meeting').toUpperCase()) + ' OF THE MEMBERS OF THE COMPANY';
+  else if (isClass) titleLine = 'MINUTES OF THE SEPARATE MEETING OF THE HOLDERS OF ' + esc(classLabel.toUpperCase()) + ' OF THE COMPANY';
+  else if (isCommittee) titleLine = 'MINUTES OF THE MEETING OF THE ' + esc(committeeLabel.toUpperCase()) + ' OF THE COMPANY';
+  else titleLine = 'MINUTES OF THE MEETING OF THE BOARD OF DIRECTORS OF THE COMPANY';
+  html += '<div class="cert-title">' + titleLine + '</div>';
+
+  var meetDescPh = isGeneral ? (gmLabel || 'Annual General Meeting') : (isClass ? ('Separate meeting of the holders of ' + classLabel) : (isCommittee ? ('Meeting of the ' + committeeLabel) : 'Meeting of the Board of Directors'));
+  html += '<p class="meeting-line">held at the ' + v(f.meetDesc, meetDescPh) +
+          ' (Meeting No. ' + v(f.meetNo, '[Meeting No.]') + ') on ' + dateLine +
+          ' at ' + vt(f.meetTime) + ' at ' + v(f.meetVenue, '[Venue]') +
+          (votedLevel ? ', notice whereof was duly given on ' + (f.noticeDate ? vd(f.noticeDate) : '<span class="ph">[Notice Date]</span>') : '') + '.</p>';
+
+  html += '<div class="present-label">Present:</div>';
+  html += list(attendees);
+  if (inAttendance.length) {
+    html += '<div class="present-label">In attendance:</div>';
+    html += list(inAttendance);
+  }
+  if (leave.length) {
+    html += '<div class="present-label">Leave of absence granted to:</div>';
+    html += list(leave);
+  }
+
+  var chairSentence = v(f.chairman, '[Chairman]') + ' chaired the meeting';
+  if (document.getElementById('chkQuorum') && document.getElementById('chkQuorum').checked) {
+    chairSentence += ' and it was noted that the requisite quorum was present throughout the meeting.';
+  } else { chairSentence += '.'; }
+  html += '<div class="chair-line">' + chairSentence + '</div>';
+
+  var itemNo = 0;
+
+  if (document.getElementById('chkConfirmMin') && document.getElementById('chkConfirmMin').checked) {
+    itemNo++;
+    var prevKind = isGeneral ? 'General Meeting' : (isClass ? 'meeting of this class' : (isCommittee ? 'meeting of the Committee' : 'meeting of the Board of Directors'));
+    html += '<div class="item-title">Item No. ' + itemNo + ': Confirmation of Minutes</div>';
+    html += '<div class="res-body">';
+    html += plainP('The Minutes of the previous ' + prevKind + ' held on ' + (f.prevMeetDate ? vd(f.prevMeetDate) : '<span class="ph">[Previous Meeting Date]</span>') + ' were tabled before the meeting.');
+    html += p('RESOLVED THAT the Minutes of the previous ' + prevKind + ' held on ' + (f.prevMeetDate ? vd(f.prevMeetDate) : '<span class="ph">[Previous Meeting Date]</span>') + ', having been circulated, be and are hereby confirmed and signed.');
+    html += '</div>';
+  }
+
+  if ((level === 'board' || level === 'committee') && document.getElementById('chkDisclosure') && document.getElementById('chkDisclosure').checked) {
+    itemNo++;
+    html += '<div class="item-title">Item No. ' + itemNo + ': Disclosure of Interest</div>';
+    html += '<div class="res-body">';
+    html += plainP('The Directors present made the requisite disclosure of their concern or interest, if any, in accordance with Section 184 of the Companies Act, 2013, and the same was noted by the ' + (isCommittee ? 'Committee' : 'Board') + ' and taken on record.');
+    html += '</div>';
+  }
+
+  var src = agendaSourceFor(level);
+  src.groups.forEach(function (grp) {
+    Object.keys(AGENDA_ITEMS).forEach(function (key) {
+      var item = AGENDA_ITEMS[key];
+      if (!src.filter(key) || item.group !== grp) return;
+      if (!itemChecked(key)) return;
+
+      itemNo++;
+      var lvl = item.level || 'board';
+      var tag = lvl === 'special' ? '<span class="item-tag">Special Business</span>' : (lvl === 'ordinary' ? '<span class="item-tag">Ordinary Business</span>' : '');
+      html += '<div class="item-title">' + tag + 'Item No. ' + itemNo + ': ' + esc(item.title) + '</div>';
+      html += '<div class="res-body">';
+      var lead = (GROUP_LEAD[grp] || 'The following matter was taken up:').replace('{t}', item.title.charAt(0).toLowerCase() + item.title.slice(1));
+      html += plainP(lead);
+      html += item.resolution(f);
+      if (votedLevel && !item.skipVoteLine) {
+        html += plainP('The above resolution was passed as ' + passedAsPhrase(lvl) + ' the votes cast in favour ' + (lvl === 'special' ? 'being not less than three times the votes cast against' : 'exceeding the votes cast against') + ' &mdash; votes in favour: ' + v(f.votesFor, '[—]') + ', votes against: ' + v(f.votesAgainst, '[—]') + '.');
+        if (item.explanatory) {
+          html += '<div class="expl-heading">Explanatory Statement (Section 102)</div>';
+          html += plainP(item.explanatory);
+        }
+      }
+      html += '</div>';
+    });
+  });
+
+  if (document.getElementById('chkAob') && document.getElementById('chkAob').checked && (f.aobTitle || f.aobDiscussion || f.aobResolution)) {
+    itemNo++;
+    html += '<div class="item-title">Item No. ' + itemNo + ': ' + v(f.aobTitle, 'Any Other Business') + '</div>';
+    html += '<div class="res-body">';
+    if (f.aobDiscussion) html += plainP(f.aobDiscussion);
+    if (f.aobResolution) html += p(f.aobResolution);
+    html += '</div>';
+  }
+
+  html += '<div class="res-body">';
+  if (document.getElementById('chkThanks') && document.getElementById('chkThanks').checked) {
+    html += plainP('There being no other business, the meeting concluded at ' + vt(f.meetEndTime) + ' with a vote of thanks to the Chair.');
+  } else {
+    html += plainP('There being no other business, the meeting concluded at ' + vt(f.meetEndTime) + '.');
+  }
+  html += '</div>';
+
+  html += signatureBlockHtml(f, 'Confirmed and signed as a true record of the proceedings.');
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+function renderPostalBallot(f) {
+  var html = companyHeaderHtml(f);
+  html += '<div class="cert-title">RESULT OF POSTAL BALLOT / REMOTE E-VOTING</div>';
+  html += '<p class="meeting-line">Notice of postal ballot dated ' + (f.pbNoticeDate ? vd(f.pbNoticeDate) : '<span class="ph">[Notice Date]</span>') +
+    ' was sent to the members of the Company seeking their assent or dissent, by postal ballot / remote e-voting, on the resolution(s) set out below, in terms of Section 110 of the Companies Act, 2013 and the rules made thereunder. The last date for receipt of duly completed postal ballot forms, or for casting votes electronically, was ' +
+    (f.pbLastDate ? vd(f.pbLastDate) : '<span class="ph">[Last Date]</span>') + '.</p>';
+  html += '<p class="meeting-line">' + v(f.pbScrutinizer, '[Scrutinizer]') + ' was appointed as the Scrutinizer for conducting the postal ballot process in a fair and transparent manner, and submitted a report on the result of the voting.</p>';
+
+  var itemNo = 0;
+  var src = agendaSourceFor('postal');
+  src.groups.forEach(function (grp) {
+    Object.keys(AGENDA_ITEMS).forEach(function (key) {
+      var item = AGENDA_ITEMS[key];
+      if (!src.filter(key) || item.group !== grp) return;
+      if (!itemChecked(key)) return;
+      itemNo++;
+      var lvl = item.level || 'board';
+      var tag = lvl === 'special' ? '<span class="item-tag">Special Business</span>' : (lvl === 'ordinary' ? '<span class="item-tag">Ordinary Business</span>' : '');
+      html += '<div class="item-title">' + tag + 'Item No. ' + itemNo + ': ' + esc(item.title) + '</div>';
+      html += '<div class="res-body">';
+      html += plainP(POSTAL_LEAD);
+      html += item.resolution(f);
+      html += plainP('On the basis of the Scrutinizer&rsquo;s report, the above resolution was declared to have been passed as ' + passedAsPhrase(lvl) + ' the votes cast in favour ' + (lvl === 'special' ? 'being not less than three times the votes cast against' : 'exceeding the votes cast against') + ' &mdash; votes in favour: ' + v(f.votesFor, '[—]') + ', votes against: ' + v(f.votesAgainst, '[—]') + '.');
+      if (item.explanatory) {
+        html += '<div class="expl-heading">Explanatory Statement (Section 102)</div>';
+        html += plainP(item.explanatory);
+      }
+      html += '</div>';
+    });
+  });
+
+  html += '<div class="res-body">' + plainP('The result of the postal ballot was declared on ' + (f.pbResultDate ? vd(f.pbResultDate) : '<span class="ph">[Result Date]</span>') + ' at ' + v(f.pbResultPlace, '[Place]') + ', and this record, together with the Scrutinizer&rsquo;s report, shall be preserved permanently in the custody of the Company Secretary or an authorised Director.') + '</div>';
+
+  html += signatureBlockHtml(f, 'Result declared and signed as a correct record.');
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+function renderCircular(f) {
+  var html = companyHeaderHtml(f);
+  html += '<div class="cert-title">RESOLUTION(S) PASSED BY CIRCULATION</div>';
+  html += '<p class="meeting-line">Resolution(s) proposed to be passed by circulation among the Directors of the Company, pursuant to Section 175 of the Companies Act, 2013, were circulated in draft, together with the necessary papers, to all Directors at their addresses registered with the Company.</p>';
+  html += '<p class="meeting-line">Circulated on ' + (f.crCircDate ? vd(f.crCircDate) : '<span class="ph">[Date]</span>') + ' to ' + v(f.crDirectorsEntitled, '[Number]') + ' Director(s) entitled to vote thereon.</p>';
+  var approved = splitLines(f.crApproved);
+  var dissented = splitLines(f.crDissented);
+  if (approved.length) { html += '<div class="present-label">Directors who approved:</div>' + list(approved); }
+  if (dissented.length) { html += '<div class="present-label">Directors who did not respond / dissented:</div>' + list(dissented); }
+
+  var itemNo = 0;
+  var src = agendaSourceFor('circular');
+  src.groups.forEach(function (grp) {
+    Object.keys(AGENDA_ITEMS).forEach(function (key) {
+      var item = AGENDA_ITEMS[key];
+      if (!src.filter(key) || item.group !== grp) return;
+      if (!itemChecked(key)) return;
+      itemNo++;
+      html += '<div class="item-title">Item No. ' + itemNo + ': ' + esc(item.title) + '</div>';
+      html += '<div class="res-body">';
+      html += plainP(CIRCULAR_LEAD);
+      html += item.resolution(f);
+      html += '</div>';
+    });
+  });
+
+  html += '<div class="res-body">';
+  html += plainP('The last response was received on ' + (f.crResponseBy ? vd(f.crResponseBy) : '<span class="ph">[Date]</span>') + ' and the resolution(s) set out above were deemed to have been passed on ' + (f.crPassedOn ? vd(f.crPassedOn) : '<span class="ph">[Date]</span>') + ', having been approved by a majority of the Directors entitled to vote thereon, no Director having required that the matter be decided at a meeting under the proviso to Section 175(1). In terms of Secretarial Standard&#8209;1, this record was noted at the meeting of the Board held on ' + (f.crNotedAt ? vd(f.crNotedAt) : '<span class="ph">[Date]</span>') + '.');
+  html += '</div>';
+
+  html += signatureBlockHtml(f, 'Noted and confirmed as a correct record of the resolution(s) passed by circulation.');
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+function renderOpc(f) {
+  var actorEl = document.getElementById('opcActorType');
+  var actor = actorEl ? actorEl.value : 'member';
+  var isMember = actor === 'member';
+  var html = companyHeaderHtml(f);
+  html += '<div class="cert-title">' + (isMember ? 'RESOLUTION OF THE SOLE MEMBER OF THE COMPANY (SECTION 122(3))' : 'RESOLUTION OF THE SOLE DIRECTOR OF THE COMPANY (SECTION 122(4))') + '</div>';
+  html += '<p class="meeting-line">' + v(f.opcActorName, isMember ? '[Sole Member]' : '[Sole Director]') + ', being the ' + (isMember ? 'sole member' : 'sole Director') + ' of the Company (' + (isMember ? 'DIN/PAN' : 'DIN') + ': ' + v(f.opcDinPan, '[—]') + '), resolved on the matter(s) set out below on ' + (f.opcResolutionDate ? vd(f.opcResolutionDate) : '<span class="ph">[Date]</span>') + '.</p>';
+
+  var itemNo = 0;
+  var src = agendaSourceFor('opc');
+  src.groups.forEach(function (grp) {
+    Object.keys(AGENDA_ITEMS).forEach(function (key) {
+      var item = AGENDA_ITEMS[key];
+      if (!src.filter(key) || item.group !== grp) return;
+      if (!itemChecked(key)) return;
+      itemNo++;
+      html += '<div class="item-title">Item No. ' + itemNo + ': ' + esc(item.title) + '</div>';
+      html += '<div class="res-body">';
+      html += plainP(isMember ? OPC_MEMBER_LEAD : OPC_DIRECTOR_LEAD);
+      html += item.resolution(f);
+      html += '</div>';
+    });
+  });
+
+  html += '<div class="res-body">';
+  html += plainP('This resolution was entered in the Minutes Book of the Company on ' + (f.opcEntryDate ? vd(f.opcEntryDate) : '<span class="ph">[Date]</span>') + ' and, in terms of Section 122(3)/(4) of the Companies Act, 2013, is deemed to have been passed at a meeting of the ' + (isMember ? 'members' : 'Board of Directors') + ' of the Company.');
+  html += '</div>';
+
+  html += signatureBlockHtml(f, 'Signed as a correct record.');
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+function renderPreview() {
+  if (EDIT_MODE) return;
+  var f = collectFields();
+  if (RES_LEVEL === 'postal') { renderPostalBallot(f); return; }
+  if (RES_LEVEL === 'circular') { renderCircular(f); return; }
+  if (RES_LEVEL === 'opc') { renderOpc(f); return; }
+  renderMeetingMinutes(f);
+}
+
+/* ================= Edit directly + Autosave ================= */
+var EDIT_MODE = false;
+var STORAGE_KEY = 'minutes_automation_draft_v1';
+var saveTimer = null;
+
+function toggleEditMode() {
+  if (EDIT_MODE) { exitEditMode(); return; }
+  EDIT_MODE = true;
+  var doc = document.getElementById('previewContent');
+  doc.style.transform = '';
+  doc.setAttribute('contenteditable', 'true');
+  doc.focus();
+  document.getElementById('editToggleBtn').textContent = 'Editing…';
+  document.getElementById('editToggleBtn').classList.add('active');
+  document.getElementById('editBanner').classList.add('show');
+  scheduleSave();
+}
+function exitEditMode() {
+  EDIT_MODE = false;
+  var doc = document.getElementById('previewContent');
+  doc.removeAttribute('contenteditable');
+  doc.style.transform = '';
+  document.getElementById('editToggleBtn').textContent = 'Edit directly';
+  document.getElementById('editToggleBtn').classList.remove('active');
+  document.getElementById('editBanner').classList.remove('show');
+  scheduleSave();
+}
+function regenerateFromForm() {
+  if (EDIT_MODE) {
+    var ok = window.confirm('This will discard your manual edits and rebuild the document from the form fields. Continue?');
+    if (!ok) return;
+  }
+  exitEditMode();
+  renderPreview();
+  scheduleSave();
+}
+
+function scheduleSave() {
+  var status = document.getElementById('autosaveStatus');
+  if (status) { status.textContent = 'Saving…'; status.classList.add('saving'); }
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 500);
+}
+
+function checkedItemKeys() {
+  return Object.keys(AGENDA_ITEMS).filter(itemChecked);
+}
+
+function saveState() {
+  try {
+    var checks = {};
+    CHECK_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) checks[id] = el.checked; });
+    var state = {
+      resLevel: RES_LEVEL,
+      fields: collectFields(),
+      checks: checks,
+      checkedItems: checkedItemKeys(),
+      gmType: document.getElementById('gmType') ? document.getElementById('gmType').value : '',
+      editMode: EDIT_MODE,
+      manualHtml: EDIT_MODE ? document.getElementById('previewContent').innerHTML : null,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    var status = document.getElementById('autosaveStatus');
+    if (status) {
+      status.classList.remove('saving');
+      var t = new Date();
+      status.textContent = 'Saved ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+    }
+  } catch (e) {
+    var status = document.getElementById('autosaveStatus');
+    if (status) { status.classList.remove('saving'); status.textContent = 'Autosave unavailable'; }
+  }
+}
+
+function restoreState() {
+  var raw;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  var state;
+  try { state = JSON.parse(raw); } catch (e) { return false; }
+  if (!state || !state.fields) return false;
+
+  /* Field values (incl. committeeType/opcActorType/clsConsentMode) must land on the DOM *before* applyResLevelUI
+     runs, because it rebuilds the agenda checklist by reading the live value of level-specific selects
+     such as #opcActorType. */
+  Object.keys(state.fields).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = state.fields[id]; });
+  if (state.gmType) { var g = document.getElementById('gmType'); if (g) g.value = state.gmType; }
+  applyResLevelUI(state.resLevel || 'board');
+  if (state.checks) { Object.keys(state.checks).forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = state.checks[id]; }); }
+  toggleDetail('confirmMinDetail', document.getElementById('chkConfirmMin') && document.getElementById('chkConfirmMin').checked);
+  toggleDetail('aobDetail', document.getElementById('chkAob') && document.getElementById('chkAob').checked);
+  (state.checkedItems || []).forEach(function (key) {
+    var chk = document.getElementById('chk_' + key);
+    if (chk) { chk.checked = true; onItemToggle(key); }
+  });
+
+  if (state.editMode && state.manualHtml) {
+    EDIT_MODE = true;
+    var doc = document.getElementById('previewContent');
+    doc.innerHTML = state.manualHtml;
+    doc.setAttribute('contenteditable', 'true');
+    document.getElementById('editToggleBtn').textContent = 'Editing…';
+    document.getElementById('editToggleBtn').classList.add('active');
+    document.getElementById('editBanner').classList.add('show');
+  } else {
+    renderPreview();
+  }
+  var status = document.getElementById('autosaveStatus');
+  if (status && state.savedAt) {
+    var d = new Date(state.savedAt);
+    status.textContent = 'Restored draft · saved ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  return true;
+}
+
+function clearSavedDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+/* ================= Sample data ================= */
+function loadSample() {
+  var samples = {
+    companyName: 'Sample Ventures Private Limited', cin: 'U74999DL2015PTC280001',
+    regOffice: '301, Tech Park, Baner Road, Pune, Maharashtra – 411045',
+    meetNo: '04/2025-26', meetDate: '2025-09-15', meetTime: '11:00',
+    meetVenue: 'Registered Office of the Company',
+    directorsPresent: 'Mr. Ramesh Kumar Sharma – Director, DIN 01234567\nMs. Anita Desai – Director, DIN 03344556',
+    inAttendance: 'Mr. K. Sample, Statutory Auditor (by invitation)',
+    leaveAbsence: '', chairman: 'Mr. Ramesh Kumar Sharma', prevMeetDate: '2025-06-10', meetEndTime: '12:15',
+    apName: 'Mr. Vikram Nair', apDin: '09876543', apEffFrom: '2025-09-15',
+    boBank: 'HDFC Bank Ltd.', boBranch: 'Baner Road, Pune', boType: 'Current Account',
+    boSignatories: 'Mr. Ramesh Kumar Sharma – Director\nMs. Anita Desai – Director', boMode: 'jointly by any two of them',
+    certName: 'Mr. Ramesh Kumar Sharma', certDinPan: '01234567', certDate: '2025-09-15', certPlace: 'Pune',
+    committeeType: 'Audit Committee', className: '8% Non-Cumulative Redeemable Preference Shares',
+    cfPeriod: 'quarter ended 30th June, 2025',
+    clsExistingRights: 'a preferential right to a fixed cumulative dividend of 8% per annum and priority in repayment of capital on winding up',
+    clsProposedVariation: 'a fixed cumulative dividend of 9% per annum, all other rights remaining unchanged',
+    noticeDate: '2025-08-25',
+    pbNoticeDate: '2025-08-20', pbLastDate: '2025-09-19', pbScrutinizer: 'Mr. A. K. Rao, Practising Company Secretary', pbResultDate: '2025-09-22', pbResultPlace: 'Pune',
+    crCircDate: '2025-09-10', crDirectorsEntitled: '3', crApproved: 'Mr. Ramesh Kumar Sharma – Director\nMs. Anita Desai – Director', crResponseBy: '2025-09-13', crPassedOn: '2025-09-13', crNotedAt: '2025-09-15',
+    opcActorName: 'Mr. Ramesh Kumar Sharma', opcDinPan: '01234567', opcResolutionDate: '2025-09-15', opcEntryDate: '2025-09-16',
+    votesFor: '9500', votesAgainst: '0'
+  };
+  /* Check the sample agenda items *first* — this injects their detail fieldsets into the DOM (see
+     ensureSectionInjected). Only once those fields exist can the sample values below (e.g. apName, boBank)
+     actually land on them; setting values before the fieldset exists silently drops them. */
+  var sampleItemsByLevel = {
+    board: ['add_director', 'bank_open'],
+    committee: ['committee_recommend_financials'],
+    general: ['adopt_financials', 'appoint_director_rotation'],
+    class: ['class_vary_rights'],
+    postal: ['reduction_capital'],
+    circular: ['bank_open'],
+    opc: ['bank_open']
+  };
+  var actorEl = document.getElementById('opcActorType');
+  if (RES_LEVEL === 'opc' && actorEl && actorEl.value === 'member') { sampleItemsByLevel.opc = ['adopt_financials']; }
+  (sampleItemsByLevel[RES_LEVEL] || []).forEach(function (key) {
+    var chk = document.getElementById('chk_' + key);
+    if (chk) { chk.checked = true; onItemToggle(key); }
+  });
+
+  Object.keys(samples).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = samples[id]; });
+  var qc = document.getElementById('chkQuorum'); if (qc) qc.checked = true;
+  var cm = document.getElementById('chkConfirmMin'); if (cm) cm.checked = true;
+  var thanks = document.getElementById('chkThanks'); if (thanks) thanks.checked = true;
+  toggleDetail('confirmMinDetail', true);
+
+  if (EDIT_MODE) exitEditMode();
+  renderPreview();
+  scheduleSave();
+}
+
+function clearForm() {
+  document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel input[type=date], #formPanel input[type=time], #formPanel textarea').forEach(function (el) { el.value = ''; });
+  document.querySelectorAll('#formPanel select').forEach(function (el) { el.selectedIndex = 0; });
+  document.querySelectorAll('#formPanel input[type=checkbox]').forEach(function (el) {
+    if (el.id === 'chkQuorum' || el.id === 'chkThanks' || el.id === 'chkConfirmMin') { el.checked = true; } else { el.checked = false; }
+  });
+  document.querySelectorAll('.cond-section[id^="sec_"]').forEach(function (el) { el.classList.remove('show'); });
+  toggleDetail('confirmMinDetail', true);
+  toggleDetail('aobDetail', false);
+  applyResLevelUI(RES_LEVEL); /* selects (committeeType/opcActorType/etc.) were just reset to their first option; rebuild the agenda checklist and labels to match */
+  if (EDIT_MODE) exitEditMode();
+  renderPreview();
+  clearSavedDraft();
+  var status = document.getElementById('autosaveStatus');
+  if (status) { status.classList.remove('saving'); status.textContent = 'Autosave on'; }
+}
+
+/* ================= Word export (with fallbacks for restrictive/embedded viewers) ================= */
+function buildWordHtml() {
+  var content = document.getElementById('previewContent').innerHTML;
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>Minutes of Meeting</title>' +
+    '<style>body{font-family:Georgia,\'Times New Roman\',serif;font-size:13pt;color:#20272c;} .co-name{font-size:15pt;font-weight:bold;text-align:center;} .co-meta{text-align:center;font-size:10.5pt;} .cert-title{text-align:center;font-size:10.5pt;} .item-title{font-weight:bold;margin:18px 0 8px;} .res-body p{text-align:justify;margin-bottom:10px;} .present-list{margin-left:20px;} .ph{color:#999;font-style:italic;} hr{border:none;border-top:2px solid #9c7a34;}</style>' +
+    '</head><body>' + content + '</body></html>';
+}
+function triggerDownload(blobOrUrl, filename, isDataUrl) {
+  var a = document.createElement('a');
+  a.href = blobOrUrl; a.download = filename; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  if (!isDataUrl) { setTimeout(function () { URL.revokeObjectURL(blobOrUrl); }, 4000); }
+}
+function downloadWord() {
+  var docHtml = buildWordHtml();
+  var FILE_TAG = { board: 'Board', committee: 'Committee', general: 'General', class: 'Class', postal: 'PostalBallot', circular: 'Circular', opc: 'OPC' };
+  var filename = 'Minutes_' + (FILE_TAG[RES_LEVEL] || 'Board') + '.doc';
+  try {
+    if (window.Blob && window.URL && window.URL.createObjectURL) {
+      var blob = new Blob(['﻿', docHtml], { type: 'application/msword' });
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) { window.navigator.msSaveOrOpenBlob(blob, filename); return; }
+      var url = URL.createObjectURL(blob);
+      triggerDownload(url, filename, false);
+      flashDownloadStatus('Word file downloading…');
+      return;
+    }
+  } catch (e) {}
+  try {
+    var dataUrl = 'data:application/msword;charset=utf-8,' + encodeURIComponent(docHtml);
+    triggerDownload(dataUrl, filename, true);
+    flashDownloadStatus('Word file downloading…');
+    return;
+  } catch (e) {}
+  try {
+    var win = window.open('', '_blank');
+    if (win) { win.document.open(); win.document.write(docHtml); win.document.close(); flashDownloadStatus('Opened in a new tab — use your browser’s Save/Print to keep it.'); return; }
+  } catch (e) {}
+  alert('This file appears to be inside an embedded preview that blocks downloads. Please open the saved HTML file directly in a browser tab (Chrome, Edge or Safari) and try again, or use the "Copy Text" button instead.');
+}
+
+/* ================= Print / PDF (with fallback) ================= */
+function safePrint() {
+  try { window.print(); }
+  catch (e) {
+    try {
+      var win = window.open('', '_blank');
+      win.document.open();
+      win.document.write('<html><head><title>Minutes of Meeting</title></head><body>' + document.getElementById('previewContent').innerHTML + '</body></html>');
+      win.document.close(); win.focus(); win.print();
+    } catch (e2) { alert('Printing is blocked in this view. Please open the saved HTML file directly in a browser tab and try again.'); }
+  }
+}
+
+/* ================= Copy as text (always-works fallback) ================= */
+function copyResolutionText() {
+  var text = document.getElementById('previewContent').innerText;
+  var done = function (ok) { flashDownloadStatus(ok ? 'Minutes text copied to clipboard.' : 'Could not copy — please select and copy the text manually.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallbackCopy(text, done); });
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, cb) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    cb(ok);
+  } catch (e) { cb(false); }
+}
+function flashDownloadStatus(msg) {
+  var status = document.getElementById('autosaveStatus');
+  if (!status) return;
+  var prev = status.textContent;
+  status.textContent = msg;
+  setTimeout(function () { status.textContent = prev; }, 3500);
+}
+
+/* ================= 3D tilt on the preview document ================= */
+function initTilt() {
+  var scroller = document.querySelector('.preview-scroll');
+  var doc = document.getElementById('previewContent');
+  if (!scroller || !doc) return;
+  var raf = null;
+  scroller.addEventListener('mousemove', function (e) {
+    if (EDIT_MODE) return;
+    var rect = doc.getBoundingClientRect();
+    var px = (e.clientX - rect.left) / rect.width;
+    var py = (e.clientY - rect.top) / rect.height;
+    var rx = (0.5 - py) * 4;
+    var ry = (px - 0.5) * 6;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function () { doc.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-2px)'; });
+  });
+  scroller.addEventListener('mouseleave', function () { if (!EDIT_MODE) doc.style.transform = ''; });
+}
+
+/* ================= Top-level tab switching ================= */
+function showTopTab(which) {
+  var gen = document.getElementById('appGenerator');
+  var guide = document.getElementById('appGuide');
+  var btnGen = document.getElementById('tabBtnGenerator');
+  var btnGuide = document.getElementById('tabBtnGuide');
+  if (which === 'guide') {
+    gen.classList.add('hide'); guide.classList.add('show');
+    btnGen.classList.remove('active'); btnGuide.classList.add('active');
+  } else {
+    gen.classList.remove('hide'); guide.classList.remove('show');
+    btnGen.classList.add('active'); btnGuide.classList.remove('active');
+  }
+}
+
+/* ================= Init ================= */
+function init() {
+  var fy = document.getElementById('footYear');
+  if (fy) fy.textContent = new Date().getFullYear();
+  applyResLevelUI(RES_LEVEL); /* reveals the level-specific fieldsets (now all cond-section) for the default 'board' level, and builds the checklist */
+  document.getElementById('formPanel').addEventListener('input', function () { renderPreview(); scheduleSave(); });
+  document.getElementById('formPanel').addEventListener('change', function () { renderPreview(); scheduleSave(); });
+  document.getElementById('previewContent').addEventListener('input', function () { if (EDIT_MODE) scheduleSave(); });
+
+  var restored = restoreState();
+  if (!restored) renderPreview();
+  initTilt();
+
+  window.addEventListener('beforeunload', function () { if (saveTimer) { clearTimeout(saveTimer); saveState(); } });
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body></html>

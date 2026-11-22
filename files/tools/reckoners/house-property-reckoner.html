@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>House Property | Income Tax Reckoner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --navy:#0B1D3A;
+  --gold:#C8A44E;
+  --cream:#FDF8EF;
+  --white:#FFFFFF;
+  --border:#E2D9C8;
+  --text-primary:#0B1D3A;
+  --text-secondary:#5C6B7A;
+  --amber:#B8681E;
+  --amber-bg:#FBEEDD;
+  --green:#2E6B47;
+  --green-bg:#E8F3EC;
+  --red:#A6403A;
+  --red-bg:#F7E7E5;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--cream);
+  color:var(--text-primary);
+  font-family:'DM Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:48px;
+}
+h1,h2,h3,h4{font-family:'DM Serif Display',serif;font-weight:400;margin:0 0 8px 0;color:var(--navy);}
+code,.mono,.ref-chip,.section-num{font-family:'IBM Plex Mono',monospace;}
+p{line-height:1.55;margin:0 0 10px 0;color:var(--text-primary);}
+.small{font-size:12.5px;color:var(--text-secondary);}
+
+/* Header */
+header{
+  background:var(--navy);
+  color:var(--cream);
+  padding:22px 18px 16px 18px;
+}
+.wordmark{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  letter-spacing:3px;
+  color:var(--gold);
+  margin-bottom:6px;
+}
+header h1{color:var(--white);font-size:24px;margin-bottom:4px;}
+header .subtitle{color:#C7CFDD;font-size:13.5px;margin-bottom:10px;}
+.ty-badge{
+  display:inline-block;
+  background:var(--gold);
+  color:var(--navy);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  font-weight:500;
+  padding:4px 10px;
+  border-radius:20px;
+}
+.scope-note{
+  margin-top:10px;
+  font-size:12px;
+  color:#C7CFDD;
+  border-left:3px solid var(--gold);
+  padding-left:10px;
+}
+
+/* Tabs */
+.tabbar{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:var(--navy);
+  display:flex;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  border-bottom:1px solid #1C2E52;
+  scrollbar-width:none;
+}
+.tabbar::-webkit-scrollbar{display:none;}
+.tab-btn{
+  flex:0 0 auto;
+  background:transparent;
+  border:none;
+  color:var(--gold);
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:700;
+  font-size:12.5px;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  padding:13px 16px;
+  cursor:pointer;
+  white-space:nowrap;
+  border-bottom:3px solid transparent;
+  min-height:44px;
+}
+.tab-btn.active{
+  color:var(--white);
+  border-bottom:3px solid var(--gold);
+}
+
+main{max-width:760px;margin:0 auto;padding:16px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+  margin-bottom:14px;
+}
+.card.accent{border-left:4px solid var(--gold);}
+.card.accent-navy{border-left:4px solid var(--navy);}
+.card.warn{border-left:4px solid var(--amber);background:var(--amber-bg);}
+.card.calc{border:1px solid var(--gold);}
+
+.intro-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-left:4px solid var(--gold);
+  border-radius:10px;
+  padding:16px;
+  margin-bottom:16px;
+}
+
+.grid-2{display:grid;grid-template-columns:1fr;gap:10px;}
+@media(min-width:600px){.grid-2{grid-template-columns:1fr 1fr;}}
+.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(min-width:600px){.grid-cards{grid-template-columns:repeat(4,1fr);}}
+
+.tile{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-top:4px solid var(--gold);
+  border-radius:8px;
+  padding:12px;
+  min-height:44px;
+}
+.tile h4{font-size:14px;margin-bottom:4px;}
+.tile .val{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--navy);font-weight:500;}
+.tile p{margin:0;}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0;}
+th,td{border:1px solid var(--border);padding:8px 9px;text-align:left;vertical-align:top;}
+th{background:var(--navy);color:var(--white);font-weight:500;font-size:12.5px;}
+tr:nth-child(even) td{background:#FBF6EC;}
+td.num,th.num{text-align:right;font-family:'IBM Plex Mono',monospace;}
+
+.ref-chip{
+  display:inline-block;
+  background:var(--navy);
+  color:var(--gold);
+  font-size:11.5px;
+  padding:3px 9px;
+  border-radius:5px;
+  margin:2px 4px 2px 0;
+  white-space:nowrap;
+}
+.ref-arrow{color:var(--text-secondary);}
+
+.step-list{list-style:none;margin:0;padding:0;counter-reset:step;}
+.step-list li{
+  counter-increment:step;
+  position:relative;
+  padding:8px 0 8px 34px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+.step-list li:last-child{border-bottom:none;}
+.step-list li::before{
+  content:counter(step);
+  position:absolute;left:0;top:8px;
+  width:24px;height:24px;
+  background:var(--navy);color:var(--gold);
+  border-radius:50%;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-list li b{display:block;color:var(--navy);}
+
+label{display:block;font-size:12.5px;color:var(--text-secondary);margin-bottom:4px;font-weight:500;}
+input[type=number],input[type=text],select{
+  width:100%;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  background:var(--white);
+  color:var(--text-primary);
+  min-height:44px;
+}
+input:disabled{background:#F3EFE4;color:#9AA4B8;}
+.field{margin-bottom:12px;}
+.field .hint{font-size:11.5px;color:var(--text-secondary);margin-top:4px;display:block;line-height:1.4;}
+
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+button.btn{
+  font-family:'DM Sans',sans-serif;
+  font-weight:600;
+  font-size:13.5px;
+  padding:11px 16px;
+  border-radius:7px;
+  cursor:pointer;
+  min-height:44px;
+  border:1px solid var(--navy);
+  background:var(--white);
+  color:var(--navy);
+}
+button.btn.primary{background:var(--navy);color:var(--white);}
+button.btn.ghost{background:transparent;color:var(--navy);}
+button.btn.small{padding:8px 12px;font-size:12.5px;min-height:38px;}
+
+.type-toggle{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.type-toggle button{
+  flex:1;
+  min-width:110px;
+  background:var(--white);
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+  padding:10px 8px;
+  border-radius:7px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  letter-spacing:0.03em;
+  text-transform:uppercase;
+  cursor:pointer;
+  font-weight:600;
+  min-height:44px;
+}
+.type-toggle button.active{
+  background:var(--navy);
+  color:var(--gold);
+  border-color:var(--navy);
+}
+
+.result-box{
+  margin-top:14px;
+  padding:14px;
+  border-radius:8px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  display:none;
+}
+.result-box.show{display:block;}
+.result-box .verdict{
+  font-family:'DM Serif Display',serif;
+  font-size:19px;
+  color:var(--navy);
+  margin-bottom:6px;
+}
+.result-box.pos{border-left:4px solid var(--green);}
+.result-box.pos .verdict{color:var(--green);}
+.result-box.neg{border-left:4px solid var(--red);}
+.result-box.neg .verdict{color:var(--red);}
+
+/* ledger rows inside result box / cards */
+.ledger{font-family:'IBM Plex Mono',monospace;font-size:13px;margin-top:6px;}
+.ledger .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);color:var(--text-secondary);}
+.ledger .row:last-child{border-bottom:none;}
+.ledger .row .amt{color:var(--navy);font-weight:500;}
+.ledger .row.total{border-top:1px solid var(--gold);margin-top:4px;padding-top:10px;font-size:14.5px;color:var(--navy);font-weight:600;}
+.ledger .row.total .amt{color:var(--gold);font-family:'DM Serif Display',serif;font-size:19px;font-weight:400;}
+.ledger .row.total .amt.loss{color:var(--red);}
+
+/* diagram flow, mobile-first vertical */
+.flow-list{display:flex;flex-direction:column;gap:0;}
+.flow-step{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-left:4px solid var(--navy);
+  border-radius:8px;
+  padding:12px 14px;
+  margin-bottom:0;
+  position:relative;
+}
+.flow-step.minus{border-left-color:var(--amber);}
+.flow-step.result{border-left-color:var(--gold);border-width:1px;border-left-width:4px;background:#FBF6EC;}
+.flow-step .k{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:var(--text-secondary);
+  display:block;
+  margin-bottom:4px;
+  font-weight:600;
+}
+.flow-step h4{font-size:15px;margin-bottom:4px;}
+.flow-step p{font-size:12.5px;color:var(--text-secondary);margin:0;}
+.flow-connector{
+  display:flex;
+  justify-content:center;
+  padding:4px 0;
+  color:var(--gold);
+  font-size:18px;
+  font-weight:700;
+}
+
+.example-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+.example-head span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-secondary);}
+
+ul.plain{margin:6px 0 10px 18px;padding:0;font-size:14px;line-height:1.6;}
+ul.plain li{margin-bottom:4px;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+/* Concept map (diagrammatic summary) */
+.concept-map{display:grid;grid-template-columns:1fr;gap:14px;margin-top:4px;}
+@media(min-width:640px){.concept-map{grid-template-columns:repeat(3,1fr);}}
+.branch{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+.branch-head{
+  background:var(--navy);
+  color:var(--gold);
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:700;
+  font-size:12px;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  padding:10px 12px;
+}
+.branch-body{padding:10px 12px 12px 12px;}
+.b-step{
+  border-left:3px solid var(--gold);
+  padding:6px 0 6px 10px;
+  margin-bottom:6px;
+  font-size:12.5px;
+  color:var(--text-secondary);
+}
+.b-step b{display:block;color:var(--navy);font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;}
+.b-arrow{text-align:center;color:var(--gold);font-size:14px;margin:0 0 4px 0;}
+.b-result{
+  margin-top:6px;
+  border-radius:7px;
+  padding:8px 10px;
+  font-size:12.5px;
+  font-weight:600;
+}
+.b-result.pos{background:var(--green-bg);color:var(--green);}
+.b-result.neg{background:var(--red-bg);color:var(--red);}
+.b-result.mix{background:var(--amber-bg);color:var(--amber);}
+
+/* Mapping table variants */
+.map-old{color:var(--text-secondary);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+.map-arrow{color:var(--gold);font-weight:700;}
+.map-new{color:var(--navy);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;}
+
+/* Regime chips + comparison table */
+.chip-old{display:inline-block;background:var(--amber-bg);color:var(--amber);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin:2px 6px 2px 0;white-space:nowrap;}
+.chip-new{display:inline-block;background:var(--green-bg);color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin:2px 6px 2px 0;white-space:nowrap;}
+table.regime-table th.old-col{background:var(--amber);color:var(--white);}
+table.regime-table th.new-col{background:var(--green);color:var(--white);}
+table.regime-table td.old-cell{background:var(--amber-bg);}
+table.regime-table td.new-cell{background:var(--green-bg);}
+table.regime-table tr.total-row td{font-weight:700;border-top:2px solid var(--gold);font-family:'IBM Plex Mono',monospace;color:var(--navy);}
+.loss-amt{color:var(--red)!important;}
+.regime-toggle-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;display:block;}
+.util-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+.util-card h4{font-size:14px;margin-bottom:8px;}
+.util-card .field{margin-bottom:8px;}
+.util-card .field label{font-size:11.5px;}
+.util-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+@media(min-width:640px){.util-grid{grid-template-columns:1fr 1fr;}}
+.checkbox-row{display:flex;align-items:center;gap:8px;min-height:44px;}
+.checkbox-row input[type=checkbox]{width:20px;height:20px;flex:0 0 auto;}
+.checkbox-row label{margin:0;font-size:12.5px;color:var(--text-primary);font-weight:500;}
+.best-row{background:#EAF6EE!important;}
+.best-row td{font-weight:600;color:var(--green);}
+select{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--white);color:var(--text-primary);min-height:44px;}
+.tip-category{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);background:var(--navy);padding:7px 13px;border-radius:6px;margin:20px 0 10px 0;display:inline-block;}
+.tip-category:first-of-type{margin-top:4px;}
+
+footer{
+  max-width:760px;
+  margin:24px auto 0 auto;
+  padding:16px;
+  text-align:center;
+  font-size:12px;
+  color:var(--text-secondary);
+  border-top:1px solid var(--border);
+}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">RECKONER</div>
+  <h1>Income from House Property</h1>
+  <div class="subtitle">Annual value, deductions, and computation for self-occupied, let-out and deemed let-out property</div>
+  <span class="ty-badge">Sections 22–27</span>
+  <div class="scope-note">Scope note: covers computation of income from house property under both tax regimes, and how far a resulting loss can be set off or carried forward under each — see the Loss Set-Off tab for the old-vs-new regime split.</div>
+</header>
+
+<div class="tabbar" id="tabbar">
+  <button class="tab-btn active" data-tab="concepts">Concepts</button>
+  <button class="tab-btn" data-tab="sections">Sections of Law</button>
+  <button class="tab-btn" data-tab="diagram">Computation Diagram</button>
+  <button class="tab-btn" data-tab="setoff">Loss Set-Off (ITR)</button>
+  <button class="tab-btn" data-tab="calculator">Calculator</button>
+  <button class="tab-btn" data-tab="sopopt">SOP Optimizer</button>
+  <button class="tab-btn" data-tab="preconbuilder">Pre-Construction Interest</button>
+  <button class="tab-btn" data-tab="coown">Co-Ownership Split</button>
+  <button class="tab-btn" data-tab="arrears">Arrears Recovered</button>
+  <button class="tab-btn" data-tab="example">Worked Example</button>
+  <button class="tab-btn" data-tab="taxtips">Tax Saving Tips</button>
+  <button class="tab-btn" data-tab="mapping">Old → New Sections</button>
+</div>
+
+<main>
+
+<!-- ===================== CONCEPTS ===================== -->
+<div class="tab-panel active" id="tab-concepts">
+  <div class="intro-card">
+    <h2>What counts, and who it's taxed on</h2>
+    <p>House property income is charged not on rent alone, but on the property's <b>annual value</b> — a notional figure the law constructs even when a property earns no rent at all.</p>
+  </div>
+
+  <div class="card accent-navy">
+    <h3>Three things every computation needs</h3>
+    <ol class="step-list">
+      <li><b>Establish ownership</b>The legal or deemed owner is taxed — not the occupant, and not whoever collects the rent unless they are also the owner.</li>
+      <li><b>Classify the property</b>Self-occupied (up to two), let-out, or deemed let-out (third property onward) — each follows a different annual value rule.</li>
+      <li><b>Apply the deductions</b>A flat 30% standard deduction, and interest on borrowed capital — capped at ₹2,00,000 only where the property is self-occupied.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>Scope — who's taxed, and what "rent" actually covers</h3>
+    <p>Only the <b>owner</b> (or deemed owner) is taxed under this head, and only for a <b>building or land appurtenant to it</b> — vacant land on its own falls outside this head entirely. Rent collected by anyone else on the property never falls under "Income from house property" — most commonly, a <b>tenant's sub-letting income</b> is taxed as Other Sources or business income instead, never under this head, since the sub-lessor isn't the owner.</p>
+    <p style="margin:0;"><b>Composite rent</b> — where the owner charges one combined amount for the building plus other assets (furniture) or services (lift, security, water) — has to be split. If the building and the other component are let <b>inseparably</b> (an equipped theatre, a serviced office), the <b>entire</b> receipt falls outside this head altogether — it's Business Income or Other Sources, not House Property. If they're <b>separable</b> (a bungalow let along with a refrigerator), the rent is apportioned: the building's share stays under this head, the rest goes to Business Income/Other Sources — even if the owner actually billed it as one figure.</p>
+  </div>
+
+  <div class="card">
+    <h3>A short list of income that's exempt from this head altogether</h3>
+    <p class="small" style="margin-bottom:8px;">Beyond the computation rules, a handful of specific categories are carved out entirely — house property income that never enters the computation at all:</p>
+    <ul class="plain">
+      <li><b>Farm buildings</b> on or near agricultural land <span class="ref-chip">Sec 2(5)</span> (old Sec 2(1A)) — treated as agricultural income and exempt.</li>
+      <li><b>Trust property</b> <span class="ref-chip">Sec 332–350 &amp; Sch XVI</span> (old Sec 11) — income applied for charitable or religious purposes; the new Act gives charitable/religious trust taxation a dedicated block of sections plus a schedule, rather than the single old Sec 11.</li>
+      <li><b>One palace</b> of a former ruler <span class="ref-chip">Sch III (39)</span> (old Sec 10(19A)), and property income of <b>local authorities</b> <span class="ref-chip">Sch III (22)</span> (old Sec 10(20)).</li>
+      <li><b>Qualifying educational or medical institutions</b> <span class="ref-chip">Sch VII</span> (old Sec 10(23C)), and a <b>registered trade union's</b> property income <span class="ref-chip">Sch III (31)</span> (old Sec 10(24)).</li>
+    </ul>
+    <p class="small" style="margin:8px 0 0 0;">These sit outside the main computation chain covered in the rest of this tool and mostly apply to specific institutional assessees rather than an individual taxpayer's own residence or investment property.</p>
+  </div>
+
+  <div class="card">
+    <h3>Property categories</h3>
+    <div class="grid-cards">
+      <div class="tile">
+        <h4>Self-Occupied</h4>
+        <p class="small">Annual value is Nil. Up to two properties qualify.</p>
+      </div>
+      <div class="tile">
+        <h4>Let-Out</h4>
+        <p class="small">Taxed on higher of expected and actual rent.</p>
+      </div>
+      <div class="tile">
+        <h4>Deemed Let-Out</h4>
+        <p class="small">Third+ self-occupied property, taxed on notional rent.</p>
+      </div>
+      <div class="tile">
+        <h4>Vacant Property</h4>
+        <p class="small">Genuine vacancy can pull GAV down to actual rent.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card accent">
+    <h3>Standard deduction — flat 30%, no receipts</h3>
+    <p style="margin:0;">Allowed on Net Annual Value for repairs and collection charges, irrespective of what was actually spent, and without needing proof of expenditure.</p>
+  </div>
+
+  <div class="card warn">
+    <h3>Interest relief — the self-occupied cap, and why it depends on regime</h3>
+    <p>Interest on a housing loan is deductible in full for let-out property in <b>both</b> regimes. For a self-occupied property, the treatment is regime-dependent, not just capped:</p>
+    <p style="margin:0;"><span class="chip-old">Old Regime</span> Capped at <b>₹2,00,000</b> under Sec 22(1)(b) (old Sec 24(b)) — any interest above that gives no tax benefit in the year it is paid.</p>
+    <p style="margin:6px 0 0 0;"><span class="chip-new">New Regime</span> Interest deduction on a self-occupied property is <b>not available at all</b> — not ₹2,00,000, not any amount. A self-occupied property always returns Nil income in the new regime; it can never generate a loss.</p>
+  </div>
+
+  <div class="card accent-navy">
+    <h3>Old Regime vs New Regime — the three things that change</h3>
+    <p class="small" style="margin-bottom:10px;">The new tax regime (Sec 202, default from Tax Year 2026-27) is the default unless you actively opt for the old regime. It changes house property computation and loss usage in three specific ways.</p>
+    <table class="regime-table">
+      <tr><th>What</th><th class="old-col">Old Regime</th><th class="new-col">New Regime</th></tr>
+      <tr><td>Self-occupied interest, Sec 22(1)(b) (old Sec 24(b))</td><td class="old-cell">Deductible, capped ₹2,00,000</td><td class="new-cell">Not deductible — Nil</td></tr>
+      <tr><td>Let-out / deemed let-out interest</td><td class="old-cell">Fully deductible, no cap</td><td class="new-cell">Fully deductible, no cap</td></tr>
+      <tr><td>Loss set off within HP head (same property type or across properties, same year)</td><td class="old-cell">Allowed, no cap</td><td class="new-cell">Allowed, no cap</td></tr>
+      <tr><td>Loss set off against <b>other heads</b> (salary, business, etc.)</td><td class="old-cell">Allowed, capped ₹2,00,000/year</td><td class="new-cell"><b>Not allowed</b> — Nil</td></tr>
+      <tr><td>Carry forward of unabsorbed loss</td><td class="old-cell">Allowed, up to 8 tax years</td><td class="new-cell"><b>Not allowed</b> — lapses at year end</td></tr>
+    </table>
+    <p class="small" style="margin-top:8px;margin-bottom:0;">Practical effect: a leveraged self-occupied property gives zero tax relief under the new regime, and any loss a let-out property does generate is usable only within the same tax year against other house property income — it cannot shelter salary or business income, and nothing survives into next year.</p>
+  </div>
+
+  <div class="card accent">
+    <h3>Pre-construction interest — deducted later, in 5 equal instalments</h3>
+    <p>Interest that accrues <b>before</b> a property is completed or acquired isn't lost — it's banked and released later, but only for loans taken to <b>purchase or construct</b> a property. It does not apply to a loan for repairs, renewal, or reconstruction.</p>
+    <ol class="step-list">
+      <li><b>Pre-construction period</b>Runs from the date the loan is borrowed to the end of the financial year immediately before the year construction is completed (or the property is acquired) — or the date the loan is repaid, if that comes first.</li>
+      <li><b>No deduction during this period</b>Interest accruing in these years cannot be claimed as it arises; it is simply totalled up and held.</li>
+      <li><b>Released in 5 equal annual instalments</b>Starting from the year construction is completed / possession is taken, one-fifth of the accumulated pre-construction interest is added to that year's regular interest deduction — every year for 5 years.</li>
+    </ol>
+    <p class="small" style="margin:8px 0 0 0;">This add-on still has to fit inside whatever cap otherwise applies to the property — see below for self-occupied, and it's uncapped for let-out/deemed let-out in both regimes.</p>
+  </div>
+
+  <div class="card accent">
+    <h3>Interest is deductible on accrual basis — payable, not necessarily paid</h3>
+    <p>Sec 22(1)(b)/24(b) uses the word "payable," and that's deliberate: the deduction is available for interest that has <b>accrued</b> for the year, whether or not it's actually been remitted to the lender — a certificate from the lender showing interest payable is enough. This isn't a special concession for any one category of borrower; it applies across self-occupied, let-out, and deemed let-out property alike.</p>
+    <p style="margin:0;">Two things it does <b>not</b> stretch to cover: interest on a fresh loan taken purely to <b>repay/refinance</b> the original housing loan is still deductible, but <b>ancillary charges</b> — processing fees, brokerage, commission, and any penal interest on a missed instalment — are not treated as "interest" for this deduction at all.</p>
+  </div>
+
+  <div class="card warn">
+    <h3>The self-occupied cap isn't always ₹2,00,000 — sometimes it's ₹30,000</h3>
+    <p>Under the <b>old regime</b>, the ₹2,00,000 ceiling on self-occupied interest under Sec 22(1)(b) (old Sec 24(b)) — current year's interest plus any pre-construction instalment together — only applies if <b>both</b> conditions below are met. Otherwise the cap drops to <b>₹30,000</b>:</p>
+    <div class="grid-2">
+      <div class="tile">
+        <h4>₹2,00,000 cap applies</h4>
+        <p class="small" style="margin:0;">Loan taken for <b>purchase or construction</b>, AND the purchase/construction is completed within <b>5 years</b> from the end of the financial year in which the loan was taken.</p>
+      </div>
+      <div class="tile">
+        <h4>₹30,000 cap applies instead</h4>
+        <p class="small" style="margin:0;">Loan taken for <b>repair, renewal, or reconstruction</b> — always ₹30,000, regardless of timeline. Or a purchase/construction loan where completion takes <b>longer than 5 years</b>.</p>
+      </div>
+    </div>
+    <p style="margin:10px 0 0 0;"><span class="chip-new">New Regime</span> None of this matters under the new regime — self-occupied interest is Nil either way, whatever the loan purpose or completion timeline. The ₹2,00,000 / ₹30,000 distinction is an old-regime concept only.</p>
+    <p class="small" style="margin:8px 0 0 0;">For let-out and deemed let-out property, there is no ₹30,000/₹2,00,000 distinction at all — interest for any of these purposes (purchase, construction, repair, renewal, reconstruction), including the pre-construction instalment, is fully deductible with no cap, in both regimes.</p>
+  </div>
+
+  <div class="card">
+    <h3>Unrealised rent — two different rules, don't confuse them</h3>
+    <p><span class="ref-chip">At GAV stage</span> If the tenant simply hasn't paid the rent for the current year, that unrealised amount is deducted from actual rent <b>before</b> comparing it with Expected Rent to arrive at GAV — but only if all four conditions hold: the tenancy is bona fide, the defaulting tenant has vacated (or steps have been taken to make him), he isn't occupying any other property of the owner's, and the owner has taken all steps to recover the amount, including legal proceedings, or can satisfy the AO that proceedings would be futile.</p>
+    <p style="margin:0;"><span class="ref-chip">Sec 23</span> (old Sec 25A) — the arrears/unrealised-rent provision; not to be confused with old Sec 23 itself (the general annual-value provision, which maps to new Sec 21). If that same unrealised rent — or arrears of rent from an earlier year — is <b>later recovered</b>, it's taxed in the year of receipt, after a flat <b>30%</b> deduction, whether or not the assessee still owns the property that year. This is a separate, later-year event from the GAV-stage adjustment above; the two should never be netted against each other.</p>
+  </div>
+
+  <div class="card accent">
+    <h3>Deemed owner — the fuller list</h3>
+    <p class="small" style="margin-bottom:8px;">Beyond the spouse/minor-child transfer and co-op society allottee already covered, two more routes create deemed ownership — full detail in the Sections of Law tab:</p>
+    <div class="grid-2">
+      <div class="tile">
+        <h4>Impartible estate holder</h4>
+        <p class="small" style="margin:0;">Deemed owner of the property comprised in the estate — an indivisible holding such as terrace rights is the classic example.</p>
+      </div>
+      <div class="tile">
+        <h4>Possession under TPA Sec 53A</h4>
+        <p class="small" style="margin:0;">A written agreement, consideration paid or willing to be paid, and possession taken — deemed owner even without a registered sale deed.</p>
+      </div>
+    </div>
+    <p class="small" style="margin:10px 0 0 0;">And the spouse/minor-child transfer carries two carve-outs worth remembering: it does <b>not</b> apply to a transfer to a spouse under an agreement to live apart, or to a <b>married</b> daughter — either exception takes the transferor out of Sec 25(a)/27(i) entirely.</p>
+  </div>
+
+  <div class="card">
+    <h3>Stock-in-trade property — Nil value while unsold, but only for 2 years</h3>
+    <p style="margin:0;">A property (or part) that a builder/developer holds as <b>stock-in-trade</b> and hasn't let out gets a Nil annual value — but this concession runs out <b>2 years</b> from the end of the financial year in which the completion certificate was obtained. Once that window closes, an unsold, unlet unit reverts to the ordinary rules — typically taxed as deemed let-out like any other unrented property the builder owns.</p>
+  </div>
+
+  <div class="card">
+    <h3>Split scenarios — part-year letting, and split-unit properties</h3>
+    <p><b>Let out for part of the year, self-occupied for the rest:</b> the property is still treated as let-out for the <b>whole</b> year when computing GAV — Expected Rent is taken for all 12 months — but actual rent is counted only for the months it was actually let. This does <b>not</b> automatically bring in vacancy relief: GAV for that year is still the higher of prorated Expected Rent and actual rent received, the same comparison as any let-out property. Vacancy relief (GAV = actual rent, even if lower than Expected Rent) is a distinct, narrower rule that applies only where the property was held out to let throughout but a genuine vacancy — not finding a tenant — pulled actual rent below Expected Rent for that reason specifically.</p>
+    <p style="margin:0;"><b>One property, two units, different uses:</b> where a house is physically split — one unit self-occupied, the other let out or used for another purpose — the two units are treated as <b>two independent properties</b>, each computed under its own category rather than as a single blended figure.</p>
+  </div>
+
+  <div class="card">
+    <h3>Diagrammatic summary — all three routes at a glance</h3>
+    <p class="small" style="margin-bottom:10px;">Every property falls into one of these three branches. Follow a branch top to bottom to see how it resolves.</p>
+    <div class="concept-map">
+      <div class="branch">
+        <div class="branch-head">Self-Occupied (≤2 homes)</div>
+        <div class="branch-body">
+          <div class="b-step"><b>Gross Annual Value</b>Deemed Nil — no notional rent charged</div>
+          <div class="b-arrow">↓</div>
+          <div class="b-step"><b>Standard deduction — Sec 22(1)(a) (old 24(a))</b>Not applicable — NAV is nil</div>
+          <div class="b-arrow">↓</div>
+          <div class="b-step"><b>Interest — Sec 22(1)(b) (old 24(b))</b><span class="chip-old">Old</span> Capped at ₹2,00,000/year<br><span class="chip-new">New</span> Not available — Nil</div>
+          <div class="b-result neg">Old regime: Nil income, or a loss up to −₹2,00,000. New regime: always Nil.</div>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="branch-head">Let-Out Property</div>
+        <div class="branch-body">
+          <div class="b-step"><b>Gross Annual Value</b>Higher of Expected Rent &amp; Actual Rent (vacancy-adjusted)</div>
+          <div class="b-arrow">↓</div>
+          <div class="b-step"><b>Less municipal tax</b>→ Net Annual Value</div>
+          <div class="b-arrow">↓</div>
+          <div class="b-step"><b>Less Sec 22(1)(a)+(b) (old 24(a)+(b))</b>30% flat + interest, no cap — same in both regimes</div>
+          <div class="b-result mix">Result: Taxable income, or an uncapped loss. Loss usage still differs by regime — see Loss Set-Off tab.</div>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="branch-head">Deemed Let-Out (3rd+ home)</div>
+        <div class="branch-body">
+          <div class="b-step"><b>Gross Annual Value</b>Expected Rent only — no actual rent involved</div>
+          <div class="b-arrow">↓</div>
+          <div class="b-step"><b>Less municipal tax</b>→ Net Annual Value</div>
+          <div class="b-arrow">↓</div>
+          <div class="b-step"><b>Less Sec 22(1)(a)+(b) (old 24(a)+(b))</b>30% flat + interest, no cap</div>
+          <div class="b-result mix">Result: Notional income taxed even if unrented</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SECTIONS OF LAW ===================== -->
+<div class="tab-panel" id="tab-sections">
+  <div class="intro-card">
+    <h2>Sec 20 through 25 (2025 Act) — with the old-Act numbers you'll still use for filings up to Tax Year 2025-26</h2>
+    <p>Each section governs one link in the computation chain — from establishing the charge to defining who is treated as an owner even without a registered title. Headings below lead with the 2025 Act number since that's what applies from Tax Year 2026-27 onward; the old Sec 22–27 numbering in brackets is what you'll still see on any return for FY 2025-26 (AY 2026-27) or earlier.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="ref-chip">Sec 20</span> (old Sec 22) Basis of Charge</h3>
+    <p style="margin:0;">Charges the annual value of any building or land appurtenant to it, owned by the assessee — unless it is used for the assessee's own business or profession, in which case it falls outside this head entirely.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="ref-chip">Sec 21</span> (old Sec 23) Annual Value</h3>
+    <p style="margin:0;">Defines Gross Annual Value as the higher of expected rent (municipal value or fair rent, capped by standard rent) and actual rent received, with relief for genuine vacancy. Prescribes Nil value for up to two self-occupied properties.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="ref-chip">Sec 22</span> (old Sec 24) Deductions</h3>
+    <p style="margin:0;">Allows two deductions from Net Annual Value: a flat 30% standard deduction under Sec 22(1)(a) (old Sec 24(a)), and interest on borrowed capital under Sec 22(1)(b) (old Sec 24(b)) — capped at ₹2,00,000 for self-occupied property under the old regime. <span class="ref-chip">Sec 202</span> (old Sec 115BAC) withdraws the self-occupied interest deduction entirely under the new regime, and separately blocks inter-head set-off and carry-forward of any house property loss — see the Loss Set-Off tab.</p>
+  </div>
+
+  <div class="card">
+    <h3>Old Sec 25 — Amounts Not Deductible <span class="small">(absorbed into new Sec 22, not a standalone new section)</span></h3>
+    <p style="margin:0;">Disallows interest payable outside India unless tax has been deducted at source on it, or a person in India has been appointed to account for the tax.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="ref-chip">Sec 23</span> (old Sec 25A) Arrears of Rent &amp; Unrealised Rent Received Subsequently</h3>
+    <p style="margin:0;">Where arrears of rent, or previously-unrealised rent, are received in a later tax year, the amount is charged to tax in the year of receipt — after a flat 30% deduction, and <b>regardless of whether the assessee still owns the property</b> in that year. This is a distinct mechanism from the vacancy/unrealised-rent adjustment made <i>while computing GAV</i> in the year the rent falls due — see the Concepts tab for how the two differ.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="ref-chip">Sec 24</span> (old Sec 26) Co-owned Property</h3>
+    <p style="margin:0;">Where a property has definite, ascertainable co-owner shares, each co-owner's share of income is computed separately rather than taxing the property as one unit.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="ref-chip">Sec 25</span> (old Sec 27) Deemed Owner</h3>
+    <p>Extends "owner" beyond the registered title-holder to cover:</p>
+    <ul class="plain">
+      <li>A transferor who transfers a property to a spouse (other than under an agreement to live apart) or to a minor child (other than a married daughter) without adequate consideration.</li>
+      <li>The holder of an <b>impartible estate</b>, for the property comprised in it — an indivisible holding such as terrace rights is the classic example.</li>
+      <li>A member of a co-operative society, company, or other AOP to whom a building (or part of one) is allotted or leased under a house-building scheme.</li>
+      <li>A person in possession of a property under <b>Sec 53A of the Transfer of Property Act, 1882</b> — a written agreement, consideration paid or the purchaser willing to pay it, and possession taken in pursuance of the agreement — even where no registered conveyance exists.</li>
+      <li>A lessee under a lease of <b>not less than 12 years</b> (whether originally fixed or extendable to that length). A month-to-month tenancy, or any lease of 1 year or less, does not attract this provision.</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ===================== COMPUTATION DIAGRAM ===================== -->
+<div class="tab-panel" id="tab-diagram">
+  <div class="intro-card">
+    <h2>From Gross Annual Value to taxable income</h2>
+    <p>Every computation — self-occupied, let-out, or deemed let-out — follows this same chain. Only the inputs at each stage change.</p>
+  </div>
+
+  <div class="card">
+    <h3>The four-stage chain</h3>
+    <div class="flow-list">
+      <div class="flow-step">
+        <span class="k">Stage 1</span>
+        <h4>Gross Annual Value</h4>
+        <p>Higher of Expected Rent and Actual Rent Received, adjusted for vacancy. Nil for self-occupied property.</p>
+      </div>
+      <div class="flow-connector">↓</div>
+      <div class="flow-step minus">
+        <span class="k">Stage 2 — Less</span>
+        <h4>Municipal Taxes</h4>
+        <p>Taxes actually paid by the owner to the local authority during the year — only if borne by the owner, not the tenant.</p>
+      </div>
+      <div class="flow-connector">↓</div>
+      <div class="flow-step">
+        <span class="k">= Net Annual Value</span>
+        <h4>NAV</h4>
+        <p>The base figure that both deductions under Section 24 are calculated on.</p>
+      </div>
+      <div class="flow-connector">↓</div>
+      <div class="flow-step minus">
+        <span class="k">Stage 3 — Less</span>
+        <h4>Sec 22(1)(a)+(b) (old 24(a)+(b))</h4>
+        <p>30% standard deduction, plus interest on borrowed capital — uncapped for let-out/deemed let-out in <b>both</b> regimes. For self-occupied: <span class="chip-old">Old</span> capped ₹2,00,000 <span class="chip-new">New</span> Nil, not available.</p>
+      </div>
+      <div class="flow-connector">↓</div>
+      <div class="flow-step result">
+        <span class="k">Result</span>
+        <h4>Income from House Property</h4>
+        <p>Taxed at slab rate. A negative figure is a loss — how far it can be used depends heavily on regime: see the Loss Set-Off tab for the old-vs-new split.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card accent">
+    <h3>Expanding Stage 1 — how Expected Rent is set</h3>
+    <p><span class="ref-chip">Step A</span> Higher of Municipal Value &amp; Fair Rent</p>
+    <p><span class="ref-chip">Step B</span> Capped at Standard Rent, if notified</p>
+    <p><span class="ref-chip">Step C</span> Compared against Actual Rent Received</p>
+    <p style="margin:0;"><span class="ref-chip">Step D</span> Vacancy override: if a genuine vacancy pulls actual rent below expected rent, GAV = actual rent</p>
+  </div>
+</div>
+
+<!-- ===================== LOSS SET-OFF IN ITR ===================== -->
+<div class="tab-panel" id="tab-setoff">
+  <div class="intro-card">
+    <h2>How much house property loss can you set off in your ITR?</h2>
+    <p>A house property loss moves through up to three stages — intra-head, inter-head, then carry forward. Under the <b>old regime</b> all three are open, subject to the ₹2,00,000 inter-head cap. Under the <b>new regime</b> (the default), only the first stage is open — the loss cannot cross into other heads, and nothing survives to next year.</p>
+  </div>
+
+  <div class="card accent-navy">
+    <h3>The three stages, and which regime keeps each one open</h3>
+    <ol class="step-list">
+      <li><b>Intra-head set-off <span class="ref-chip">Sec 108</span> (old Sec 70)</b> — loss from one property is first set off against income from another house property you own, in the same year — no cap, open under <b>both</b> regimes since this is basic computation of the head figure, not a set-off Sec 115BAC/Sec 202 touches.</li>
+      <li><b>Inter-head set-off <span class="ref-chip">Sec 109</span> (old Sec 71(3A)) <span class="chip-old">Old only</span></b> — if the head still shows a net loss, it can be set off against salary, business, or other-source income — capped at <b>₹2,00,000</b> per year, and available <b>only under the old regime</b>. <b>Not available under the new regime</b> — the loss cannot touch any other head, not even up to ₹2,00,000.</li>
+      <li><b>Carry forward <span class="ref-chip">Sec 110</span> (old Sec 71B) <span class="chip-old">Old only</span></b> — whatever remains unabsorbed after stages 1–2 carries forward for up to <b>8 tax years</b>, settable only against future house property income — but this route too is <b>old-regime only</b>. <b>Under the new regime, any house property loss left after intra-head adjustment simply lapses at year end — it cannot be carried forward at all.</b> This applies equally to a loss arising in the current year and to a loss already brought forward from an earlier year: the restriction is keyed to the regime chosen for the year the set-off is attempted, not to when the loss originally arose. A pre-1 April 2026 loss still carried forward under the Sec 536(2)(m)/(n) transitional rule can likewise only be set off in a tax year where the old regime is elected — see the Old → New Sections tab.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>Old Regime vs New Regime — loss set-off at a glance</h3>
+    <table class="regime-table">
+      <tr><th>Stage</th><th class="old-col">Old Regime</th><th class="new-col">New Regime</th></tr>
+      <tr><td>Intra-head (against other HP income, same year)</td><td class="old-cell">Allowed, no cap</td><td class="new-cell">Allowed, no cap</td></tr>
+      <tr><td>Inter-head (against salary/business/other income, same year)</td><td class="old-cell">Allowed, capped ₹2,00,000/year</td><td class="new-cell"><b>Not allowed</b></td></tr>
+      <tr><td>Carry forward to future tax years</td><td class="old-cell">Allowed, up to 8 tax years</td><td class="new-cell"><b>Not allowed — loss lapses</b></td></tr>
+    </table>
+  </div>
+
+  <div class="card warn">
+    <h3>New tax regime: only the intra-head route survives</h3>
+    <p style="margin:0;">Under the new tax regime (default from Tax Year 2026-27), house property loss <b>cannot</b> be set off against any other head of income — not even up to ₹2,00,000 — and <b>cannot be carried forward</b> to a future tax year. The only relief available in the year the loss arises is netting it against income from another house property. Any balance beyond that gives no further tax benefit and simply disappears at year end.</p>
+  </div>
+
+  <div class="card">
+    <h3>Worked mini-example — same loss, two regimes</h3>
+    <table>
+      <tr><th>Item</th><th class="num">Amount</th></tr>
+      <tr><td>Interest paid on home loan (let-out property)</td><td class="num">₹4,00,000</td></tr>
+      <tr><td>Rent received (net of standard deduction, tax)</td><td class="num">₹1,00,000</td></tr>
+      <tr><td>Net loss from house property</td><td class="num">− ₹3,00,000</td></tr>
+    </table>
+    <div class="divider"></div>
+    <p style="margin:0 0 4px 0;"><span class="chip-old">Old Regime</span></p>
+    <div class="ledger">
+      <div class="row"><span>Set off against salary income this year, capped</span><span class="amt">− ₹2,00,000</span></div>
+      <div class="row total"><span>Balance carried forward (against future HP income, 8 years)</span><span class="amt loss">₹1,00,000</span></div>
+    </div>
+    <div class="divider"></div>
+    <p style="margin:0 0 4px 0;"><span class="chip-new">New Regime</span></p>
+    <div class="ledger">
+      <div class="row"><span>Set off against salary income this year</span><span class="amt">₹0 (not allowed)</span></div>
+      <div class="row total"><span>Balance carried forward to next year</span><span class="amt loss">₹0 (lapses — not allowed)</span></div>
+    </div>
+    <p class="small" style="margin-top:8px;margin-bottom:0;">The full ₹3,00,000 gives no tax benefit at all this year under the new regime unless there is other house property income to net it against — and none of it survives into next year either way.</p>
+  </div>
+
+  <div class="card accent">
+    <p style="margin:0;" class="small">Filing note: under the old regime, house property loss carry-forward is one of the few loss categories that survives even a belated return — but claiming it correctly still depends on reporting the loss in the ITR for the year it arises. Under the new regime this question doesn't arise, since there is nothing left to carry forward.</p>
+  </div>
+</div>
+
+<!-- ===================== CALCULATOR ===================== -->
+<div class="tab-panel" id="tab-calculator">
+  <div class="intro-card">
+    <h2>Income from House Property calculator</h2>
+    <p>Choose the property category and enter the figures — the ledger computes both regimes side by side, using the same four-stage computation shown in the diagram, and tells you which one is more beneficial for these numbers.</p>
+  </div>
+
+  <div class="card calc">
+    <h3>Property type</h3>
+    <div class="type-toggle" id="typeToggle">
+      <button data-type="self" class="active">Self-Occupied</button>
+      <button data-type="let">Let-Out</button>
+      <button data-type="deemed">Deemed Let-Out</button>
+    </div>
+
+    <div id="rentFields">
+      <div class="field">
+        <label>Municipal Value (annual, ₹)</label>
+        <input type="number" id="municipalValue" value="240000" min="0">
+      </div>
+      <div class="field">
+        <label>Fair Rent (annual, ₹)</label>
+        <input type="number" id="fairRent" value="264000" min="0">
+      </div>
+      <div class="field">
+        <label>Standard Rent (annual, ₹) — leave 0 if not notified</label>
+        <input type="number" id="standardRent" value="252000" min="0">
+      </div>
+      <div class="field" id="actualRentField">
+        <label>Actual Rent Received / Receivable (annual, ₹)</label>
+        <input type="number" id="actualRent" value="216000" min="0">
+        <span class="hint">Enter the rent for the period the property was actually let, not a pro-rated full-year figure. If any of it is unrealised rent that qualifies for deduction (see Concepts tab), enter the figure net of that amount.</span>
+      </div>
+      <div class="field" id="vacancyField">
+        <label>Months Vacant (during the year)</label>
+        <input type="number" id="vacancyMonths" value="1" min="0" max="12">
+        <span class="hint">Used only to check whether the vacancy provision lowers Gross Annual Value below Expected Rent.</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Municipal Taxes Paid by Owner (₹)</label>
+      <input type="number" id="municipalTax" value="12000" min="0">
+    </div>
+    <div class="field">
+      <label>Interest on Housing Loan for the Year (₹)</label>
+      <input type="number" id="interest" value="180000" min="0">
+      <span class="hint" id="interestHint">Self-occupied property: capped at ₹2,00,000 under Sec 22(1)(b) (old Sec 24(b)).</span>
+      <span class="hint">Enter this year's regular interest only. If any pre-construction interest instalment falls due this year, add it in separately — see the Concepts tab for how the 5-instalment release and the ₹2,00,000/₹30,000 cap work.</span>
+      <span class="hint">This is interest payable for the year (accrual basis) — it doesn't have to have actually been remitted to the lender yet. Exclude processing fees, brokerage, commission, and any penal interest; none of those count as interest for this deduction.</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary small" onclick="calculate()">Recalculate</button>
+      <button class="btn ghost small" onclick="calcSample()">Load sample</button>
+      <button class="btn ghost small" onclick="calcClear()">Clear</button>
+    </div>
+
+    <div class="card" style="margin-top:14px;overflow-x:auto;">
+      <table class="regime-table">
+        <thead>
+          <tr><th>Component</th><th class="old-col num">Old Regime</th><th class="new-col num">New Regime</th></tr>
+        </thead>
+        <tbody id="comboRows"></tbody>
+      </table>
+    </div>
+
+    <div class="card accent-navy" style="margin-top:14px;margin-bottom:0;">
+      <h3 style="font-size:15px;">Which is more beneficial?</h3>
+      <p id="verdictNote" style="margin:0;"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SOP OPTIMIZER ===================== -->
+<div class="tab-panel" id="tab-sopopt">
+  <div class="intro-card">
+    <h2>Which two properties should be self-occupied?</h2>
+    <p>Enter up to four properties you own but haven't let out. The tool checks every valid combination of nominating up to two as self-occupied — the rest fall to deemed let-out — and finds the combination that gives the lowest total house property income, separately for each regime. "Highest notional value" is usually right, but a very high-interest property can sometimes do better left as deemed let-out, since that interest is uncapped there.</p>
+  </div>
+
+  <div class="card calc">
+    <div class="util-grid">
+      <div class="util-card">
+        <h4>Property 1</h4>
+        <div class="field"><label>Municipal Value (₹)</label><input type="number" id="sop1_mv" value="240000" min="0"></div>
+        <div class="field"><label>Fair Rent (₹)</label><input type="number" id="sop1_fr" value="264000" min="0"></div>
+        <div class="field"><label>Standard Rent (₹, 0 if N/A)</label><input type="number" id="sop1_sr" value="252000" min="0"></div>
+        <div class="field"><label>Municipal Tax Paid (₹)</label><input type="number" id="sop1_tax" value="12000" min="0"></div>
+        <div class="field"><label>Interest for the Year (₹)</label><input type="number" id="sop1_int" value="220000" min="0"></div>
+      </div>
+      <div class="util-card">
+        <h4>Property 2</h4>
+        <div class="field"><label>Municipal Value (₹)</label><input type="number" id="sop2_mv" value="180000" min="0"></div>
+        <div class="field"><label>Fair Rent (₹)</label><input type="number" id="sop2_fr" value="192000" min="0"></div>
+        <div class="field"><label>Standard Rent (₹, 0 if N/A)</label><input type="number" id="sop2_sr" value="0" min="0"></div>
+        <div class="field"><label>Municipal Tax Paid (₹)</label><input type="number" id="sop2_tax" value="8000" min="0"></div>
+        <div class="field"><label>Interest for the Year (₹)</label><input type="number" id="sop2_int" value="60000" min="0"></div>
+      </div>
+      <div class="util-card">
+        <h4>Property 3</h4>
+        <div class="field"><label>Municipal Value (₹)</label><input type="number" id="sop3_mv" value="150000" min="0"></div>
+        <div class="field"><label>Fair Rent (₹)</label><input type="number" id="sop3_fr" value="160000" min="0"></div>
+        <div class="field"><label>Standard Rent (₹, 0 if N/A)</label><input type="number" id="sop3_sr" value="0" min="0"></div>
+        <div class="field"><label>Municipal Tax Paid (₹)</label><input type="number" id="sop3_tax" value="6000" min="0"></div>
+        <div class="field"><label>Interest for the Year (₹)</label><input type="number" id="sop3_int" value="380000" min="0"></div>
+      </div>
+      <div class="util-card">
+        <h4>Property 4 <span class="small">(optional)</span></h4>
+        <div class="field"><label>Municipal Value (₹)</label><input type="number" id="sop4_mv" value="0" min="0"></div>
+        <div class="field"><label>Fair Rent (₹)</label><input type="number" id="sop4_fr" value="0" min="0"></div>
+        <div class="field"><label>Standard Rent (₹, 0 if N/A)</label><input type="number" id="sop4_sr" value="0" min="0"></div>
+        <div class="field"><label>Municipal Tax Paid (₹)</label><input type="number" id="sop4_tax" value="0" min="0"></div>
+        <div class="field"><label>Interest for the Year (₹)</label><input type="number" id="sop4_int" value="0" min="0"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary small" onclick="sopCalculate()">Find best nomination</button>
+      <button class="btn ghost small" onclick="sopSample()">Load sample</button>
+      <button class="btn ghost small" onclick="sopClear()">Clear</button>
+    </div>
+  </div>
+
+  <div class="card accent-navy" id="sopResultCard" style="display:none;">
+    <h3 style="font-size:15px;">Best nomination</h3>
+    <p id="sopVerdictOld" class="small" style="margin:0 0 6px 0;"></p>
+    <p id="sopVerdictNew" class="small" style="margin:0;"></p>
+  </div>
+
+  <div class="card" id="sopTableCard" style="display:none;overflow-x:auto;">
+    <h4 style="font-size:14px;">All combinations compared</h4>
+    <table>
+      <thead><tr><th>Self-occupied</th><th class="num">Total — Old Regime</th><th class="num">Total — New Regime</th></tr></thead>
+      <tbody id="sopRows"></tbody>
+    </table>
+    <p class="small" style="margin-top:8px;margin-bottom:0;">Assumes the old-regime self-occupied cap is ₹2,00,000 (loan for purchase/construction, completed within 5 years) — use the ₹30,000 figure instead if that condition isn't met for a property. New regime self-occupied is always Nil regardless.</p>
+  </div>
+</div>
+
+<!-- ===================== PRE-CONSTRUCTION INTEREST BUILDER ===================== -->
+<div class="tab-panel" id="tab-preconbuilder">
+  <div class="intro-card">
+    <h2>Pre-construction interest schedule builder</h2>
+    <p>Enter the loan and completion dates and the total interest that accrued before completion — the tool derives the pre-construction period, checks the 5-year completion condition, and lays out the 5 equal annual instalments against the tax years they fall in.</p>
+  </div>
+
+  <div class="card calc">
+    <h3>Property type</h3>
+    <div class="type-toggle" id="preconTypeToggle">
+      <button data-ptype="self" class="active">Self-Occupied</button>
+      <button data-ptype="let">Let-Out / Deemed Let-Out</button>
+    </div>
+
+    <div class="field">
+      <label>Loan purpose</label>
+      <select id="preconLoanPurpose">
+        <option value="purchase">Purchase / Construction</option>
+        <option value="repair">Repair / Renewal / Reconstruction</option>
+      </select>
+      <span class="hint">The 5-instalment pre-construction spread only applies to a purchase/construction loan — see the Concepts tab. A repair/renewal/reconstruction loan doesn't have a pre-construction phase in this sense, and stays at the ₹30,000 self-occupied cap (old regime) regardless of timeline.</span>
+    </div>
+
+    <div class="field">
+      <label>Date loan was taken</label>
+      <input type="date" id="preconLoanDate" value="2021-06-15">
+    </div>
+    <div class="field">
+      <label>Date of completion / acquisition</label>
+      <input type="date" id="preconCompletionDate" value="2025-11-20">
+    </div>
+    <div class="field">
+      <label>Total interest accrued during pre-construction period (₹)</label>
+      <input type="number" id="preconTotalInterest" value="240000" min="0">
+      <span class="hint">From the lender's interest certificate — the amount accrued from the loan date up to 31 March before completion.</span>
+    </div>
+    <div class="field">
+      <label>Regular interest for the tax year you're computing (₹)</label>
+      <input type="number" id="preconRegularInterest" value="150000" min="0">
+    </div>
+    <div class="field">
+      <label>Which release year are you computing for? (1 of the 5)</label>
+      <select id="preconYearSelect"></select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary small" onclick="preconCalculate()">Build schedule</button>
+      <button class="btn ghost small" onclick="preconSample()">Load sample</button>
+      <button class="btn ghost small" onclick="preconClear()">Clear</button>
+    </div>
+
+    <div class="result-box show" id="preconPeriodBox">
+      <div class="verdict" style="font-size:15px;" id="preconPeriodVerdict"></div>
+      <p class="small" id="preconPeriodNote" style="margin:0;"></p>
+    </div>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <h4 style="font-size:14px;">5-instalment release schedule</h4>
+    <p class="small" style="margin-top:-4px;margin-bottom:8px;">Each row is the full amount released for deduction that year — <b>total pre-construction interest ÷ 5</b>, not an EMI or a portion within one.</p>
+    <table>
+      <thead><tr><th>Tax Year</th><th class="num">Deductible Amount (1/5th of Total)</th></tr></thead>
+      <tbody id="preconRows"></tbody>
+    </table>
+  </div>
+
+  <div class="card accent-navy" id="preconSelectedCard">
+    <h3 style="font-size:15px;">Selected year — combined interest deduction</h3>
+    <table class="regime-table">
+      <thead><tr><th>Component</th><th class="old-col num">Old Regime</th><th class="new-col num">New Regime</th></tr></thead>
+      <tbody id="preconComboRows"></tbody>
+    </table>
+    <p class="small" id="preconCapNote" style="margin-top:8px;margin-bottom:0;"></p>
+  </div>
+</div>
+
+<!-- ===================== CO-OWNERSHIP SPLITTER ===================== -->
+<div class="tab-panel" id="tab-coown">
+  <div class="intro-card">
+    <h2>Co-ownership deduction splitter</h2>
+    <p>Where a property has definite, ascertainable co-owner shares, income is computed separately for each co-owner — not once for the property as a whole. Enter up to four co-owners and see each one's individual deduction and income share, old and new regime side by side.</p>
+  </div>
+
+  <div class="card calc">
+    <h3>Property type</h3>
+    <div class="type-toggle" id="coownTypeToggle">
+      <button data-ctype="self" class="active">Self-Occupied</button>
+      <button data-ctype="let">Let-Out / Deemed Let-Out</button>
+    </div>
+
+    <div class="field" id="coownNavField" style="display:none;">
+      <label>Net Annual Value of the property (₹)</label>
+      <input type="number" id="coownNav" value="300000" min="0">
+      <span class="hint">GAV less municipal taxes paid — use the main Calculator tab to derive this first if needed.</span>
+    </div>
+
+    <div id="coownOwnerGrid">
+      <div class="util-card">
+        <h4>Co-owner 1</h4>
+        <div class="util-grid">
+          <div class="field"><label>Name / Label</label><input type="text" id="co1_name" value="Husband"></div>
+          <div class="field"><label>Ownership Share (%)</label><input type="number" id="co1_share" value="50" min="0" max="100"></div>
+          <div class="field"><label>Interest Paid by This Co-owner (₹)</label><input type="number" id="co1_int" value="150000" min="0"></div>
+          <div class="checkbox-row"><input type="checkbox" id="co1_borrower" checked="checked"><label for="co1_borrower">Co-borrower on the loan</label></div>
+        </div>
+      </div>
+      <div class="util-card">
+        <h4>Co-owner 2</h4>
+        <div class="util-grid">
+          <div class="field"><label>Name / Label</label><input type="text" id="co2_name" value="Wife"></div>
+          <div class="field"><label>Ownership Share (%)</label><input type="number" id="co2_share" value="50" min="0" max="100"></div>
+          <div class="field"><label>Interest Paid by This Co-owner (₹)</label><input type="number" id="co2_int" value="150000" min="0"></div>
+          <div class="checkbox-row"><input type="checkbox" id="co2_borrower" checked="checked"><label for="co2_borrower">Co-borrower on the loan</label></div>
+        </div>
+      </div>
+      <div class="util-card">
+        <h4>Co-owner 3 <span class="small">(optional)</span></h4>
+        <div class="util-grid">
+          <div class="field"><label>Name / Label</label><input type="text" id="co3_name" value=""></div>
+          <div class="field"><label>Ownership Share (%)</label><input type="number" id="co3_share" value="0" min="0" max="100"></div>
+          <div class="field"><label>Interest Paid by This Co-owner (₹)</label><input type="number" id="co3_int" value="0" min="0"></div>
+          <div class="checkbox-row"><input type="checkbox" id="co3_borrower"><label for="co3_borrower">Co-borrower on the loan</label></div>
+        </div>
+      </div>
+      <div class="util-card">
+        <h4>Co-owner 4 <span class="small">(optional)</span></h4>
+        <div class="util-grid">
+          <div class="field"><label>Name / Label</label><input type="text" id="co4_name" value=""></div>
+          <div class="field"><label>Ownership Share (%)</label><input type="number" id="co4_share" value="0" min="0" max="100"></div>
+          <div class="field"><label>Interest Paid by This Co-owner (₹)</label><input type="number" id="co4_int" value="0" min="0"></div>
+          <div class="checkbox-row"><input type="checkbox" id="co4_borrower"><label for="co4_borrower">Co-borrower on the loan</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary small" onclick="coownCalculate()">Split deductions</button>
+      <button class="btn ghost small" onclick="coownSample()">Load sample</button>
+      <button class="btn ghost small" onclick="coownClear()">Clear</button>
+    </div>
+
+    <p class="small" id="coownShareWarning" style="color:var(--red);margin-top:8px;"></p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Co-owner</th><th class="num">Share</th><th class="num">Old Regime Income</th><th class="num">New Regime Income</th></tr></thead>
+      <tbody id="coownRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== ARREARS / UNREALISED RENT RECOVERED ===================== -->
+<div class="tab-panel" id="tab-arrears">
+  <div class="intro-card">
+    <h2>Arrears of rent &amp; unrealised rent recovered</h2>
+    <p>Money recovered in a later tax year — either arrears of rent, or previously unrealised rent that finally comes in — is taxed in the year it's received, after a flat 30% deduction, whether or not the assessee still owns the property that year. This is separate from the annual computation for the property in that year; it's an addition on top.</p>
+  </div>
+
+  <div class="card calc">
+    <div class="field">
+      <label>Amount recovered this year (₹)</label>
+      <input type="number" id="arrearsAmount" value="150000" min="0">
+    </div>
+    <div class="btn-row">
+      <button class="btn primary small" onclick="arrearsCalculate()">Calculate</button>
+      <button class="btn ghost small" onclick="arrearsSample()">Load sample</button>
+      <button class="btn ghost small" onclick="arrearsClear()">Clear</button>
+    </div>
+
+    <div class="result-box show" id="arrearsResult">
+      <div class="verdict">Taxable amount this year</div>
+      <div class="ledger" id="arrearsLedger"></div>
+      <p class="small" id="arrearsNote" style="margin-top:10px;"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== WORKED EXAMPLE ===================== -->
+<div class="tab-panel" id="tab-example">
+  <div class="intro-card">
+    <h2>A fully worked let-out property example</h2>
+    <p>The same mechanism from the diagram, applied end to end to one illustrative property so every line item can be traced back to its source figure.</p>
+  </div>
+
+  <div class="card accent">
+    <div class="example-head">
+      <h3 style="margin-bottom:0;">Mr. Sharma's flat, Sector 62, Noida</h3>
+      <span>Let out for 11 months</span>
+    </div>
+    <table>
+      <tr><th>Given</th><th class="num">Amount</th></tr>
+      <tr><td>Municipal Value</td><td class="num">₹2,40,000</td></tr>
+      <tr><td>Fair Rent</td><td class="num">₹2,64,000</td></tr>
+      <tr><td>Standard Rent (notified)</td><td class="num">₹2,52,000</td></tr>
+      <tr><td>Rent received (11 months @ ₹18,000)</td><td class="num">₹1,98,000</td></tr>
+      <tr><td>Property vacant for</td><td class="num">1 month</td></tr>
+      <tr><td>Municipal taxes paid by owner</td><td class="num">₹12,000</td></tr>
+      <tr><td>Interest on home loan for the year</td><td class="num">₹1,80,000</td></tr>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="ledger">
+      <div class="row"><span>Step 1 — Higher of Municipal Value &amp; Fair Rent</span><span class="amt">₹2,64,000</span></div>
+      <div class="row"><span>Step 2 — Capped at Standard Rent → Expected Rent</span><span class="amt">₹2,52,000</span></div>
+      <div class="row"><span>Step 3 — Expected Rent ÷ 12 × 11 (let-out period)</span><span class="amt">₹2,31,000</span></div>
+      <div class="row"><span>Step 4 — Actual rent (₹1,98,000) lower due to vacancy → GAV</span><span class="amt">₹1,98,000</span></div>
+      <div class="row"><span>Less: Municipal taxes paid</span><span class="amt">− ₹12,000</span></div>
+      <div class="row"><span>Net Annual Value</span><span class="amt">₹1,86,000</span></div>
+      <div class="row"><span>Less: Standard deduction, Sec 22(1)(a) (old 24(a)) @ 30%</span><span class="amt">− ₹55,800</span></div>
+      <div class="row"><span>Less: Interest, Sec 22(1)(b) (old 24(b)) — no cap, let-out</span><span class="amt">− ₹1,80,000</span></div>
+      <div class="row total"><span>Income from House Property</span><span class="amt loss">− ₹49,800 (loss)</span></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="tile" style="border-top-color:var(--amber);">
+      <h4><span class="chip-old">Old Regime</span></h4>
+      <p class="small" style="margin:0;">The ₹49,800 loss can be set off against Mr. Sharma's other heads of income this year, within the ₹2,00,000 annual cap under Section 71 — the full amount is absorbed since it's well under the cap. Nothing is left to carry forward.</p>
+    </div>
+    <div class="tile" style="border-top-color:var(--green);">
+      <h4><span class="chip-new">New Regime</span></h4>
+      <p class="small" style="margin:0;">The same ₹49,800 loss <b>cannot</b> be set off against salary or any other head, and cannot be carried forward. Unless Mr. Sharma has income from another house property to net it against, it gives him no tax benefit this year.</p>
+    </div>
+  </div>
+
+  <div class="card accent-navy">
+    <h3 style="font-size:15px;">Which is more beneficial?</h3>
+    <p style="margin:0;">The ₹49,800 figure itself is identical in both regimes — let-out interest is uncapped either way. Old regime is more beneficial here purely on <b>usability</b>: it lets Mr. Sharma actually absorb the full loss against his salary this year. Under the new regime the same loss gives him zero benefit unless he owns another let-out or deemed let-out property to set it off against.</p>
+  </div>
+</div>
+
+<!-- ===================== TAX SAVING TIPS ===================== -->
+<div class="tab-panel" id="tab-taxtips">
+  <div class="intro-card">
+    <h2>Eleven planning propositions worth knowing</h2>
+    <p>These are established interpretive positions on the house property head — some settled by the courts, some simply a matter of reading the deeming, clubbing and TDS provisions closely. None of them override the computation rules in the earlier tabs; they're about which facts to arrange, which elections to make, and which compliance step not to skip.</p>
+  </div>
+
+  <span class="tip-category">Elections that change the numbers</span>
+
+  <div class="card accent-navy">
+    <h3>"I live there" doesn't automatically make it self-occupied</h3>
+    <p>It's a common assumption that occupation alone decides the self-occupied label. Not quite — occupation is necessary, but the Nil-value exemption itself is capped at <b>two</b> houses of the owner's own choosing, however many he actually lives in over the year. A third or fourth residence he genuinely occupies still falls into deemed let-out and gets taxed on notional rent, occupation notwithstanding.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> work out the notional Expected Rent for each residence before nominating the two self-occupied ones, and treat "highest notional value" as a starting heuristic, not a guaranteed answer — a careless nomination (say, simply the first two purchased) can cost real tax for no legal reason, but the actual best choice depends on municipal taxes, interest, and loss-set-off effects too, so run the full computation property-by-property before finalizing.</p>
+  </div>
+
+  <div class="card accent">
+    <h3>Co-ownership doesn't just split the EMI — it multiplies the deductions</h3>
+    <p>Where a property is co-owned with definite, ascertainable shares, income is computed <b>separately for each co-owner</b> under <span class="ref-chip">Sec 24</span> (old Sec 26), not once for the property as a whole. If the co-owners are also co-borrowers — legally liable on the loan, not merely named on the property deed — each independently repaying their own share, each one separately claims their own interest deduction — up to ₹2,00,000 apiece for a self-occupied property under the old regime — and their own 30% standard deduction on their share of Net Annual Value.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> two co-owners genuinely servicing the loan together can shelter up to ₹4,00,000 of interest between them rather than ₹2,00,000 for a single owner. This depends on ownership share, the borrowing arrangement, legal liability for the loan, and documented evidence of payment lining up — a co-owner who isn't actually paying their share of the EMI can't claim a deduction for interest they didn't pay, however the ownership deed reads.</p>
+  </div>
+
+  <div class="card">
+    <h3>An unused third property is taxed whether or not you ever rent it out</h3>
+    <p>Beyond the first two self-occupied houses, every additional residence is deemed let-out — taxed on notional Expected Rent — regardless of whether it's actually rented. "I'm not renting it out, so there's no income" isn't how the computation works; the law charges the notional figure either way.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> before deciding to hold a third house vacant — for a child's future use, sentimental value, or any other reason — price in this notional tax cost as a genuine carrying expense. Actually letting it out at least brings in rent to offset the same tax bill; leaving it empty pays the tax with nothing to show for it.</p>
+  </div>
+
+  <span class="tip-category">Deemed ownership &amp; family transfers</span>
+
+  <div class="card">
+    <h3>Co-op society allottees don't need a sale deed at all</h3>
+    <p>Ownership under this head doesn't wait for a registered conveyance. A member of a co-operative society, company, or AOP allotted a building (or part of one) under a house-building scheme <b>may</b> be treated as deemed owner from the date of that allotment — well before any sale deed exists — and the interest they pay on outstanding instalments of the building's cost deductible under <span class="ref-chip">Sec 22(1)(b)</span> (old Sec 24(b)) from that same date, same as any other owner. This turns on the allotment being definite rather than provisional: the commencement date for ownership and the interest deduction should be checked against the actual allotment terms, possession status, and payment obligations, not assumed from the scheme type alone.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> a member's claim is easy to miss entirely on the mistaken assumption that no sale deed means no ownership yet. But don't over-correct either — verify the allotment is definite (not a mere proposal or waitlisted application) and check the supporting documents before relying on the allotment date. Separately, remember that interest under Sec 22(1)(b)/24(b) is on an accrual basis for every owner generally, not something specific to co-op allottees — see the Concepts tab.</p>
+  </div>
+
+  <div class="card">
+    <h3>Cash gift to a spouse: one trap avoided, one left standing</h3>
+    <p>Gift cash to a wife and let her buy a house with it, and the husband may avoid deemed ownership of that property under <span class="ref-chip">Sec 25(a)</span> (old Sec 27(i)) on those specific facts. That's often taken to mean "the property is now hers, nothing more to think about" — it isn't that simple. The clubbing provision is separate and still bites: her income from that property (or Nil, if she lives in it under <span class="ref-chip">Sec 21(6)</span>/old Sec 23(2)) is added straight back into his total income under <span class="ref-chip">Sec 99(1)(a)(ii)</span> (old Sec 64(1)(iv)) — and questions of source-tracing and genuineness of the gift remain relevant on top of that.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> the cash-gift route only ever deals with deemed ownership, never with clubbing. To actually keep the income out of his hands, the asset transferred needs to be something <b>other than house property</b> altogether — and even then, the facts and documentation of the transfer matter.</p>
+  </div>
+
+  <div class="card">
+    <h3>The same escape doesn't repeat itself for a son's wife — but the outcome can still work in your favour</h3>
+    <p>Transfer a house to a son's wife without consideration, and the transferor may likewise avoid deemed ownership under Sec 25(a) on those facts. But the rental income she earns from it is clubbed straight back into the transferor's hands under <span class="ref-chip">Sec 99(1)(b)</span> (old Sec 64(1)(vi)) — the transferee is treated as owner for computing the figure, which is then added to the transferor's total income.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> the outcome hinges entirely on what she does with it afterward. If she occupies it herself, annual value is Nil and there's nothing left to club on those facts — the transfer can work well in that specific pattern. Let her rent it out instead, and the clubbed income defeats the whole purpose. Either way, this is a fact-sensitive position, not a guaranteed result.</p>
+  </div>
+
+  <span class="tip-category">Payment timing &amp; TDS compliance</span>
+
+  <div class="card">
+    <h3>Accrual doesn't count for municipal tax — only payment does</h3>
+    <p>A municipal tax bill that's due but sitting unpaid at year-end earns nothing. The deduction only opens once the tax is <b>actually paid</b>, and only in the tax year it's paid in — due-basis or accrual-basis accounting has no bearing here. This deduction is taken from GAV to arrive at NAV, and only where the tax is genuinely borne by the owner, not the tenant.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> a bill falling due in late March can be settled before 31 March rather than in April to pull the deduction a full year forward — the expense is identical either way, so this is purely a timing choice, worth weighing against the owner's own cash flow rather than treating as automatically worthwhile.</p>
+  </div>
+
+  <div class="card">
+    <h3>Interest paid abroad — TDS is a condition, not a formality</h3>
+    <p>Interest payable outside India can be disallowed <b>in full</b> — not reduced, not prorated — where tax hasn't been deducted at source on it and there's no one in India who can be treated as an agent for the lender under <span class="ref-chip">Sec 306</span> (old Sec 163). Partial compliance buys no partial relief here. The applicable withholding provision and rate depend on the nature of the payment, the lender's residential status, and any treaty relief — provisions outside this chapter, so treat this as a flag to check rather than a self-contained TDS computation.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> before claiming interest paid to a foreign lender or NRI under Sec 22(1)(b), confirm the TDS was actually deducted on the remittance — this is a condition the claim has to satisfy, not paperwork to tidy up later.</p>
+  </div>
+
+  <div class="card">
+    <h3>TDS on rent — the ₹50,000 threshold vanishes for an NRI landlord</h3>
+    <p>The familiar rule — no TDS below ₹50,000 rent a month, under Sec 194-IB, for a resident landlord — simply doesn't carry over when the landlord is a non-resident. Rent paid to an NRI landlord instead falls under <b>Sec 195</b>, which has no monetary threshold at all — TDS applies from the first rupee of rent. The rate itself isn't a fixed number: it depends on the nature of the payment, surcharge, health and education cess, any applicable tax treaty, and whether the landlord holds a lower or nil deduction certificate — so it has to be worked out on the facts each time, not assumed.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> confirm a landlord's residential status before assuming the ₹50,000 threshold protects a tenant from any TDS obligation — that threshold simply doesn't apply once the landlord is an NRI. Getting this wrong exposes the tenant to being treated as an assessee-in-default for the shortfall, with interest and a possible penalty on top; check the current Sec 195 rate, treaty position, and certificate status for the specific case rather than relying on a rule of thumb.</p>
+  </div>
+
+  <span class="tip-category">Interactions with other provisions</span>
+
+  <div class="card">
+    <h3>HRA and home loan interest are not an either/or choice</h3>
+    <p>A surprisingly common belief is that claiming HRA rules out a home loan interest deduction in the same year, or vice versa — as if the two compete for the same rupee. They don't. HRA exemption (Sch III Sl. 11, old Sec 10(13A)) relates to rent actually paid for the accommodation lived in; interest deduction under Sec 22(1)(b)/24(b) relates to a property owned. Nothing in the Act ties one to the other.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> this comes up most often where someone owns a home in one city (financed by a loan) but rents elsewhere for work, or owns a home in the same city that genuinely isn't suitable to occupy. Both benefits can be claimed together, old regime only, provided each is independently substantiated — rent receipts and a credible reason the owned house isn't occupied, on top of the usual loan interest certificate.</p>
+  </div>
+
+  <div class="card">
+    <h3>Legacy top-up: check for an old Sec 80EE / 80EEA claim before writing it off</h3>
+    <p>Two now-closed schemes give a home-loan borrower an interest deduction <b>over and above</b> the Sec 24(b)/22(1)(b) figure, old regime only: old <b>Sec 80EE</b> — up to ₹50,000, for loans sanctioned 1-4-2016 to 31-3-2017 (loan ≤ ₹35 lakh, property value ≤ ₹50 lakh, no other residential property owned on the sanction date); and old <b>Sec 80EEA</b> — up to ₹1,50,000, for loans sanctioned 1-4-2019 to 31-3-2022 (stamp duty value ≤ ₹45 lakh, same no-other-property condition, and not eligible under 80EE). Both sanction windows are shut for new loans, but a borrower who took a qualifying loan back then and is still repaying it can keep claiming the top-up every year until the loan closes.</p>
+    <p class="small" style="margin:0;"><b>Practical takeaway:</b> for any client still servicing a home loan sanctioned in either window, check whether this top-up is being claimed year after year — it's easy to miss precisely because the scheme itself is no longer open to new borrowers. These two sections haven't been separately cross-mapped to 2025 Act numbering in this tool yet; verify the new citation before quoting it in an opinion.</p>
+  </div>
+
+  <div class="card warn">
+    <p class="small" style="margin:0;">These are illustrative planning propositions, not guaranteed outcomes — they turn on the specific facts of each case.</p>
+  </div>
+</div>
+
+<!-- ===================== OLD → NEW SECTION MAPPING ===================== -->
+<div class="tab-panel" id="tab-mapping">
+  <div class="intro-card">
+    <h2>Old Act (1961) → New Act (2025)</h2>
+    <p>The Income-tax Act, 2025 replaced the Income-tax Act, 1961 from <b>1 April 2026</b>. Section numbers changed across the board, but the house property rules themselves are carried over largely unchanged.</p>
+  </div>
+
+  <div class="card warn">
+    <p style="margin:0;"><b>Which one applies to you:</b> your ITR for FY 2025-26 (AY 2026-27), filed in July 2026, still uses the <b>old</b> section numbers 22–27. The new numbers below apply from Tax Year 2026-27 onward — the return you'll file in July 2027.</p>
+  </div>
+
+  <div class="card">
+    <h3>Section-by-section mapping</h3>
+    <table>
+      <tr><th>Old Sec. (1961)</th><th>New Sec. (2025)</th><th>Subject</th></tr>
+      <tr><td class="map-old">Sec 22</td><td class="map-new">Sec 20</td><td>Basis of charge — chargeability on annual value</td></tr>
+      <tr><td class="map-old">Sec 23</td><td class="map-new">Sec 21</td><td>Determination of Annual Value (GAV), Nil for self-occupied</td></tr>
+      <tr><td class="map-old">Sec 24</td><td class="map-new">Sec 22</td><td>Deductions — standard 30% and interest on borrowed capital</td></tr>
+      <tr><td class="map-old">Sec 25A</td><td class="map-new">Sec 23</td><td>Arrears of rent and unrealised rent received subsequently</td></tr>
+      <tr><td class="map-old">Sec 26</td><td class="map-new">Sec 24</td><td>Property owned by co-owners</td></tr>
+      <tr><td class="map-old">Sec 27</td><td class="map-new">Sec 25</td><td>Deemed owner — spouse/minor transfers, co-op society members, long leases</td></tr>
+      <tr><td class="map-old">Sec 70</td><td class="map-new">Sec 108</td><td>Intra-head set-off of loss (same head, same year)</td></tr>
+      <tr><td class="map-old">Sec 71(3A)</td><td class="map-new">Sec 109</td><td>Inter-head set-off of house property loss, capped ₹2,00,000/year (old regime)</td></tr>
+      <tr><td class="map-old">Sec 71B</td><td class="map-new">Sec 110</td><td>Carry forward and set-off of house property loss (old regime)</td></tr>
+    </table>
+    <p class="small" style="margin-top:6px;">Old Section 25 (disallowance of interest payable outside India without TDS) is retained in substance as a condition within the new Section 22 deduction framework rather than as a standalone numbered section.</p>
+    <p class="small" style="margin:6px 0 0 0;"><b>Transitional point:</b> a house property loss brought forward from a tax year before 1 April 2026 continues to be carried forward and set off under the <b>new</b> Act, but in the manner of <b>old Sec 71B</b> — the repeal-and-savings clause is Sec 536(2)(m)/(n). The original 8-year window isn't restarted; it's still counted from the year the loss first arose.</p>
+  </div>
+
+  <div class="card accent">
+    <h3>What actually changed</h3>
+    <ul class="plain">
+      <li>Numbering only, as between the two Acts — the 30% standard deduction, the GAV mechanism, and the ₹2,00,000 interest cap for self-occupied property (under the old regime) are unchanged in substance.</li>
+      <li>"Previous Year" and "Assessment Year" are replaced by a single concept: <b>Tax Year</b>.</li>
+      <li>The real substantive change sits outside the 1961→2025 renumbering — it comes from Sec 202 (old Sec 115BAC). Under the <b>new</b> tax regime (default from Tax Year 2026-27), self-occupied interest relief is <b>not available at all</b>, and house property loss can no longer be set off against other heads or carried forward — see the Loss Set-Off tab.</li>
+    </ul>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Reference tool for illustrative purposes only — not a substitute for professional tax advice.
+</footer>
+
+<script>
+// ---------- Tabs ----------
+var tabBtns = document.querySelectorAll('.tab-btn');
+for (var t = 0; t < tabBtns.length; t++) {
+  tabBtns[t].onclick = function () {
+    var target = this.getAttribute('data-tab');
+    var btns = document.querySelectorAll('.tab-btn');
+    var panels = document.querySelectorAll('.tab-panel');
+    for (var i = 0; i < btns.length; i++) { btns[i].className = 'tab-btn'; }
+    for (var j = 0; j < panels.length; j++) { panels[j].className = 'tab-panel'; }
+    this.className = 'tab-btn active';
+    document.getElementById('tab-' + target).className = 'tab-panel active';
+    window.scrollTo(0, 0);
+  };
+}
+
+// ---------- Calculator ----------
+var propType = 'self';
+var typeToggle = document.getElementById('typeToggle');
+typeToggle.onclick = function (e) {
+  if (e.target.tagName !== 'BUTTON') return;
+  var btns = typeToggle.querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  e.target.className = 'active';
+  propType = e.target.getAttribute('data-type');
+  updateVisibility();
+  calculate();
+};
+
+var fieldIds = ['municipalValue','fairRent','standardRent','actualRent','vacancyMonths','municipalTax','interest'];
+for (var f = 0; f < fieldIds.length; f++) {
+  document.getElementById(fieldIds[f]).addEventListener('input', calculate);
+}
+
+var rentFields = document.getElementById('rentFields');
+var actualRentField = document.getElementById('actualRentField');
+var vacancyField = document.getElementById('vacancyField');
+var interestHint = document.getElementById('interestHint');
+
+function updateVisibility() {
+  var rentInputs = rentFields.querySelectorAll('input');
+  if (propType === 'self') {
+    rentFields.style.opacity = '0.5';
+    for (var i = 0; i < rentInputs.length; i++) { rentInputs[i].disabled = true; }
+    interestHint.textContent = 'Self-occupied property: old regime caps interest deduction at ₹2,00,000 under Sec 22(1)(b) (old Sec 24(b)); new regime allows none — compared side by side below.';
+  } else {
+    rentFields.style.opacity = '1';
+    for (var i = 0; i < rentInputs.length; i++) { rentInputs[i].disabled = false; }
+    interestHint.textContent = (propType === 'let' ? 'Let-out property: ' : 'Deemed let-out property: ')
+      + 'interest deduction is uncapped in both regimes — but loss usability differs, see below.';
+  }
+  if (propType === 'deemed') {
+    actualRentField.style.display = 'none';
+    vacancyField.style.display = 'none';
+  } else {
+    actualRentField.style.display = 'block';
+    vacancyField.style.display = propType === 'let' ? 'block' : 'none';
+  }
+}
+
+function fmt(n) {
+  var neg = n < 0;
+  var val = Math.round(Math.abs(n)).toLocaleString('en-IN');
+  return (neg ? '− ' : '') + '₹' + val;
+}
+function trow(label, oldVal, newVal, isTotal) {
+  var rowClass = isTotal ? ' class="total-row"' : '';
+  var lossSuffix = isTotal ? ' (loss)' : '';
+  var oldCls = 'old-cell num' + (isTotal && oldVal < 0 ? ' loss-amt' : '');
+  var newCls = 'new-cell num' + (isTotal && newVal < 0 ? ' loss-amt' : '');
+  return '<tr' + rowClass + '><td>' + label + '</td>'
+    + '<td class="' + oldCls + '">' + fmt(oldVal) + (isTotal && oldVal < 0 ? lossSuffix : '') + '</td>'
+    + '<td class="' + newCls + '">' + fmt(newVal) + (isTotal && newVal < 0 ? lossSuffix : '') + '</td></tr>';
+}
+
+function calculate() {
+  var mv = parseFloat(document.getElementById('municipalValue').value) || 0;
+  var fr = parseFloat(document.getElementById('fairRent').value) || 0;
+  var sr = parseFloat(document.getElementById('standardRent').value) || 0;
+  var ar = parseFloat(document.getElementById('actualRent').value) || 0;
+  var vacMonths = parseFloat(document.getElementById('vacancyMonths').value) || 0;
+  var tax = parseFloat(document.getElementById('municipalTax').value) || 0;
+  var interestPaid = parseFloat(document.getElementById('interest').value) || 0;
+
+  var rowsHTML = '';
+  var oldIncome = 0, newIncome = 0;
+
+  if (propType === 'self') {
+    var oldDed = Math.min(interestPaid, 200000);
+    var newDed = 0;
+    rowsHTML += trow('Gross Annual Value', 0, 0);
+    rowsHTML += trow('Net Annual Value (nil for self-occupied)', 0, 0);
+    rowsHTML += trow('Standard deduction, Sec 22(1)(a) (old 24(a)) — not applicable', 0, 0);
+    rowsHTML += trow('Interest, Sec 22(1)(b) (old 24(b)) — old: capped ₹2,00,000 / new: not deductible', -oldDed, -newDed);
+    oldIncome = 0 - oldDed;
+    newIncome = 0 - newDed;
+  } else {
+    var higherMvFr = Math.max(mv, fr);
+    var expectedRent = sr > 0 ? Math.min(higherMvFr, sr) : higherMvFr;
+    var gav = 0;
+
+    if (propType === 'let') {
+      var lettableMonths = 12 - vacMonths;
+      var proratedExpected = expectedRent / 12 * lettableMonths;
+      var vacancyApplies = vacMonths > 0 && ar < proratedExpected;
+      gav = vacancyApplies ? ar : Math.max(proratedExpected, ar);
+
+      rowsHTML += trow('Higher of Municipal Value & Fair Rent', higherMvFr, higherMvFr);
+      rowsHTML += trow('Capped at Standard Rent → Expected Rent (annual)', expectedRent, expectedRent);
+      if (vacMonths > 0) {
+        rowsHTML += trow('Expected Rent prorated for ' + lettableMonths + ' let-out months', proratedExpected, proratedExpected);
+      }
+      rowsHTML += trow(vacancyApplies ? 'Actual rent lower due to vacancy → Gross Annual Value' : 'Higher of prorated expected rent & actual rent → GAV', gav, gav);
+    } else {
+      gav = expectedRent;
+      rowsHTML += trow('Higher of Municipal Value & Fair Rent', higherMvFr, higherMvFr);
+      rowsHTML += trow('Capped at Standard Rent → Gross Annual Value (deemed)', gav, gav);
+    }
+
+    rowsHTML += trow('Less: Municipal taxes paid by owner', -tax, -tax);
+    var nav = gav - tax;
+    rowsHTML += trow('Net Annual Value', nav, nav);
+
+    var stdDed = Math.max(nav, 0) * 0.30;
+    var interestDed = interestPaid;
+    rowsHTML += trow('Less: Standard deduction, Sec 22(1)(a) (old 24(a)) @ 30% of NAV', -stdDed, -stdDed);
+    rowsHTML += trow('Less: Interest, Sec 22(1)(b) (old 24(b)) (no cap, both regimes)', -interestDed, -interestDed);
+
+    oldIncome = nav - stdDed - interestDed;
+    newIncome = oldIncome;
+  }
+
+  rowsHTML += trow('Income from House Property', oldIncome, newIncome, true);
+  document.getElementById('comboRows').innerHTML = rowsHTML;
+
+  var vText = '';
+  if (propType === 'self') {
+    if (interestPaid > 0) {
+      var oldDedShown = Math.min(interestPaid, 200000);
+      vText = 'Old regime is more beneficial here — it deducts ' + fmt(oldDedShown) + ' of interest (capped at ₹2,00,000), giving you a loss you can use elsewhere. New regime allows no interest deduction on self-occupied property at all, so income is always Nil regardless of the loan.';
+    } else {
+      vText = 'No interest entered, so both regimes give Nil income from this self-occupied property — regime choice makes no difference here.';
+    }
+  } else {
+    if (newIncome < 0) {
+      vText = 'Both regimes compute the same loss of ' + fmt(Math.abs(newIncome)) + ' here, since interest on let-out/deemed let-out property is uncapped either way. Old regime is more beneficial for what you can DO with that loss: up to ₹2,00,000 can be set off against salary or other income this year, with the balance carried forward up to 8 tax years. New regime confines the loss to set-off against other house property income only — nothing survives to next year.';
+    } else {
+      vText = 'Income from this property is ' + fmt(newIncome) + ' in both regimes — interest is uncapped either way, so regime choice makes no difference for this computation.';
+    }
+  }
+  vText += ' This compares the house-property head in isolation — your overall regime choice should weigh the full return, not this figure alone.';
+  document.getElementById('verdictNote').textContent = vText;
+}
+
+function calcSample() {
+  var btns = typeToggle.querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  typeToggle.querySelector('[data-type="let"]').className = 'active';
+  propType = 'let';
+  document.getElementById('municipalValue').value = 240000;
+  document.getElementById('fairRent').value = 264000;
+  document.getElementById('standardRent').value = 252000;
+  document.getElementById('actualRent').value = 198000;
+  document.getElementById('vacancyMonths').value = 1;
+  document.getElementById('municipalTax').value = 12000;
+  document.getElementById('interest').value = 180000;
+  updateVisibility();
+  calculate();
+}
+
+function calcClear() {
+  var ids = ['municipalValue','fairRent','standardRent','actualRent','municipalTax','interest'];
+  for (var i = 0; i < ids.length; i++) { document.getElementById(ids[i]).value = 0; }
+  document.getElementById('vacancyMonths').value = 0;
+  calculate();
+}
+
+// ---------- SOP Optimizer ----------
+function sopReadProp(idx) {
+  var mv = Math.max(0, parseFloat(document.getElementById('sop' + idx + '_mv').value) || 0);
+  var fr = Math.max(0, parseFloat(document.getElementById('sop' + idx + '_fr').value) || 0);
+  var sr = Math.max(0, parseFloat(document.getElementById('sop' + idx + '_sr').value) || 0);
+  var tax = Math.max(0, parseFloat(document.getElementById('sop' + idx + '_tax').value) || 0);
+  var interest = Math.max(0, parseFloat(document.getElementById('sop' + idx + '_int').value) || 0);
+  return { mv: mv, fr: fr, sr: sr, tax: tax, interest: interest, idx: idx, active: (mv > 0 || fr > 0 || interest > 0) };
+}
+
+function sopIncomeIfSelf(prop, regime) {
+  if (regime === 'old') { return 0 - Math.min(prop.interest, 200000); }
+  return 0;
+}
+
+function sopIncomeIfDeemed(prop) {
+  var higherMvFr = Math.max(prop.mv, prop.fr);
+  var expectedRent = prop.sr > 0 ? Math.min(higherMvFr, prop.sr) : higherMvFr;
+  var nav = expectedRent - prop.tax;
+  var stdDed = Math.max(nav, 0) * 0.30;
+  return nav - stdDed - prop.interest;
+}
+
+function sopCombinations(indices) {
+  var result = [[]];
+  var i, j;
+  for (i = 0; i < indices.length; i++) { result.push([indices[i]]); }
+  for (i = 0; i < indices.length; i++) {
+    for (j = i + 1; j < indices.length; j++) { result.push([indices[i], indices[j]]); }
+  }
+  return result;
+}
+
+function sopFmt(n) {
+  var neg = n < 0;
+  var val = Math.round(Math.abs(n)).toLocaleString('en-IN');
+  return (neg ? '− ' : '') + '₹' + val;
+}
+
+function sopCalculate() {
+  var props = [];
+  var i;
+  for (i = 1; i <= 4; i++) { props.push(sopReadProp(i)); }
+  var active = [];
+  for (i = 0; i < props.length; i++) { if (props[i].active) { active.push(props[i]); } }
+
+  var resultCard = document.getElementById('sopResultCard');
+  var tableCard = document.getElementById('sopTableCard');
+
+  if (active.length === 0) {
+    resultCard.style.display = 'none';
+    tableCard.style.display = 'none';
+    return;
+  }
+
+  var indices = [];
+  for (i = 0; i < active.length; i++) { indices.push(i); }
+  var combos = sopCombinations(indices);
+
+  var combosData = [];
+  var bestOld = null, bestNew = null;
+
+  for (i = 0; i < combos.length; i++) {
+    var combo = combos[i];
+    var totalOld = 0, totalNew = 0, j;
+    for (j = 0; j < active.length; j++) {
+      var isSelf = combo.indexOf(j) !== -1;
+      if (isSelf) {
+        totalOld += sopIncomeIfSelf(active[j], 'old');
+        totalNew += sopIncomeIfSelf(active[j], 'new');
+      } else {
+        var deemedIncome = sopIncomeIfDeemed(active[j]);
+        totalOld += deemedIncome;
+        totalNew += deemedIncome;
+      }
+    }
+    var label = 'None (all deemed let-out)';
+    if (combo.length > 0) {
+      var names = [];
+      for (j = 0; j < combo.length; j++) { names.push('Property ' + active[combo[j]].idx); }
+      label = names.join(' & ');
+    }
+    var entry = { label: label, totalOld: totalOld, totalNew: totalNew };
+    combosData.push(entry);
+    if (bestOld === null || totalOld < bestOld.totalOld) { bestOld = entry; }
+    if (bestNew === null || totalNew < bestNew.totalNew) { bestNew = entry; }
+  }
+
+  var rowsHTML = '';
+  for (i = 0; i < combosData.length; i++) {
+    var c = combosData[i];
+    var isBest = (c === bestOld) || (c === bestNew);
+    rowsHTML += '<tr' + (isBest ? ' class="best-row"' : '') + '><td>' + c.label + '</td><td class="num">' + sopFmt(c.totalOld) + '</td><td class="num">' + sopFmt(c.totalNew) + '</td></tr>';
+  }
+  document.getElementById('sopRows').innerHTML = rowsHTML;
+  tableCard.style.display = 'block';
+
+  document.getElementById('sopVerdictOld').innerHTML = '<span class="chip-old">Old Regime</span> Best: <b>' + bestOld.label + '</b> as self-occupied — total house property income ' + sopFmt(bestOld.totalOld) + (bestOld.totalOld < 0 ? ' (loss)' : '') + '.';
+  document.getElementById('sopVerdictNew').innerHTML = '<span class="chip-new">New Regime</span> Best: <b>' + bestNew.label + '</b> as self-occupied — total house property income ' + sopFmt(bestNew.totalNew) + (bestNew.totalNew < 0 ? ' (loss)' : '') + '.';
+  resultCard.style.display = 'block';
+}
+
+function sopSample() {
+  document.getElementById('sop1_mv').value = 240000;
+  document.getElementById('sop1_fr').value = 264000;
+  document.getElementById('sop1_sr').value = 252000;
+  document.getElementById('sop1_tax').value = 12000;
+  document.getElementById('sop1_int').value = 220000;
+  document.getElementById('sop2_mv').value = 180000;
+  document.getElementById('sop2_fr').value = 192000;
+  document.getElementById('sop2_sr').value = 0;
+  document.getElementById('sop2_tax').value = 8000;
+  document.getElementById('sop2_int').value = 60000;
+  document.getElementById('sop3_mv').value = 150000;
+  document.getElementById('sop3_fr').value = 160000;
+  document.getElementById('sop3_sr').value = 0;
+  document.getElementById('sop3_tax').value = 6000;
+  document.getElementById('sop3_int').value = 380000;
+  document.getElementById('sop4_mv').value = 0;
+  document.getElementById('sop4_fr').value = 0;
+  document.getElementById('sop4_sr').value = 0;
+  document.getElementById('sop4_tax').value = 0;
+  document.getElementById('sop4_int').value = 0;
+  sopCalculate();
+}
+
+function sopClear() {
+  var ids = ['sop1_mv','sop1_fr','sop1_sr','sop1_tax','sop1_int','sop2_mv','sop2_fr','sop2_sr','sop2_tax','sop2_int','sop3_mv','sop3_fr','sop3_sr','sop3_tax','sop3_int','sop4_mv','sop4_fr','sop4_sr','sop4_tax','sop4_int'];
+  for (var i = 0; i < ids.length; i++) { document.getElementById(ids[i]).value = 0; }
+  document.getElementById('sopResultCard').style.display = 'none';
+  document.getElementById('sopTableCard').style.display = 'none';
+}
+
+// ---------- Pre-Construction Interest Builder ----------
+var preconPropType = 'self';
+var preconTypeToggle = document.getElementById('preconTypeToggle');
+preconTypeToggle.onclick = function (e) {
+  if (e.target.tagName !== 'BUTTON') { return; }
+  var btns = preconTypeToggle.querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  e.target.className = 'active';
+  preconPropType = e.target.getAttribute('data-ptype');
+  preconUpdateSelected();
+};
+
+function preconFmt(n) {
+  var neg = n < 0;
+  var val = Math.round(Math.abs(n)).toLocaleString('en-IN');
+  return (neg ? '− ' : '') + '₹' + val;
+}
+
+function preconFYStart(dateObj) {
+  var y = dateObj.getFullYear();
+  var m = dateObj.getMonth();
+  return m >= 3 ? y : y - 1;
+}
+
+function preconTaxYearLabel(startYear) {
+  return 'Tax Year ' + startYear + '-' + String(startYear + 1).slice(-2);
+}
+
+var preconSchedule = [];
+
+function preconCalculate() {
+  var loanDateVal = document.getElementById('preconLoanDate').value;
+  var completionDateVal = document.getElementById('preconCompletionDate').value;
+  var totalInterest = Math.max(0, parseFloat(document.getElementById('preconTotalInterest').value) || 0);
+  var loanPurpose = document.getElementById('preconLoanPurpose').value;
+
+  var periodVerdict = document.getElementById('preconPeriodVerdict');
+  var periodNote = document.getElementById('preconPeriodNote');
+  var rowsBody = document.getElementById('preconRows');
+  var yearSelect = document.getElementById('preconYearSelect');
+
+  if (!loanDateVal || !completionDateVal) {
+    periodVerdict.textContent = 'Enter both dates to continue';
+    periodNote.textContent = '';
+    rowsBody.innerHTML = '';
+    yearSelect.innerHTML = '';
+    preconSchedule = [];
+    document.getElementById('preconComboRows').innerHTML = '';
+    document.getElementById('preconCapNote').textContent = '';
+    return;
+  }
+
+  if (loanPurpose === 'repair') {
+    periodVerdict.textContent = 'No pre-construction spread for repair/renewal/reconstruction loans';
+    periodNote.textContent = 'The 5-instalment pre-construction mechanism applies only to a loan for purchase or construction. For a repair, renewal, or reconstruction loan, claim interest in the year it accrues, and — for a self-occupied property, old regime — the cap is ₹30,000 regardless of the completion timeline.';
+    rowsBody.innerHTML = '';
+    yearSelect.innerHTML = '';
+    preconSchedule = [];
+    document.getElementById('preconComboRows').innerHTML = '';
+    document.getElementById('preconCapNote').textContent = '';
+    return;
+  }
+
+  var loanDate = new Date(loanDateVal);
+  var completionDate = new Date(completionDateVal);
+
+  if (completionDate < loanDate) {
+    periodVerdict.textContent = 'Completion date is earlier than the loan date';
+    periodNote.textContent = 'Check these two entries — completion cannot precede the loan.';
+    rowsBody.innerHTML = '';
+    yearSelect.innerHTML = '';
+    preconSchedule = [];
+    document.getElementById('preconComboRows').innerHTML = '';
+    document.getElementById('preconCapNote').textContent = '';
+    return;
+  }
+
+  var loanFY = preconFYStart(loanDate);
+  var completionFY = preconFYStart(completionDate);
+
+  if (completionFY <= loanFY) {
+    periodVerdict.textContent = 'No pre-construction period';
+    periodNote.textContent = 'The completion date falls in the same tax year as the loan — there is no pre-construction interest to spread; claim the full interest in the year it accrues.';
+    rowsBody.innerHTML = '';
+    yearSelect.innerHTML = '';
+    preconSchedule = [];
+    document.getElementById('preconComboRows').innerHTML = '';
+    document.getElementById('preconCapNote').textContent = '';
+    return;
+  }
+
+  var preConEndYear = completionFY;
+  periodVerdict.textContent = 'Pre-construction period: ' + loanDateVal + ' to 31 March ' + preConEndYear;
+
+  var yearsToComplete = completionFY - loanFY;
+  var within5 = yearsToComplete <= 5;
+  periodNote.textContent = 'Completion is ' + yearsToComplete + ' year(s) after the end of the tax year the loan was taken — ' + (within5 ? 'within the 5-year window (so the ₹2,00,000 self-occupied cap applies, old regime).' : 'beyond the 5-year window (so the ₹30,000 self-occupied cap applies instead, old regime).');
+
+  var instalment = totalInterest / 5;
+  preconSchedule = [];
+  var rowsHTML = '';
+  var optionsHTML = '';
+  for (var k = 0; k < 5; k++) {
+    var yr = completionFY + k;
+    preconSchedule.push({ year: yr, amount: instalment });
+    rowsHTML += '<tr><td>' + preconTaxYearLabel(yr) + '</td><td class="num">' + preconFmt(instalment) + '</td></tr>';
+    optionsHTML += '<option value="' + k + '">' + preconTaxYearLabel(yr) + '</option>';
+  }
+  rowsBody.innerHTML = rowsHTML;
+  yearSelect.innerHTML = optionsHTML;
+
+  preconUpdateSelected();
+}
+
+function preconUpdateSelected() {
+  var yearSelect = document.getElementById('preconYearSelect');
+  var comboRows = document.getElementById('preconComboRows');
+  var capNote = document.getElementById('preconCapNote');
+  if (!preconSchedule.length || yearSelect.selectedIndex < 0) {
+    comboRows.innerHTML = '';
+    capNote.textContent = '';
+    return;
+  }
+  var sel = preconSchedule[yearSelect.selectedIndex];
+  var regularInterest = Math.max(0, parseFloat(document.getElementById('preconRegularInterest').value) || 0);
+  var combined = regularInterest + sel.amount;
+
+  var oldDed, newDed;
+  if (preconPropType === 'self') {
+    oldDed = Math.min(combined, 200000);
+    newDed = 0;
+  } else {
+    oldDed = combined;
+    newDed = combined;
+  }
+
+  var rowsHTML = '';
+  rowsHTML += '<tr><td>Regular interest for the year</td><td class="old-cell num">' + preconFmt(regularInterest) + '</td><td class="new-cell num">' + preconFmt(regularInterest) + '</td></tr>';
+  rowsHTML += '<tr><td>Pre-construction interest released this year (1/5th of total, ' + preconTaxYearLabel(sel.year) + ')</td><td class="old-cell num">' + preconFmt(sel.amount) + '</td><td class="new-cell num">' + preconFmt(sel.amount) + '</td></tr>';
+  rowsHTML += '<tr class="total-row"><td>Deduction available</td><td class="old-cell num">' + preconFmt(oldDed) + '</td><td class="new-cell num">' + preconFmt(newDed) + '</td></tr>';
+  comboRows.innerHTML = rowsHTML;
+
+  if (preconPropType === 'self') {
+    capNote.textContent = combined > 200000
+      ? 'Combined interest of ' + preconFmt(combined) + ' exceeds the ₹2,00,000 self-occupied cap (old regime) — the excess gives no benefit that year. New regime: self-occupied interest is never deductible, so this year\'s pre-construction release gives no benefit there either.'
+      : 'Combined interest is within the ₹2,00,000 self-occupied cap (old regime), so the full amount is deductible. New regime: self-occupied interest is never deductible regardless.';
+  } else {
+    capNote.textContent = 'Let-out / deemed let-out interest is uncapped in both regimes — the full combined amount, including this year\'s pre-construction release, is deductible either way.';
+  }
+}
+
+document.getElementById('preconYearSelect').onchange = preconUpdateSelected;
+document.getElementById('preconRegularInterest').addEventListener('input', preconUpdateSelected);
+document.getElementById('preconLoanPurpose').onchange = preconCalculate;
+
+function preconSample() {
+  document.getElementById('preconLoanPurpose').value = 'purchase';
+  document.getElementById('preconLoanDate').value = '2021-06-15';
+  document.getElementById('preconCompletionDate').value = '2025-11-20';
+  document.getElementById('preconTotalInterest').value = 240000;
+  document.getElementById('preconRegularInterest').value = 150000;
+  preconCalculate();
+}
+
+function preconClear() {
+  document.getElementById('preconLoanPurpose').value = 'purchase';
+  document.getElementById('preconLoanDate').value = '';
+  document.getElementById('preconCompletionDate').value = '';
+  document.getElementById('preconTotalInterest').value = 0;
+  document.getElementById('preconRegularInterest').value = 0;
+  document.getElementById('preconPeriodVerdict').textContent = '';
+  document.getElementById('preconPeriodNote').textContent = '';
+  document.getElementById('preconRows').innerHTML = '';
+  document.getElementById('preconYearSelect').innerHTML = '';
+  document.getElementById('preconComboRows').innerHTML = '';
+  document.getElementById('preconCapNote').textContent = '';
+  preconSchedule = [];
+}
+
+// ---------- Co-Ownership Splitter ----------
+var coownPropType = 'self';
+var coownTypeToggle = document.getElementById('coownTypeToggle');
+coownTypeToggle.onclick = function (e) {
+  if (e.target.tagName !== 'BUTTON') { return; }
+  var btns = coownTypeToggle.querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  e.target.className = 'active';
+  coownPropType = e.target.getAttribute('data-ctype');
+  document.getElementById('coownNavField').style.display = coownPropType === 'let' ? 'block' : 'none';
+  coownCalculate();
+};
+
+function coownFmt(n) {
+  var neg = n < 0;
+  var val = Math.round(Math.abs(n)).toLocaleString('en-IN');
+  return (neg ? '− ' : '') + '₹' + val;
+}
+
+function coownCalculate() {
+  var nav = Math.max(0, parseFloat(document.getElementById('coownNav').value) || 0);
+  var stdDedTotal = coownPropType === 'let' ? Math.max(nav, 0) * 0.30 : 0;
+  var warning = document.getElementById('coownShareWarning');
+  var rowsHTML = '';
+  var totalShare = 0;
+  var noShareFlags = [];
+  var i;
+
+  for (i = 1; i <= 4; i++) {
+    var name = document.getElementById('co' + i + '_name').value || ('Co-owner ' + i);
+    var share = Math.max(0, parseFloat(document.getElementById('co' + i + '_share').value) || 0);
+    var interest = Math.max(0, parseFloat(document.getElementById('co' + i + '_int').value) || 0);
+    var isBorrower = document.getElementById('co' + i + '_borrower').checked;
+    if (share <= 0 && interest <= 0) { continue; }
+    if (share <= 0 && interest > 0) { noShareFlags.push(name); }
+
+    totalShare += share;
+    var navShare = nav * (share / 100);
+    var stdDedShare = stdDedTotal * (share / 100);
+
+    var oldInterestDed, newInterestDed;
+    if (!isBorrower) {
+      oldInterestDed = 0; newInterestDed = 0;
+    } else if (coownPropType === 'self') {
+      oldInterestDed = Math.min(interest, 200000);
+      newInterestDed = 0;
+    } else {
+      oldInterestDed = interest;
+      newInterestDed = interest;
+    }
+
+    var oldIncome = coownPropType === 'self' ? (0 - oldInterestDed) : (navShare - stdDedShare - oldInterestDed);
+    var newIncome = coownPropType === 'self' ? 0 : (navShare - stdDedShare - newInterestDed);
+
+    rowsHTML += '<tr><td>' + name + (isBorrower ? '' : ' <span class="small">(not a co-borrower)</span>') + '</td><td class="num">' + share + '%</td><td class="num">' + coownFmt(oldIncome) + (oldIncome < 0 ? ' (loss)' : '') + '</td><td class="num">' + coownFmt(newIncome) + (newIncome < 0 ? ' (loss)' : '') + '</td></tr>';
+  }
+
+  document.getElementById('coownRows').innerHTML = rowsHTML;
+
+  var warnings = [];
+  if (totalShare !== 0 && totalShare !== 100) {
+    warnings.push('Ownership shares total ' + totalShare + '%, not 100% — check the entries before relying on this split.');
+  }
+  if (noShareFlags.length > 0) {
+    warnings.push((noShareFlags.length > 1 ? noShareFlags.join(', ') + ' have' : noShareFlags[0] + ' has') + ' no ownership share entered but interest paid — a deduction generally requires being an owner, not just a loan repayer; verify this before relying on it.');
+  }
+  warning.textContent = warnings.join(' ');
+}
+
+function coownSample() {
+  document.getElementById('co1_name').value = 'Husband';
+  document.getElementById('co1_share').value = 50;
+  document.getElementById('co1_int').value = 150000;
+  document.getElementById('co1_borrower').checked = true;
+  document.getElementById('co2_name').value = 'Wife';
+  document.getElementById('co2_share').value = 50;
+  document.getElementById('co2_int').value = 150000;
+  document.getElementById('co2_borrower').checked = true;
+  document.getElementById('co3_name').value = '';
+  document.getElementById('co3_share').value = 0;
+  document.getElementById('co3_int').value = 0;
+  document.getElementById('co3_borrower').checked = false;
+  document.getElementById('co4_name').value = '';
+  document.getElementById('co4_share').value = 0;
+  document.getElementById('co4_int').value = 0;
+  document.getElementById('co4_borrower').checked = false;
+  coownCalculate();
+}
+
+function coownClear() {
+  var i;
+  for (i = 1; i <= 4; i++) {
+    document.getElementById('co' + i + '_name').value = '';
+    document.getElementById('co' + i + '_share').value = 0;
+    document.getElementById('co' + i + '_int').value = 0;
+    document.getElementById('co' + i + '_borrower').checked = false;
+  }
+  document.getElementById('coownRows').innerHTML = '';
+  document.getElementById('coownShareWarning').textContent = '';
+}
+
+// ---------- Arrears / Unrealised Rent Recovered ----------
+function arrearsFmt(n) {
+  var val = Math.round(Math.abs(n)).toLocaleString('en-IN');
+  return '₹' + val;
+}
+
+function arrearsCalculate() {
+  var amount = Math.max(0, parseFloat(document.getElementById('arrearsAmount').value) || 0);
+  var deduction = amount * 0.30;
+  var taxable = amount - deduction;
+
+  var ledgerHTML = '';
+  ledgerHTML += '<div class="row"><span>Amount recovered this year</span><span class="amt">' + arrearsFmt(amount) + '</span></div>';
+  ledgerHTML += '<div class="row"><span>Less: flat deduction @ 30%</span><span class="amt">− ' + arrearsFmt(deduction) + '</span></div>';
+  ledgerHTML += '<div class="row total"><span>Taxable this year</span><span class="amt">' + arrearsFmt(taxable) + '</span></div>';
+  document.getElementById('arrearsLedger').innerHTML = ledgerHTML;
+
+  var note = 'Taxed under Sec 23 (old Sec 25A) in the year of receipt, whether or not the property is still owned that year — added on top of, not netted against, the property\'s regular annual computation for the year.';
+  document.getElementById('arrearsNote').textContent = note;
+}
+
+function arrearsSample() {
+  document.getElementById('arrearsAmount').value = 150000;
+  arrearsCalculate();
+}
+
+function arrearsClear() {
+  document.getElementById('arrearsAmount').value = 0;
+  arrearsCalculate();
+}
+
+sopCalculate();
+preconCalculate();
+coownCalculate();
+arrearsCalculate();
+
+updateVisibility();
+calculate();
+</script>
+
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

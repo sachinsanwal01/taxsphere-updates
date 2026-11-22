@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GST Return Studio · TaxSphere</title>
+<style>
+:root{--bg:#f5f4fa;--sf:#fff;--sf2:#f0eef8;--ink:#17142a;--tx:#3d3852;--soft:#6f6987;--rule:#e2deef;--ac:#5b3fd6;--ac2:#7c5cff;--acw:#ece7ff;
+  --ok:#0f7b53;--okw:#e1f5ec;--warn:#a86400;--warnw:#fff3dc;--bad:#c2334d;--badw:#fbe6ea;--r:14px;--sh:0 1px 2px rgba(23,20,42,.05),0 6px 20px rgba(23,20,42,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0d17;--sf:#181525;--sf2:#211d31;--ink:#f2efff;--tx:#d2cce6;--soft:#9a93b3;--rule:#2d2842;--ac:#9b84ff;--ac2:#b7a6ff;--acw:#29214f;
+  --ok:#44d19a;--okw:#123326;--warn:#f0b45a;--warnw:#3a2c12;--bad:#ff7d93;--badw:#3a1a22;--sh:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:14.5px/1.5 Inter,"Segoe UI",system-ui,sans-serif}
+h1,h2,h3{color:var(--ink);margin:0;letter-spacing:-.01em}h2{font-size:17px}h3{font-size:14.5px}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--ac)}
+/* app bar */
+.bar{position:sticky;top:0;z-index:20;background:linear-gradient(120deg,#3b259e,#5b3fd6 55%,#8a4fd8);color:#fff;padding:12px 14px 0;padding-top:calc(12px + env(safe-area-inset-top))}
+.bar .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media (max-width:640px){.ctx{margin-left:0!important;width:100%;order:3}.ctx select{flex:1;max-width:none!important}}
+.logo{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:.02em}
+.bar h1{color:#fff;font-size:16px}.bar small{display:block;opacity:.8;font-size:11.5px}
+.ctx{margin-left:auto;display:flex;gap:6px;align-items:center}
+.ctx select{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;padding:6px 8px;font-size:12.5px;max-width:150px}
+.ctx select option{color:#17142a}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin:10px -14px 0;padding:0 10px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:0;background:none;color:rgba(255,255,255,.78);padding:10px 11px 11px;font-size:13px;font-weight:600;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button.on{color:#fff;border-bottom-color:#c6f432}
+.tabs .cnt{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:rgba(255,255,255,.2);font-size:10.5px}
+main{padding:14px 12px 90px;max-width:1080px;margin:0 auto}
+.card{background:var(--sf);border:1px solid var(--rule);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--sh)}
+.card>h2{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.tag{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--acw);color:var(--ac)}
+.tag.ok{background:var(--okw);color:var(--ok)}.tag.warn{background:var(--warnw);color:var(--warn)}.tag.bad{background:var(--badw);color:var(--bad)}
+.muted{color:var(--soft);font-size:12.5px}
+.grid{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:640px){.g3,.g4{grid-template-columns:1fr 1fr}.g2.st{grid-template-columns:1fr}}
+label.f{display:block}label.f span{display:block;font-size:11.5px;font-weight:600;color:var(--soft);margin:0 0 4px;text-transform:uppercase;letter-spacing:.03em}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--rule);border-radius:10px;background:var(--sf);color:var(--ink);min-height:42px}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--ac) 40%,transparent);border-color:transparent}
+input.err{border-color:var(--bad);background:var(--badw)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:11px;padding:10px 14px;font-weight:700;font-size:13.5px;background:var(--ac);color:#fff;cursor:pointer;min-height:42px;text-decoration:none}
+.btn.alt{background:var(--acw);color:var(--ac)}.btn.ghost{background:transparent;border:1px solid var(--rule);color:var(--tx)}.btn.danger{background:var(--badw);color:var(--bad)}
+.btn.ok{background:var(--ok);color:#fff}.btn.sm{padding:6px 10px;min-height:32px;font-size:12.5px;border-radius:9px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.kpi{background:var(--sf2);border-radius:12px;padding:10px 12px}.kpi small{display:block;color:var(--soft);font-size:11.5px}.kpi b{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi.hi{background:linear-gradient(120deg,var(--acw),color-mix(in srgb,var(--acw) 40%,var(--sf)))}.kpi.hi b{color:var(--ac);font-size:20px}
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+th,td{padding:8px 9px;border-bottom:1px solid var(--rule);text-align:right;font-variant-numeric:tabular-nums}
+th{background:var(--sf2);color:var(--soft);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.02em;position:sticky;top:0}
+th:first-child,td:first-child,td.l,th.l{text-align:left}
+tr:last-child td{border-bottom:0}tfoot td{font-weight:800;background:var(--sf2)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--acw)}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:2px 0 4px}
+.steps div{padding:8px 6px;border-radius:10px;background:var(--sf2);text-align:center;font-size:11.5px;font-weight:700;color:var(--soft)}
+.steps div.done{background:var(--okw);color:var(--ok)}.steps div.now{background:var(--acw);color:var(--ac)}
+.steps i{display:block;font-style:normal;font-size:15px}
+.issue{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:10px;margin-top:6px;font-size:13px}
+.issue.e{background:var(--badw)}.issue.w{background:var(--warnw)}.issue b{color:var(--ink)}.issue .go{margin-left:auto;flex:none}
+.empty{text-align:center;padding:26px 10px;color:var(--soft)}
+.items td input,.items td select{min-height:36px;padding:6px 8px;font-size:13px}
+.items td{padding:4px}
+.items td:last-child{width:36px}
+.x{border:0;background:var(--badw);color:var(--bad);width:32px;height:32px;border-radius:8px;cursor:pointer;font-weight:800}
+.note{font-size:12.5px;padding:10px 12px;border-radius:10px;background:var(--warnw);color:var(--tx);margin-top:10px}
+.note.ok{background:var(--okw)}.note.info{background:var(--acw)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#1f1a33;color:#fff;padding:11px 16px;border-radius:14px;font-size:13.5px;opacity:0;transition:.25s;z-index:99;max-width:90%;text-align:center;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:7px;background:var(--sf2);color:var(--soft)}
+.pill.b2b{background:var(--acw);color:var(--ac)}.pill.b2cl{background:var(--warnw);color:var(--warn)}.pill.b2cs{background:var(--okw);color:var(--ok)}
+.portal{display:grid;gap:10px}.portal a.btn{justify-content:flex-start}
+ol.how{margin:6px 0 0;padding-left:20px}ol.how li{margin:6px 0}
+textarea.paste{min-height:120px;font:12.5px/1.4 ui-monospace,monospace}
+.search{max-width:260px}
+.hide{display:none!important}
+@media print{.bar,.btns,.btn,.noprint{display:none!important}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="row1"><div class="logo">GST</div><div><h1>GST Return Studio</h1><small>GSTR-1 · GSTR-3B · JSON for the GST portal</small></div>
+    <div class="ctx"><select id="selClient" aria-label="Client"></select><select id="selPeriod" aria-label="Return period"></select></div></div>
+  <nav class="tabs" id="tabs"></nav>
+</div>
+<main id="main"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ======================================================= masters */
+const STATES={"01":"Jammu and Kashmir","02":"Himachal Pradesh","03":"Punjab","04":"Chandigarh","05":"Uttarakhand","06":"Haryana","07":"Delhi","08":"Rajasthan","09":"Uttar Pradesh","10":"Bihar","11":"Sikkim","12":"Arunachal Pradesh","13":"Nagaland","14":"Manipur","15":"Mizoram","16":"Tripura","17":"Meghalaya","18":"Assam","19":"West Bengal","20":"Jharkhand","21":"Odisha","22":"Chhattisgarh","23":"Madhya Pradesh","24":"Gujarat","26":"Dadra and Nagar Haveli and Daman and Diu","27":"Maharashtra","29":"Karnataka","30":"Goa","31":"Lakshadweep","32":"Kerala","33":"Tamil Nadu","34":"Puducherry","35":"Andaman and Nicobar Islands","36":"Telangana","37":"Andhra Pradesh","38":"Ladakh","97":"Other Territory","96":"Other Countries"};
+const RATES=[0,0.1,0.25,1,1.5,3,5,6,7.5,12,18,28,40];
+const UQC=["NOS","PCS","KGS","GMS","LTR","MTR","BOX","PAC","SET","BAG","BTL","DOZ","SQM","SQF","TON","QTL","MLT","CTN","ROL","UNT","PRS","OTH","NA"];
+const DOCN={1:"Invoices for outward supply",2:"Invoices for inward supply from unregistered person",3:"Revised invoice",4:"Debit note",5:"Credit note",6:"Receipt voucher",7:"Payment voucher",8:"Refund voucher",9:"Delivery challan for job work",10:"Delivery challan for supply on approval",11:"Delivery challan in case of liquid gas",12:"Delivery challan in other cases"};
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const B2CL_LIMIT=100000;
+
+/* ======================================================= helpers */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const r2=n=>Math.round((+n||0)*100)/100;
+const inr=n=>(n<0?"−":"")+"₹"+Math.abs(+n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(m,ms){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),ms||2600);}
+const BR=(()=>{try{return window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){return window.AndroidBridge||null;}})();
+const IN_APP=!!BR||/; wv\)/.test(navigator.userAgent);
+function save(name,text,mime){
+  if(BR&&BR.saveFile){try{BR.saveFile(name,mime||"application/json",text);toast("Saved to Downloads/Tax Sphere: "+name,3500);return;}catch(e){}}
+  const b=new Blob([text],{type:mime||"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);toast("Downloaded "+name);
+}
+function armed(btn,label,fn){ // two-tap confirm (dialogs don't show in the Android app)
+  if(btn._arm){btn._arm=0;btn.textContent=label;fn();return;}
+  btn._arm=1;const old=btn.textContent;btn.textContent="Tap again to confirm";setTimeout(()=>{if(btn._arm){btn._arm=0;btn.textContent=old;}},3000);
+}
+// GSTIN: format + checksum
+const GSTIN_RE=/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const UIN_RE=/^[0-9]{4}[A-Z]{3}[0-9]{5}[UO]N[A-Z0-9]$/;
+function gstinCheck(g){
+  g=String(g||"").toUpperCase().trim();
+  if(!GSTIN_RE.test(g))return UIN_RE.test(g)?"ok":"format";
+  const cs="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";let sum=0;
+  for(let i=0;i<14;i++){const p=cs.indexOf(g[i])*(i%2?2:1);sum+=Math.floor(p/36)+p%36;}
+  return cs[(36-sum%36)%36]===g[14]?(STATES[g.slice(0,2)]?"ok":"state"):"checksum";
+}
+const gMsg={format:"GSTIN format is wrong (15 characters, e.g. 27ABCDE1234F1Z5)",checksum:"GSTIN check digit doesn't match (typo?)",state:"GSTIN state code is not valid"};
+// dates: stored YYYY-MM-DD; JSON DD-MM-YYYY
+const dmy=d=>{if(!d)return"";const[y,m,dd]=d.split("-");return`${dd}-${m}-${y}`;};
+function parseDate(v){
+  if(v==null||v==="")return"";
+  if(typeof v==="number"&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return d.toISOString().slice(0,10);}  // Excel serial
+  const s=String(v).trim();let m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+  if((m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/))){let y=m[3];if(y.length===2)y="20"+y;return`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;}
+  if((m=s.match(/^(\d{1,2})[-\s]([A-Za-z]{3})[A-Za-z]*[-\s](\d{2,4})$/))){const mi=MON.findIndex(x=>x.toLowerCase()===m[2].toLowerCase());if(mi>=0){let y=m[3];if(y.length===2)y="20"+y;return`${y}-${String(mi+1).padStart(2,"0")}-${m[1].padStart(2,"0")}`;}}
+  return"";
+}
+function stateCode(v){
+  if(v==null)return"";const s=String(v).trim();if(!s)return"";
+  if(/^\d{1,2}$/.test(s))return s.padStart(2,"0");
+  const m=s.match(/^(\d{2})\s*[-–]/);if(m)return m[1];
+  const n=s.toLowerCase().replace(/&/g,"and").replace(/[^a-z]/g,"");
+  for(const[c,nm]of Object.entries(STATES))if(nm.toLowerCase().replace(/[^a-z]/g,"")===n)return c;
+  const alias={orissa:"21",pondicherry:"34",uttaranchal:"05",newdelhi:"07",jammuandkashmir:"01",dadraandnagarhaveli:"26",damananddiu:"26",telengana:"36"};
+  return alias[n]||"";
+}
+const num=v=>{const n=parseFloat(String(v??"").replace(/[,₹\s]/g,""));return isFinite(n)?n:0;};
+
+/* ======================================================= store */
+const KEY="semi.gstStudio.v1";
+let DB={clients:[],cur:null,period:null,data:{}};
+function load(){try{const s=localStorage.getItem(KEY);if(s)DB=Object.assign(DB,JSON.parse(s));}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast("Couldn't save: storage full");}}
+const client=()=>DB.clients.find(c=>c.gstin===DB.cur)||null;
+const pkey=()=>DB.cur&&DB.period?DB.cur+"_"+DB.period:null;
+function R(){const k=pkey();if(!k)return null;if(!DB.data[k])DB.data[k]={sales:[],notes:[],exports:[],nil:{INTRB2B:{},INTRAB2B:{},INTRB2C:{},INTRAB2C:{}},docsManual:[],itc:{},meta:{}};return DB.data[k];}
+const fp=()=>DB.period; // MMYYYY
+const home=()=>(client()||{}).gstin?.slice(0,2)||"";
+
+/* ======================================================= tax engine */
+function itemTax(it,inter,noTax){
+  const tx=r2(num(it.tx)),rt=num(it.rt),cs=r2(num(it.cs));
+  if(noTax)return{tx,rt,iamt:0,camt:0,samt:0,csamt:0};
+  const t=tx*rt/100;
+  return inter?{tx,rt,iamt:r2(t),camt:0,samt:0,csamt:cs}:{tx,rt,iamt:0,camt:r2(t/2),samt:r2(t/2),csamt:cs};
+}
+const isInter=(pos,typ)=>typ==="SEWP"||typ==="SEWOP"||pos!==home();
+function docCalc(d,kind){ // returns {inter, lines:[{...tax}], tx,tax,val}
+  const typ=kind==="exp"?"EXP":(d.typ||"R"),pos=kind==="exp"?"96":d.pos,inter=kind==="exp"?true:isInter(pos,typ);
+  const noTax=typ==="SEWOP"||(kind==="exp"&&d.exp==="WOPAY");
+  const lines=(d.items||[]).map(it=>Object.assign({hsn:String(it.hsn||"").trim(),desc:it.desc||"",uqc:it.uqc||"",qty:num(it.qty)},itemTax(it,inter,noTax)));
+  const tx=r2(lines.reduce((a,l)=>a+l.tx,0)),tax=r2(lines.reduce((a,l)=>a+l.iamt+l.camt+l.samt+l.csamt,0));
+  return{inter,lines,tx,tax,val:r2(tx+tax)};
+}
+const rateWise=lines=>{const m={};for(const l of lines){const k=l.rt;m[k]=m[k]||{rt:l.rt,tx:0,iamt:0,camt:0,samt:0,csamt:0};for(const f of["tx","iamt","camt","samt","csamt"])m[k][f]=r2(m[k][f]+l[f]);}return Object.values(m).sort((a,b)=>a.rt-b.rt);};
+function classify(s){const c=docCalc(s,"sale");if(s.ctin)return"B2B";if(c.inter&&c.val>B2CL_LIMIT)return"B2CL";return"B2CS";}
+
+/* ======================================================= GSTR-1 builder */
+function buildR1(){
+  const d=R(),out={b2b:[],b2cl:[],b2cs:[],exp:[],cdnr:[],cdnur:[],hsnB2B:{},hsnB2C:{},nil:[],docs:[],totals:{}};
+  const addHSN=(bucket,l,sign)=>{
+    const svc=/^99/.test(l.hsn),uqc=svc?"NA":(l.uqc||"OTH"),k=l.hsn+"|"+l.rt+"|"+uqc;
+    const h=bucket[k]=bucket[k]||{hsn_sc:l.hsn,desc:l.desc||"",uqc,qty:0,rt:l.rt,txval:0,iamt:0,camt:0,samt:0,csamt:0};
+    if(!h.desc&&l.desc)h.desc=l.desc;
+    h.qty=r2(h.qty+(svc?0:sign*l.qty));for(const[f,g]of[["txval","tx"],["iamt","iamt"],["camt","camt"],["samt","samt"],["csamt","csamt"]])h[f]=r2(h[f]+sign*l[g]);
+  };
+  const b2b={},b2cl={},b2cs={},exp={WPAY:[],WOPAY:[]},cdnr={};
+  for(const s of d.sales){
+    const c=docCalc(s,"sale"),cls=classify(s);
+    const itms=rateWise(c.lines).map((x,i)=>({num:i+1,itm_det:Object.assign({rt:x.rt,txval:x.tx},c.inter?{iamt:x.iamt}:{camt:x.camt,samt:x.samt},{csamt:x.csamt})}));
+    if(cls==="B2B"){
+      const inv={inum:s.no,idt:dmy(s.dt),val:c.val,pos:s.pos,rchrg:s.rc==="Y"?"Y":"N",inv_typ:s.typ||"R",itms};
+      if(s.etin)inv.etin=s.etin;
+      (b2b[s.ctin]=b2b[s.ctin]||[]).push(inv);c.lines.forEach(l=>addHSN(out.hsnB2B,l,1));
+    }else if(cls==="B2CL"){
+      const inv={inum:s.no,idt:dmy(s.dt),val:c.val,itms:itms.map(x=>({num:x.num,itm_det:{rt:x.itm_det.rt,txval:x.itm_det.txval,iamt:x.itm_det.iamt||0,csamt:x.itm_det.csamt}}))};
+      if(s.etin)inv.etin=s.etin;
+      (b2cl[s.pos]=b2cl[s.pos]||[]).push(inv);c.lines.forEach(l=>addHSN(out.hsnB2C,l,1));
+    }else{
+      for(const x of rateWise(c.lines)){const typ=s.etin?"E":"OE",k=[s.pos,x.rt,typ,s.etin||""].join("|");
+        const e=b2cs[k]=b2cs[k]||{sply_ty:c.inter?"INTER":"INTRA",pos:s.pos,typ,etin:s.etin||"",rt:x.rt,txval:0,iamt:0,camt:0,samt:0,csamt:0};
+        for(const[f,g]of[["txval","tx"],["iamt","iamt"],["camt","camt"],["samt","samt"],["csamt","csamt"]])e[f]=r2(e[f]+x[g]);}
+      c.lines.forEach(l=>addHSN(out.hsnB2C,l,1));
+    }
+  }
+  for(const x of d.exports){
+    const c=docCalc(x,"exp"),inv={inum:x.no,idt:dmy(x.dt),val:c.val,itms:rateWise(c.lines).map(l=>({txval:l.tx,rt:l.rt,iamt:l.iamt,csamt:l.csamt}))};
+    if(x.sbpcode)inv.sbpcode=x.sbpcode;if(x.sbnum)inv.sbnum=String(x.sbnum);if(x.sbdt)inv.sbdt=dmy(x.sbdt);
+    exp[x.exp==="WOPAY"?"WOPAY":"WPAY"].push(inv);c.lines.forEach(l=>addHSN(out.hsnB2C,l,1));
+  }
+  for(const n of d.notes){
+    const c=docCalc(n,"note"),sign=n.ntty==="D"?1:-1;
+    const itms=rateWise(c.lines).map((x,i)=>({num:i+1,itm_det:Object.assign({rt:x.rt,txval:x.tx},c.inter?{iamt:x.iamt}:{camt:x.camt,samt:x.samt},{csamt:x.csamt})}));
+    if(n.ctin){(cdnr[n.ctin]=cdnr[n.ctin]||[]).push({ntty:n.ntty,nt_num:n.no,nt_dt:dmy(n.dt),val:c.val,pos:n.pos,rchrg:n.rc==="Y"?"Y":"N",inv_typ:n.typ||"R",itms});c.lines.forEach(l=>addHSN(out.hsnB2B,l,sign));}
+    else if(n.utyp==="B2CS"){ // adjusted in Table 7
+      for(const x of rateWise(c.lines)){const typ=n.etin?"E":"OE",k=[n.pos,x.rt,typ,n.etin||""].join("|");
+        const e=b2cs[k]=b2cs[k]||{sply_ty:c.inter?"INTER":"INTRA",pos:n.pos,typ,etin:n.etin||"",rt:x.rt,txval:0,iamt:0,camt:0,samt:0,csamt:0};
+        for(const[f,g]of[["txval","tx"],["iamt","iamt"],["camt","camt"],["samt","samt"],["csamt","csamt"]])e[f]=r2(e[f]+sign*x[g]);}
+      c.lines.forEach(l=>addHSN(out.hsnB2C,l,sign));
+    }else{
+      const nt={typ:n.utyp||"B2CL",ntty:n.ntty,nt_num:n.no,nt_dt:dmy(n.dt),val:c.val,itms:itms.map(x=>({num:x.num,itm_det:{rt:x.itm_det.rt,txval:x.itm_det.txval,iamt:x.itm_det.iamt||0,csamt:x.itm_det.csamt}}))};
+      if(nt.typ==="B2CL")nt.pos=n.pos;
+      out.cdnur.push(nt);c.lines.forEach(l=>addHSN(out.hsnB2C,l,sign));
+    }
+  }
+  out.b2b=Object.entries(b2b).map(([ctin,inv])=>({ctin,inv}));
+  out.b2cl=Object.entries(b2cl).map(([pos,inv])=>({pos,inv}));
+  out.b2cs=Object.values(b2cs).filter(e=>e.txval!==0).map(e=>{const o={sply_ty:e.sply_ty,rt:e.rt,typ:e.typ,pos:e.pos,txval:e.txval};
+    if(e.etin)o.etin=e.etin;if(e.sply_ty==="INTER")o.iamt=e.iamt;else{o.camt=e.camt;o.samt=e.samt;}o.csamt=e.csamt;return o;});
+  out.exp=Object.entries(exp).filter(([,v])=>v.length).map(([exp_typ,inv])=>({exp_typ,inv}));
+  out.cdnr=Object.entries(cdnr).map(([ctin,nt])=>({ctin,nt}));
+  for(const[k,v]of Object.entries(d.nil)){const o={sply_ty:k,expt_amt:r2(num(v.expt)),nil_amt:r2(num(v.nil)),ngsup_amt:r2(num(v.ngsup))};if(o.expt_amt||o.nil_amt||o.ngsup_amt)out.nil.push(o);}
+  out.docs=docSeries();
+  // totals
+  const T=out.totals={b2b:0,b2cl:0,b2cs:0,exp:0,cdn:0,nil:0,tx:0,iamt:0,camt:0,samt:0,csamt:0,count:{b2b:0,b2cl:0,b2cs:0,exp:d.exports.length,cdnr:0,cdnur:0}};
+  const acc=(l,sg)=>{T.tx=r2(T.tx+sg*l.txval);T.iamt=r2(T.iamt+sg*(l.iamt||0));T.camt=r2(T.camt+sg*(l.camt||0));T.samt=r2(T.samt+sg*(l.samt||0));T.csamt=r2(T.csamt+sg*(l.csamt||0));};
+  out.b2b.forEach(g=>g.inv.forEach(i=>{T.count.b2b++;i.itms.forEach(x=>{T.b2b=r2(T.b2b+x.itm_det.txval);acc(x.itm_det,1);});}));
+  out.b2cl.forEach(g=>g.inv.forEach(i=>{T.count.b2cl++;i.itms.forEach(x=>{T.b2cl=r2(T.b2cl+x.itm_det.txval);acc(x.itm_det,1);});}));
+  out.b2cs.forEach(x=>{T.b2cs=r2(T.b2cs+x.txval);acc(x,1);});T.count.b2cs=out.b2cs.length;
+  out.exp.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>{T.exp=r2(T.exp+x.txval);acc(x,1);})));
+  out.cdnr.forEach(g=>g.nt.forEach(n=>{T.count.cdnr++;const sg=n.ntty==="D"?1:-1;n.itms.forEach(x=>{T.cdn=r2(T.cdn+sg*x.itm_det.txval);acc(x.itm_det,sg);});}));
+  out.cdnur.forEach(n=>{T.count.cdnur++;const sg=n.ntty==="D"?1:-1;n.itms.forEach(x=>{T.cdn=r2(T.cdn+sg*x.itm_det.txval);acc(x.itm_det,sg);});});
+  out.nil.forEach(x=>T.nil=r2(T.nil+x.expt_amt+x.nil_amt+x.ngsup_amt));
+  return out;
+}
+function docSeries(){ // Table 13 from registers (series = prefix) + manual rows
+  const d=R(),groups={};
+  const addDoc=(nature,no)=>{const m=String(no).match(/^(.*?)(\d+)(\D*)$/);const pre=m?m[1]:"",suf=m?m[3]:"",n=m?parseInt(m[2],10):NaN,w=m?m[2].length:0;
+    const k=nature+"|"+pre+"|"+suf;const g=groups[k]=groups[k]||{nature,pre,suf,w,list:[]};g.list.push({n,raw:String(no)});};
+  d.sales.forEach(s=>addDoc(1,s.no));d.exports.forEach(s=>addDoc(1,s.no));
+  d.notes.forEach(n=>addDoc(n.ntty==="D"?4:5,n.no));
+  const rows=[];
+  for(const g of Object.values(groups)){
+    const nums=g.list.filter(x=>isFinite(x.n)).sort((a,b)=>a.n-b.n);if(!nums.length)continue;
+    const fmt=n=>g.pre+String(n).padStart(g.w,"0")+g.suf,first=nums[0].n,last=nums[nums.length-1].n,total=last-first+1;
+    rows.push({nature:g.nature,from:fmt(first),to:fmt(last),totnum:total,cancel:Math.max(0,total-nums.length),auto:true});
+  }
+  for(const m of d.docsManual)rows.push({nature:+m.nature,from:m.from,to:m.to,totnum:num(m.totnum),cancel:num(m.cancel),manual:true});
+  return rows;
+}
+function r1JSON(){
+  const o=buildR1(),j={gstin:DB.cur,fp:fp(),version:"GST3.0.4",hash:"hash"};
+  if(o.b2b.length)j.b2b=o.b2b;if(o.b2cl.length)j.b2cl=o.b2cl;if(o.b2cs.length)j.b2cs=o.b2cs;if(o.exp.length)j.exp=o.exp;
+  if(o.cdnr.length)j.cdnr=o.cdnr;if(o.cdnur.length)j.cdnur=o.cdnur;if(o.nil.length)j.nil={inv:o.nil};
+  const hsnArr=b=>Object.values(b).filter(h=>h.txval!==0).map((h,i)=>{const e={hsn_sc:h.hsn_sc,num:i+1,desc:h.desc.slice(0,30),uqc:h.uqc,qty:/^99/.test(h.hsn_sc)?0:h.qty,rt:h.rt,txval:h.txval,iamt:h.iamt,camt:h.camt,samt:h.samt,csamt:h.csamt};return e;});
+  j.hsn={hsn_b2b:hsnArr(o.hsnB2B)};const hb2c=hsnArr(o.hsnB2C);if(hb2c.length)j.hsn.hsn_b2c=hb2c;
+  const dd={};o.docs.forEach(r=>{(dd[r.nature]=dd[r.nature]||[]).push(r);});
+  j.doc_issue={doc_det:Object.entries(dd).map(([n,rows])=>({doc_num:+n,docs:rows.map((r,i)=>({num:i+1,from:r.from,to:r.to,totnum:r.totnum,cancel:r.cancel,net_issue:r.totnum-r.cancel}))}))};
+  return j;
+}
+
+/* ======================================================= validation */
+function validate(){
+  const d=R(),c=client(),iss=[],seen={},[mm,yy]=[+fp().slice(0,2),+fp().slice(2)];
+  const pStart=new Date(yy,mm-1,1),pEnd=new Date(yy,mm,0);
+  const hsnMin=c&&c.band==="above5"?6:4;
+  const chkDoc=(x,kind,tab)=>{
+    const tag=`${kind} ${x.no||"(no number)"}`;
+    if(!x.no)iss.push({t:"e",m:`${kind} number is missing`,tab,id:x.id});
+    else{if(String(x.no).length>16)iss.push({t:"e",m:`${tag}: number longer than 16 characters`,tab,id:x.id});
+      if(!/^[A-Za-z0-9/-]+$/.test(x.no))iss.push({t:"e",m:`${tag}: only letters, digits, / and - are allowed`,tab,id:x.id});
+      if(/^[0/-]+$/.test(x.no))iss.push({t:"e",m:`${tag}: number can't be all zeros`,tab,id:x.id});
+      const k=(tab==="notes"?"N":"I")+String(x.no).toUpperCase();if(seen[k])iss.push({t:"e",m:`${tag}: duplicate number`,tab,id:x.id});seen[k]=1;}
+    if(!x.dt)iss.push({t:"e",m:`${tag}: date missing`,tab,id:x.id});
+    else{const dt=new Date(x.dt);if(dt>pEnd)iss.push({t:"e",m:`${tag}: date is after the return period`,tab,id:x.id});
+      else if(dt<pStart&&tab!=="notes")iss.push({t:"w",m:`${tag}: date is before this period (report in the right month or as an amendment)`,tab,id:x.id});}
+    if(kind!=="Export"&&!STATES[x.pos])iss.push({t:"e",m:`${tag}: place of supply missing`,tab,id:x.id});
+    if(x.ctin){const g=gstinCheck(x.ctin);if(g!=="ok")iss.push({t:"e",m:`${tag}: ${gMsg[g]}`,tab,id:x.id});if(x.ctin===DB.cur)iss.push({t:"e",m:`${tag}: customer GSTIN is your own GSTIN`,tab,id:x.id});}
+    if(x.etin&&gstinCheck(x.etin)!=="ok")iss.push({t:"e",m:`${tag}: e-commerce operator GSTIN is invalid`,tab,id:x.id});
+    if(!(x.items||[]).length)iss.push({t:"e",m:`${tag}: no line items`,tab,id:x.id});
+    (x.items||[]).forEach((it,i)=>{
+      if(!RATES.includes(num(it.rt)))iss.push({t:"e",m:`${tag} line ${i+1}: GST rate ${it.rt}% is not a valid rate`,tab,id:x.id});
+      if(!(num(it.tx)>0))iss.push({t:"e",m:`${tag} line ${i+1}: taxable value must be more than 0`,tab,id:x.id});
+      const h=String(it.hsn||"").trim();
+      if(!/^\d+$/.test(h))iss.push({t:"e",m:`${tag} line ${i+1}: HSN/SAC missing or not numeric`,tab,id:x.id});
+      else if(h.length<hsnMin&&(x.ctin||hsnMin===6))iss.push({t:"e",m:`${tag} line ${i+1}: HSN needs at least ${hsnMin} digits for your turnover`,tab,id:x.id});
+      else if(![4,6,8].includes(h.length))iss.push({t:"w",m:`${tag} line ${i+1}: HSN/SAC is usually 4, 6 or 8 digits`,tab,id:x.id});
+      if(!/^99/.test(h)&&!(num(it.qty)>0))iss.push({t:"w",m:`${tag} line ${i+1}: quantity is 0 for goods (needed in the HSN summary)`,tab,id:x.id});
+    });
+  };
+  if(!c)iss.push({t:"e",m:"Add a business (GSTIN) first",tab:"clients"});
+  d.sales.forEach(s=>{chkDoc(s,"Invoice","sales");
+    if((s.typ==="SEWP"||s.typ==="SEWOP")&&!s.ctin)iss.push({t:"e",m:`Invoice ${s.no}: SEZ supplies need the SEZ unit's GSTIN`,tab:"sales",id:s.id});
+    if(s.typ==="SEWOP"&&s.items.some(it=>num(it.rt)===0))iss.push({t:"w",m:`Invoice ${s.no}: for SEZ without payment, still enter the applicable rate`,tab:"sales",id:s.id});});
+  d.notes.forEach(n=>{chkDoc(n,"Note","notes");if(!n.ctin&&!["B2CL","B2CS","EXPWP","EXPWOP"].includes(n.utyp))iss.push({t:"e",m:`Note ${n.no}: choose the unregistered type (B2CL / B2CS / export)`,tab:"notes",id:n.id});});
+  d.exports.forEach(x=>{chkDoc(x,"Export","exports");if(x.sbpcode&&!/^[A-Z0-9]{6}$/i.test(x.sbpcode))iss.push({t:"w",m:`Export ${x.no}: port code is usually 6 characters`,tab:"exports",id:x.id});
+    if(x.sbnum&&!/^\d{3,7}$/.test(String(x.sbnum)))iss.push({t:"w",m:`Export ${x.no}: shipping bill number is 3–7 digits`,tab:"exports",id:x.id});});
+  const o=buildR1();
+  o.b2cs.forEach(e=>{if(e.txval<0)iss.push({t:"e",m:`Table 7 (B2CS) ${STATES[e.pos]} @ ${e.rt}% is negative: credit notes exceed sales; adjust against the original month`,tab:"r1"});});
+  if(!d.sales.length&&!d.exports.length&&!d.notes.length&&!o.nil.length)iss.push({t:"w",m:"No supplies entered. If there was no business this period, file a nil return on the portal (or by SMS).",tab:"sales"});
+  return iss;
+}
+
+/* ======================================================= GSTR-3B */
+function build3B(){
+  const o=buildR1(),d=R(),it=d.itc||{},v=k=>r2(num(it[k]));
+  const osup={txval:0,iamt:0,camt:0,samt:0,csamt:0},zero={txval:0,iamt:0,csamt:0},unreg={};
+  const add=(t,x,sg)=>{t.txval=r2(t.txval+sg*x.txval);for(const f of["iamt","camt","samt","csamt"])if(f in t)t[f]=r2(t[f]+sg*(x[f]||0));};
+  o.b2b.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>{if(i.rchrg==="Y")return;(i.inv_typ==="SEWP"||i.inv_typ==="SEWOP")?add(zero,x.itm_det,1):add(osup,x.itm_det,1);})));
+  o.b2cl.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>{add(osup,x.itm_det,1);const u=unreg[g.pos]=unreg[g.pos]||{pos:g.pos,txval:0,iamt:0};u.txval=r2(u.txval+x.itm_det.txval);u.iamt=r2(u.iamt+x.itm_det.iamt);})));
+  o.b2cs.forEach(x=>{add(osup,x,1);if(x.sply_ty==="INTER"){const u=unreg[x.pos]=unreg[x.pos]||{pos:x.pos,txval:0,iamt:0};u.txval=r2(u.txval+x.txval);u.iamt=r2(u.iamt+(x.iamt||0));}});
+  o.exp.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>add(zero,x,1))));
+  o.cdnr.forEach(g=>g.nt.forEach(n=>n.itms.forEach(x=>add((n.inv_typ==="SEWP"||n.inv_typ==="SEWOP")?zero:osup,x.itm_det,n.ntty==="D"?1:-1))));
+  o.cdnur.forEach(n=>n.itms.forEach(x=>add(/^EXP/.test(n.typ)?zero:osup,x.itm_det,n.ntty==="D"?1:-1)));
+  const nilT=r2(o.nil.reduce((a,x)=>a+x.expt_amt+x.nil_amt,0)),ngT=r2(o.nil.reduce((a,x)=>a+x.ngsup_amt,0));
+  const rcm={txval:v("rcm_tx"),iamt:v("rcm_i"),camt:v("rcm_c"),samt:v("rcm_s"),csamt:v("rcm_cs")};
+  const avl=[["IMPG","imp_g"],["IMPS","imp_s"],["ISRC","rc"],["ISD","isd"],["OTH","oth"]].map(([ty,p])=>({ty,iamt:v(p+"_i"),camt:ty.startsWith("IMP")?0:v(p+"_c"),samt:ty.startsWith("IMP")?0:v(p+"_s"),csamt:v(p+"_cs")}));
+  const rev=[["RUL","rev1"],["OTH","rev2"]].map(([ty,p])=>({ty,iamt:v(p+"_i"),camt:v(p+"_c"),samt:v(p+"_s"),csamt:v(p+"_cs")}));
+  const inelg=[["RUL","in1"],["OTH","in2"]].map(([ty,p])=>({ty,iamt:v(p+"_i"),camt:v(p+"_c"),samt:v(p+"_s"),csamt:v(p+"_cs")}));
+  const sum=(a,f)=>r2(a.reduce((s,x)=>s+(x[f]||0),0));
+  const net={iamt:r2(sum(avl,"iamt")-sum(rev,"iamt")),camt:r2(sum(avl,"camt")-sum(rev,"camt")),samt:r2(sum(avl,"samt")-sum(rev,"samt")),csamt:r2(sum(avl,"csamt")-sum(rev,"csamt"))};
+  // liability = outward (osup+zero with payment) + RCM inward
+  const L={i:r2(osup.iamt+zero.iamt+rcm.iamt),c:r2(osup.camt+rcm.camt),s:r2(osup.samt+rcm.samt),cs:r2(osup.csamt+zero.csamt+rcm.csamt)};
+  // RCM liability must be paid in cash; ITC only against forward-charge liability
+  const LF={i:r2(L.i-rcm.iamt),c:r2(L.c-rcm.camt),s:r2(L.s-rcm.samt),cs:r2(L.cs-rcm.csamt)};
+  const so=setoff(LF,{i:Math.max(0,net.iamt),c:Math.max(0,net.camt),s:Math.max(0,net.samt),cs:Math.max(0,net.csamt)});
+  const cash={i:r2(so.cash.i+rcm.iamt),c:r2(so.cash.c+rcm.camt),s:r2(so.cash.s+rcm.samt),cs:r2(so.cash.cs+rcm.csamt)};
+  return{osup,zero,nilT,ngT,rcm,unreg:Object.values(unreg).filter(u=>u.txval),avl,rev,inelg,net,L,so,cash,
+    inward:{gst_inter:v("ex_inter"),gst_intra:v("ex_intra"),ng_inter:v("ng_inter"),ng_intra:v("ng_intra")},intr:{iamt:v("int_i"),camt:v("int_c"),samt:v("int_s"),csamt:v("int_cs")}};
+}
+function setoff(L,C){ // Sec 49/49A/49B + Rule 88A, arranged to minimise cash
+  L={...L};C={...C};const U=[];const use=(from,to,amt)=>{amt=r2(Math.min(amt,C[from],L[to]));if(amt>0){C[from]=r2(C[from]-amt);L[to]=r2(L[to]-amt);U.push([from,to,amt]);}};
+  use("i","i",C.i);
+  const cDef=Math.max(0,L.c-C.c),sDef=Math.max(0,L.s-C.s);use("i","c",cDef);use("i","s",sDef);use("i","c",C.i);use("i","s",C.i);
+  use("c","c",C.c);use("c","i",C.c);use("s","s",C.s);use("s","i",C.s);use("cs","cs",C.cs);
+  return{U,cash:L,left:C};
+}
+function r3JSON(){
+  const b=build3B(),z=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,r2(v)]));
+  return{gstin:DB.cur,ret_period:fp(),
+    sup_details:{osup_det:z(b.osup),osup_zero:{txval:b.zero.txval,iamt:b.zero.iamt,csamt:b.zero.csamt},osup_nil_exmp:{txval:b.nilT},isup_rev:z(b.rcm),osup_nongst:{txval:b.ngT}},
+    inter_sup:{unreg_details:b.unreg.map(u=>({pos:u.pos,txval:u.txval,iamt:u.iamt})),comp_details:[],uin_details:[]},
+    itc_elg:{itc_avl:b.avl,itc_rev:b.rev,itc_net:b.net,itc_inelg:b.inelg},
+    inward_sup:{isup_details:[{ty:"GST",inter:b.inward.gst_inter,intra:b.inward.gst_intra},{ty:"NONGST",inter:b.inward.ng_inter,intra:b.inward.ng_intra}]},
+    intr_ltfee:{intr_details:b.intr}};
+}
+
+/* ======================================================= templates & import */
+const TPL={
+  sales:{name:"Sales_register_template.csv",cols:["Invoice No","Invoice Date (DD-MM-YYYY)","Customer GSTIN (blank if unregistered)","Customer Name","Place of Supply (state code or name)","Reverse Charge (Y/N)","Invoice Type (R/SEWP/SEWOP/DE/CBW)","E-commerce GSTIN","HSN/SAC","Description","UQC","Quantity","Taxable Value","GST Rate %","Cess Amount"],
+    sample:[["INV/001","05-10-2026","29ABCDE1234F1ZW","Sample Traders","29","N","R","","6204","Ladies kurta","PCS","10","15000","5","0"],["INV/001","05-10-2026","29ABCDE1234F1ZW","Sample Traders","29","N","R","","6109","T-shirt","PCS","20","8000","5","0"],["INV/002","07-10-2026","","Walk-in customer","27","N","R","","998314","IT support","NA","0","5000","18","0"]]},
+  notes:{name:"Credit_debit_notes_template.csv",cols:["Note No","Note Date (DD-MM-YYYY)","Note Type (C/D)","Customer GSTIN (blank if unregistered)","Customer Name","Place of Supply","Unregistered Type (B2CL/B2CS/EXPWP/EXPWOP)","HSN/SAC","Description","UQC","Quantity","Taxable Value","GST Rate %","Cess Amount"],
+    sample:[["CN/001","20-10-2026","C","29ABCDE1234F1ZW","Sample Traders","29","","6204","Return of kurta","PCS","2","3000","5","0"]]},
+  exports:{name:"Export_invoices_template.csv",cols:["Invoice No","Invoice Date (DD-MM-YYYY)","Export Type (WPAY/WOPAY)","Port Code","Shipping Bill No","Shipping Bill Date (DD-MM-YYYY)","HSN/SAC","Description","UQC","Quantity","Taxable Value","GST Rate %","Cess Amount"],
+    sample:[["EXP/001","12-10-2026","WOPAY","INBOM1","1234567","14-10-2026","6204","Cotton kurta","PCS","500","400000","5","0"]]}
+};
+const csvCell=x=>/[",\n]/.test(String(x))?`"${String(x).replace(/"/g,'""')}"`:String(x);
+function downloadTpl(k,withSample){const t=TPL[k];save(t.name,"\ufeff"+[t.cols,...(withSample?t.sample:[])].map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv");}
+function parseTable(text){
+  if(text.includes("\t")&&!/^[^\t\n]*,[^\t\n]*\n/.test(text.slice(0,200)))return text.split(/\r?\n/).map(l=>l.split("\t")).filter(r=>r.some(x=>x.trim()));
+  const out=[];let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch=='"'){if(text[i+1]=='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else if(ch=='"')q=true;else if(ch==","){row.push(cur);cur="";}else if(ch=="\n"||ch=="\r"){if(ch=="\r"&&text[i+1]=="\n")i++;row.push(cur);out.push(row);row=[];cur="";}else cur+=ch;}
+  if(cur||row.length){row.push(cur);out.push(row);}
+  return out.filter(r=>r.some(x=>String(x).trim()!==""));
+}
+const nk=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+function colIdx(h,...names){const H=h.map(nk);for(const n of names){const i=H.findIndex(x=>x.startsWith(nk(n)));if(i>=0)return i;}return -1;}
+function importRows(kind,rows){
+  if(rows.length<2)throw new Error("Paste the header row and at least one data row");
+  const h=rows[0],I=k=>colIdx(h,...k);
+  const ix={no:I(["Invoice No","Note No","Invoice Number","Inv No","Document No"]),dt:I(["Invoice Date","Note Date","Date"]),ctin:I(["Customer GSTIN","GSTIN","Recipient GSTIN"]),cname:I(["Customer Name","Party","Receiver Name","Name"]),
+    pos:I(["Place of Supply","POS","State"]),rc:I(["Reverse Charge"]),typ:I(["Invoice Type"]),etin:I(["E-commerce GSTIN","Ecommerce GSTIN","ETIN"]),hsn:I(["HSN/SAC","HSN","SAC"]),desc:I(["Description","Item"]),
+    uqc:I(["UQC","Unit"]),qty:I(["Quantity","Qty"]),tx:I(["Taxable Value","Taxable"]),rt:I(["GST Rate","Rate"]),cs:I(["Cess Amount","Cess"]),ntty:I(["Note Type","Type (C/D)"]),utyp:I(["Unregistered Type","UR Type"]),
+    exp:I(["Export Type"]),sbpcode:I(["Port Code"]),sbnum:I(["Shipping Bill No"]),sbdt:I(["Shipping Bill Date"])};
+  if(ix.no<0||ix.tx<0||ix.rt<0)throw new Error("Couldn't find Invoice/Note No, Taxable Value and GST Rate columns. Use the template header.");
+  const g=(r,k)=>ix[k]>=0?String(r[ix[k]]??"").trim():"",list=kind==="sales"?R().sales:kind==="notes"?R().notes:R().exports,map={};let n=0,lines=0;
+  for(const r of rows.slice(1)){
+    const no=g(r,"no");if(!no)continue;
+    let doc=map[no];
+    if(!doc){doc={id:uid(),no,dt:parseDate(ix.dt>=0?r[ix.dt]:""),items:[]};
+      if(kind!=="exports"){const ct=g(r,"ctin").toUpperCase();doc.ctin=ct;doc.cname=g(r,"cname");doc.pos=stateCode(g(r,"pos"))||(ct?ct.slice(0,2):home());doc.rc=/^y/i.test(g(r,"rc"))?"Y":"N";
+        const t=g(r,"typ").toUpperCase();doc.typ=["R","SEWP","SEWOP","DE","CBW"].includes(t)?t:/sez.*with ?out/i.test(t)?"SEWOP":/sez/i.test(t)?"SEWP":/deem/i.test(t)?"DE":"R";doc.etin=g(r,"etin").toUpperCase();}
+      if(kind==="notes"){doc.ntty=/^d/i.test(g(r,"ntty"))?"D":"C";doc.utyp=g(r,"utyp").toUpperCase();}
+      if(kind==="exports"){doc.exp=/wo/i.test(g(r,"exp"))?"WOPAY":"WPAY";doc.sbpcode=g(r,"sbpcode").toUpperCase();doc.sbnum=g(r,"sbnum");doc.sbdt=parseDate(ix.sbdt>=0?r[ix.sbdt]:"");}
+      map[no]=doc;list.push(doc);n++;}
+    doc.items.push({hsn:g(r,"hsn"),desc:g(r,"desc"),uqc:(g(r,"uqc")||"").toUpperCase(),qty:num(g(r,"qty")),tx:num(g(r,"tx")),rt:num(String(g(r,"rt")).replace("%","")),cs:num(g(r,"cs"))});lines++;
+  }
+  persist();return{n,lines};
+}
+
+/* ======================================================= UI */
+const TABS=[["home","Dashboard"],["clients","Business"],["sales","Sales"],["notes","Credit/Debit notes"],["exports","Exports"],["others","Nil & docs"],["import","Templates & import"],["r1","GSTR-1"],["r3b","GSTR-3B"],["portal","File on portal"]];
+let TAB="home",EDIT=null,FILTER="";
+function periods(){const o=[],d=new Date();for(let k=-1;k<15;k++){const x=new Date(d.getFullYear(),d.getMonth()-k,1);o.push([String(x.getMonth()+1).padStart(2,"0")+x.getFullYear(),MON[x.getMonth()]+" "+x.getFullYear()]);}return o;}
+function header(){
+  $("#selClient").innerHTML=DB.clients.length?DB.clients.map(c=>`<option value="${c.gstin}" ${c.gstin===DB.cur?"selected":""}>${esc(c.name||c.gstin)}</option>`).join("")+'<option value="__new">＋ Add business</option>':'<option value="__new">＋ Add business</option>';
+  $("#selPeriod").innerHTML=periods().map(([v,l])=>`<option value="${v}" ${v===DB.period?"selected":""}>${l}</option>`).join("");
+  const d=R(),cnt={sales:d?d.sales.length:0,notes:d?d.notes.length:0,exports:d?d.exports.length:0};
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button data-t="${k}" class="${k===TAB?"on":""}">${l}${cnt[k]?`<span class="cnt">${cnt[k]}</span>`:""}</button>`).join("");
+}
+function go(t){TAB=t;EDIT=null;render();window.scrollTo(0,0);const b=$(`#tabs [data-t="${t}"]`);if(b)b.scrollIntoView({inline:"center",block:"nearest"});}
+function render(){header();const m=$("#main");
+  if(!client()&&!["clients","portal"].includes(TAB))TAB="clients";
+  m.innerHTML=({home:vHome,clients:vClients,sales:()=>vReg("sales"),notes:()=>vReg("notes"),exports:()=>vReg("exports"),others:vOthers,import:vImport,r1:vR1,r3b:v3B,portal:vPortal})[TAB]();
+  bind();}
+
+function stepper(){
+  const d=R(),iss=validate(),err=iss.filter(i=>i.t==="e").length,has=d.sales.length+d.notes.length+d.exports.length>0,meta=d.meta||{};
+  const st=[["🏢","Business",!!client()],["🧾","Enter data",has],["✅","Validate",has&&!err],["⬇️","JSON",!!meta.r1json],["🌐","Upload",!!meta.uploaded]];
+  const now=st.findIndex(s=>!s[2]);
+  return`<div class="steps">${st.map((s,i)=>`<div class="${s[2]?"done":i===now?"now":""}"><i>${s[0]}</i>${s[1]}</div>`).join("")}</div>`;
+}
+function vHome(){
+  const c=client(),o=buildR1(),T=o.totals,b=build3B(),iss=validate(),e=iss.filter(i=>i.t==="e").length,w=iss.length-e;
+  const per=periods().find(p=>p[0]===DB.period);const due=c.freq==="Q"?"13th after the quarter (IFF by 13th for months 1–2)":"11th of next month";
+  return SAMPLE_BAR()+`<div class="card"><h2>${esc(c.name||"Business")} <span class="tag">${esc(c.gstin)}</span></h2>
+    <div class="muted">${STATES[c.gstin.slice(0,2)]} · ${c.freq==="Q"?"QRMP (quarterly)":"Monthly"} filer · Period <b>${per?per[1]:DB.period}</b> · GSTR-1 due ${due}</div>
+    <div style="margin-top:12px">${stepper()}</div></div>
+  <div class="card"><h2>GSTR-1 summary</h2><div class="kpis">
+    <div class="kpi hi"><small>Total taxable value</small><b>${inr(T.tx)}</b></div><div class="kpi"><small>IGST</small><b>${inr(T.iamt)}</b></div>
+    <div class="kpi"><small>CGST</small><b>${inr(T.camt)}</b></div><div class="kpi"><small>SGST</small><b>${inr(T.samt)}</b></div>
+    <div class="kpi"><small>B2B · ${T.count.b2b} invoices</small><b>${inr(T.b2b)}</b></div><div class="kpi"><small>B2C large · ${T.count.b2cl}</small><b>${inr(T.b2cl)}</b></div>
+    <div class="kpi"><small>B2C small (Table 7)</small><b>${inr(T.b2cs)}</b></div><div class="kpi"><small>Exports / SEZ</small><b>${inr(T.exp)}</b></div>
+    <div class="kpi"><small>Notes (net)</small><b>${inr(T.cdn)}</b></div><div class="kpi"><small>Nil / exempt / non-GST</small><b>${inr(T.nil)}</b></div></div></div>
+  <div class="card"><h2>GSTR-3B estimate</h2><div class="kpis">
+    <div class="kpi"><small>Output tax</small><b>${inr(b.L.i+b.L.c+b.L.s+b.L.cs)}</b></div><div class="kpi"><small>Net ITC</small><b>${inr(b.net.iamt+b.net.camt+b.net.samt+b.net.csamt)}</b></div>
+    <div class="kpi hi"><small>Cash payable</small><b>${inr(b.cash.i+b.cash.c+b.cash.s+b.cash.cs)}</b></div></div></div>
+  <div class="card"><h2>Checks ${e?`<span class="tag bad">${e} errors</span>`:""}${w?`<span class="tag warn">${w} warnings</span>`:""}${!iss.length?'<span class="tag ok">All clear</span>':""}</h2>
+    ${iss.slice(0,6).map(issueRow).join("")||'<div class="note ok">No problems found. Generate your GSTR-1 JSON.</div>'}
+    ${iss.length>6?`<button class="btn ghost sm" data-go="r1" style="margin-top:8px">See all ${iss.length}</button>`:""}</div>
+  <div class="btns"><button class="btn" data-go="sales">＋ Add sales invoice</button><button class="btn alt" data-go="import">Import from Excel</button><button class="btn alt" data-go="r1">Generate GSTR-1 JSON</button><button class="btn ghost" data-go="portal">Open GST portal</button></div>`;
+}
+const issueRow=i=>`<div class="issue ${i.t}"><span>${i.t==="e"?"⛔":"⚠️"}</span><span>${esc(i.m)}</span>${i.tab&&TABS.some(t=>t[0]===i.tab)?`<button class="btn ghost sm go" data-go="${i.tab}" ${i.id?`data-edit="${i.id}"`:""}>Fix</button>`:""}</div>`;
+
+function vClients(){
+  const c=EDIT&&EDIT.client?EDIT.client:{gstin:"",name:"",freq:"M",band:"upto5",ecom:false};
+  return SAMPLE_BAR()+`<div class="card"><h2>${DB.clients.length?"Businesses":"Add your business"}</h2>
+    ${DB.clients.length?`<div class="tw"><table><tr><th>Business</th><th class="l">GSTIN</th><th class="l">State</th><th class="l">Filing</th><th></th></tr>
+      ${DB.clients.map(x=>`<tr><td>${esc(x.name)}</td><td class="l">${x.gstin}</td><td class="l">${STATES[x.gstin.slice(0,2)]||""}</td><td class="l">${x.freq==="Q"?"QRMP":"Monthly"}</td>
+      <td><button class="btn sm alt" data-use="${x.gstin}">Use</button> <button class="btn sm ghost" data-cedit="${x.gstin}">Edit</button></td></tr>`).join("")}</table></div>`:
+      '<p class="muted">Add each GSTIN you file for. Practitioners can add many clients and switch from the top bar.</p>'}
+  </div>
+  <div class="card"><h2>${c.gstin&&DB.clients.some(x=>x.gstin===c.gstin)?"Edit business":"New business"}</h2>
+    <div class="grid g2 st"><label class="f"><span>GSTIN</span><input id="cG" maxlength="15" value="${esc(c.gstin)}" placeholder="27ABCDE1234F1Z5" autocapitalize="characters"></label>
+      <label class="f"><span>Legal / trade name</span><input id="cN" value="${esc(c.name)}" placeholder="Business name"></label>
+      <label class="f"><span>Filing frequency</span><select id="cF"><option value="M" ${c.freq==="M"?"selected":""}>Monthly</option><option value="Q" ${c.freq==="Q"?"selected":""}>Quarterly (QRMP)</option></select></label>
+      <label class="f"><span>Aggregate turnover (last FY)</span><select id="cB"><option value="upto5" ${c.band!=="above5"?"selected":""}>Up to ₹5 crore (4-digit HSN)</option><option value="above5" ${c.band==="above5"?"selected":""}>Above ₹5 crore (6-digit HSN, e-invoice)</option></select></label></div>
+    <div id="cMsg"></div>
+    <div class="btns" style="margin-top:12px"><button class="btn" id="cSave">Save business</button>${c.gstin&&DB.clients.some(x=>x.gstin===c.gstin)?'<button class="btn danger" id="cDel">Delete business & data</button>':""}</div></div>`;
+}
+function emptyDoc(kind){
+  const base={id:uid(),no:"",dt:new Date().toISOString().slice(0,10),items:[{hsn:"",desc:"",uqc:"NOS",qty:1,tx:"",rt:18,cs:0}]};
+  if(kind==="sales")return Object.assign(base,{ctin:"",cname:"",pos:home(),rc:"N",typ:"R",etin:""});
+  if(kind==="notes")return Object.assign(base,{ntty:"C",ctin:"",cname:"",pos:home(),rc:"N",typ:"R",utyp:"B2CS",etin:""});
+  return Object.assign(base,{exp:"WOPAY",sbpcode:"",sbnum:"",sbdt:""});
+}
+function vReg(kind){
+  const list=R()[kind],lab={sales:"Sales invoices",notes:"Credit & debit notes",exports:"Export invoices"}[kind];
+  if(EDIT&&EDIT.kind===kind)return vForm(kind,EDIT.doc);
+  const f=FILTER.toLowerCase(),rows=list.filter(x=>!f||(x.no+" "+(x.cname||"")+" "+(x.ctin||"")).toLowerCase().includes(f));
+  return`<div class="card"><h2>${lab} <span class="tag">${list.length}</span></h2>
+    <div class="btns" style="margin-bottom:10px"><button class="btn" data-new="${kind}">＋ Add ${kind==="notes"?"note":"invoice"}</button>
+      <input class="search" id="flt" placeholder="Search number, party, GSTIN" value="${esc(FILTER)}"></div>
+    ${rows.length?`<div class="tw"><table><tr><th>No.</th><th class="l">Date</th>${kind!=="exports"?'<th class="l">Party</th><th class="l">Table</th>':'<th class="l">Type</th>'}<th>Taxable</th><th>Tax</th><th>Value</th></tr>
+    ${rows.map(x=>{const c=docCalc(x,kind==="exports"?"exp":kind==="notes"?"note":"sale"),cls=kind==="sales"?classify(x):kind==="notes"?(x.ctin?"CDNR":x.utyp==="B2CS"?"B2CS adj":"CDNUR"):x.exp;
+      return`<tr class="click" data-edit="${x.id}"><td>${esc(x.no)}${kind==="notes"?` <span class="pill">${x.ntty==="D"?"Debit":"Credit"}</span>`:""}</td><td class="l">${dmy(x.dt)}</td>
+      ${kind!=="exports"?`<td class="l">${esc(x.cname||x.ctin||"Unregistered")}<div class="muted">${x.ctin||STATES[x.pos]||""}</div></td><td class="l"><span class="pill ${cls.toLowerCase().split(" ")[0]}">${cls}</span></td>`:`<td class="l">${cls}</td>`}
+      <td>${inr(c.tx)}</td><td>${inr(c.tax)}</td><td>${inr(c.val)}</td></tr>`;}).join("")}</table></div>`:`<div class="empty">No ${lab.toLowerCase()} yet.<br>Add one, or import from the Excel template.</div>`}
+  </div>${kind==="sales"?`<p class="muted">Classification is automatic: customer GSTIN → B2B (Table 4/6). No GSTIN, inter-state and invoice value above ₹1 lakh → B2C large (Table 5). Everything else → B2C small (Table 7, rate- and state-wise).</p>`:""}`;
+}
+function vForm(kind,d){
+  const isNew=!R()[kind].some(x=>x.id===d.id),stOpts=sel=>Object.entries(STATES).filter(([c])=>c!=="96").map(([c,n])=>`<option value="${c}" ${c===sel?"selected":""}>${c} - ${n}</option>`).join("");
+  const c=docCalc(d,kind==="exports"?"exp":kind==="notes"?"note":"sale");
+  return`<div class="card"><h2>${isNew?"New":"Edit"} ${kind==="sales"?"sales invoice":kind==="notes"?"credit / debit note":"export invoice"}</h2>
+  <div class="grid g3">
+    <label class="f"><span>${kind==="notes"?"Note":"Invoice"} number</span><input data-f="no" value="${esc(d.no)}" maxlength="16" placeholder="INV/2026/001"></label>
+    <label class="f"><span>Date</span><input type="date" data-f="dt" value="${d.dt}"></label>
+    ${kind==="notes"?`<label class="f"><span>Note type</span><select data-f="ntty"><option value="C" ${d.ntty==="C"?"selected":""}>Credit note</option><option value="D" ${d.ntty==="D"?"selected":""}>Debit note</option></select></label>`:""}
+    ${kind!=="exports"?`<label class="f"><span>Customer GSTIN / UIN (blank if unregistered)</span><input data-f="ctin" value="${esc(d.ctin)}" maxlength="15" autocapitalize="characters" placeholder="29ABCDE1234F1Z5"></label>
+    <label class="f"><span>Customer name</span><input data-f="cname" value="${esc(d.cname)}"></label>
+    <label class="f"><span>Place of supply</span><select data-f="pos">${stOpts(d.pos)}</select></label>
+    <label class="f"><span>Invoice type</span><select data-f="typ">${[["R","Regular"],["SEWP","SEZ with payment"],["SEWOP","SEZ without payment"],["DE","Deemed export"],["CBW","Intra-state supply with IGST (bonded warehouse)"]].map(([v,l])=>`<option value="${v}" ${d.typ===v?"selected":""}>${l}</option>`).join("")}</select></label>
+    <label class="f"><span>Reverse charge</span><select data-f="rc"><option value="N" ${d.rc!=="Y"?"selected":""}>No</option><option value="Y" ${d.rc==="Y"?"selected":""}>Yes</option></select></label>
+    <label class="f"><span>E-commerce operator GSTIN (if sold via ECO)</span><input data-f="etin" value="${esc(d.etin||"")}" maxlength="15" autocapitalize="characters"></label>`:""}
+    ${kind==="notes"?`<label class="f"><span>If unregistered, original supply was</span><select data-f="utyp">${[["B2CS","B2C small (adjust in Table 7)"],["B2CL","B2C large (Table 9B)"],["EXPWP","Export with payment"],["EXPWOP","Export without payment"]].map(([v,l])=>`<option value="${v}" ${d.utyp===v?"selected":""}>${l}</option>`).join("")}</select></label>`:""}
+    ${kind==="exports"?`<label class="f"><span>Export type</span><select data-f="exp"><option value="WOPAY" ${d.exp!=="WPAY"?"selected":""}>Without payment (LUT)</option><option value="WPAY" ${d.exp==="WPAY"?"selected":""}>With payment of IGST</option></select></label>
+    <label class="f"><span>Port code</span><input data-f="sbpcode" value="${esc(d.sbpcode)}" maxlength="6" autocapitalize="characters" placeholder="INBOM1"></label>
+    <label class="f"><span>Shipping bill no.</span><input data-f="sbnum" value="${esc(d.sbnum)}" inputmode="numeric"></label>
+    <label class="f"><span>Shipping bill date</span><input type="date" data-f="sbdt" value="${d.sbdt||""}"></label>`:""}
+  </div><div id="gMsg"></div>
+  <h3 style="margin:14px 0 6px">Line items</h3>
+  <div class="tw"><table class="items"><tr><th class="l">HSN/SAC</th><th class="l">Description</th><th class="l">UQC</th><th>Qty</th><th>Taxable ₹</th><th>Rate %</th><th>Cess ₹</th><th></th></tr>
+  ${d.items.map((it,i)=>`<tr><td><input data-i="${i}" data-k="hsn" value="${esc(it.hsn)}" inputmode="numeric" style="width:96px"></td><td><input data-i="${i}" data-k="desc" value="${esc(it.desc)}" style="width:150px"></td>
+    <td><select data-i="${i}" data-k="uqc" style="width:88px">${UQC.map(u=>`<option ${u===it.uqc?"selected":""}>${u}</option>`).join("")}</select></td>
+    <td><input data-i="${i}" data-k="qty" value="${it.qty}" inputmode="decimal" style="width:70px"></td><td><input data-i="${i}" data-k="tx" value="${it.tx}" inputmode="decimal" style="width:110px"></td>
+    <td><select data-i="${i}" data-k="rt" style="width:76px">${RATES.map(r=>`<option ${r==num(it.rt)?"selected":""}>${r}</option>`).join("")}</select></td>
+    <td><input data-i="${i}" data-k="cs" value="${it.cs}" inputmode="decimal" style="width:80px"></td><td>${d.items.length>1?`<button class="x" data-rm="${i}">×</button>`:""}</td></tr>`).join("")}</table></div>
+  <div class="btns" style="margin-top:8px"><button class="btn ghost sm" id="addLine">＋ Add line</button></div>
+  <div class="kpis" style="margin-top:12px" id="docTot">${docTotals(c)}</div>
+  <div class="btns" style="margin-top:14px"><button class="btn" id="dSave">Save</button>${!isNew?'<button class="btn alt" id="dCopy">Duplicate</button><button class="btn danger" id="dDel">Delete</button>':""}<button class="btn ghost" id="dCancel">Cancel</button></div></div>`;
+}
+const docTotals=c=>`<div class="kpi"><small>Taxable</small><b>${inr(c.tx)}</b></div><div class="kpi"><small>${c.inter?"IGST":"CGST + SGST"}</small><b>${inr(c.lines.reduce((a,l)=>a+l.iamt+l.camt+l.samt,0))}</b></div><div class="kpi"><small>Cess</small><b>${inr(c.lines.reduce((a,l)=>a+l.csamt,0))}</b></div><div class="kpi hi"><small>Invoice value</small><b>${inr(c.val)}</b></div>`;
+
+function vOthers(){
+  const d=R(),rowN=(k,l)=>{const v=d.nil[k]||{};return`<tr><td>${l}</td>${["nil","expt","ngsup"].map(f=>`<td><input data-nil="${k}" data-k="${f}" value="${v[f]||""}" inputmode="decimal" style="width:120px;text-align:right"></td>`).join("")}</tr>`;};
+  const docs=docSeries();
+  return`<div class="card"><h2>Table 8 · Nil-rated, exempt and non-GST supplies</h2>
+    <div class="tw"><table class="items"><tr><th>Supply</th><th>Nil rated</th><th>Exempted</th><th>Non-GST</th></tr>
+    ${rowN("INTRB2B","Inter-state to registered")}${rowN("INTRAB2B","Intra-state to registered")}${rowN("INTRB2C","Inter-state to unregistered")}${rowN("INTRAB2C","Intra-state to unregistered")}</table></div></div>
+  <div class="card"><h2>Table 13 · Documents issued</h2><p class="muted" style="margin-top:0">Invoice and note series are worked out from your registers. Gaps in numbering are counted as cancelled. Add other documents (receipt vouchers, challans) below.</p>
+    <div class="tw"><table><tr><th class="l">Nature of document</th><th class="l">From</th><th class="l">To</th><th>Total</th><th>Cancelled</th><th>Net issued</th><th></th></tr>
+    ${docs.map((r,i)=>`<tr><td class="l">${DOCN[r.nature]}${r.auto?' <span class="pill">auto</span>':""}</td><td class="l">${esc(r.from)}</td><td class="l">${esc(r.to)}</td><td>${r.totnum}</td><td>${r.cancel}</td><td>${r.totnum-r.cancel}</td><td>${r.manual?`<button class="x" data-rmdoc="${i-docs.filter(x=>x.auto).length}">×</button>`:""}</td></tr>`).join("")||'<tr><td colspan="7" class="l muted">No documents yet</td></tr>'}</table></div>
+    <div class="grid g4" style="margin-top:10px"><label class="f"><span>Nature</span><select id="mdN">${Object.entries(DOCN).map(([k,v])=>`<option value="${k}">${k}. ${v}</option>`).join("")}</select></label>
+      <label class="f"><span>From</span><input id="mdF"></label><label class="f"><span>To</span><input id="mdT"></label>
+      <label class="f"><span>Total / cancelled</span><div style="display:flex;gap:6px"><input id="mdTot" inputmode="numeric" placeholder="Total"><input id="mdC" inputmode="numeric" placeholder="Cancelled"></div></label></div>
+    <div class="btns" style="margin-top:8px"><button class="btn alt sm" id="mdAdd">＋ Add document row</button></div></div>`;
+}
+function vImport(){
+  return`<div class="card"><h2>Excel / CSV templates</h2><p class="muted" style="margin-top:0">Download a template, fill it in Excel, Google Sheets or your billing software export (one row per item; rows with the same number become one invoice), then paste it below.</p>
+    <div class="grid g3">${Object.entries(TPL).map(([k,t])=>`<div class="kpi"><b style="font-size:14px">${{sales:"Sales register",notes:"Credit / debit notes",exports:"Export invoices"}[k]}</b><small>${t.cols.length} columns</small>
+      <div class="btns" style="margin-top:8px"><button class="btn sm" data-tpl="${k}">⬇ Blank</button><button class="btn sm alt" data-tpls="${k}">⬇ With sample</button></div></div>`).join("")}</div></div>
+  <div class="card"><h2>Import data</h2>
+    <div class="grid g2"><label class="f"><span>This data is</span><select id="impK"><option value="sales">Sales register</option><option value="notes">Credit / debit notes</option><option value="exports">Export invoices</option></select></label>
+      <label class="f ${IN_APP?"hide":""}"><span>CSV file</span><input type="file" id="impFile" accept=".csv,.txt"></label></div>
+    <label class="f" style="margin-top:10px"><span>Or paste cells copied from Excel (include the header row)</span><textarea class="paste" id="impTxt" placeholder="Invoice No	Invoice Date	Customer GSTIN	…"></textarea></label>
+    <div class="btns" style="margin-top:10px"><button class="btn" id="impGo">Import</button><button class="btn ghost" id="impSample">Load sample</button></div>
+    <div class="note info">Columns are matched by header name, so the order doesn't matter. Dates can be DD-MM-YYYY, YYYY-MM-DD or Excel dates. Place of supply can be a state code (27) or name (Maharashtra).</div></div>
+  <div class="card"><h2>Backup</h2><div class="btns"><button class="btn alt" id="bk">⬇ Backup all data (JSON)</button></div>
+    <label class="f" style="margin-top:10px"><span>Restore: paste backup JSON</span><textarea class="paste" id="rsTxt"></textarea></label><div class="btns" style="margin-top:8px"><button class="btn ghost" id="rs">Restore</button></div></div>`;
+}
+function vR1(){
+  const iss=validate(),e=iss.filter(i=>i.t==="e"),w=iss.filter(i=>i.t==="w"),o=buildR1(),T=o.totals,hb=Object.values(o.hsnB2B),hc=Object.values(o.hsnB2C);
+  const sec=(t,n,v,tx)=>`<tr><td class="l">${t}</td><td>${n}</td><td>${inr(v)}</td><td>${inr(tx)}</td></tr>`;
+  const taxOf=a=>a.reduce((s,x)=>s+(x.iamt||0)+(x.camt||0)+(x.samt||0)+(x.csamt||0),0);
+  return`<div class="card"><h2>GSTR-1 · ${periods().find(p=>p[0]===DB.period)?.[1]||DB.period}</h2>${stepper()}
+    <div class="tw" style="margin-top:10px"><table><tr><th class="l">Table</th><th>Records</th><th>Taxable</th><th>Tax</th></tr>
+    ${sec("4A/4B/6B/6C · B2B invoices",T.count.b2b,T.b2b,o.b2b.reduce((s,g)=>s+g.inv.reduce((a,i)=>a+taxOf(i.itms.map(x=>x.itm_det)),0),0))}
+    ${sec("5 · B2C large invoices",T.count.b2cl,T.b2cl,o.b2cl.reduce((s,g)=>s+g.inv.reduce((a,i)=>a+taxOf(i.itms.map(x=>x.itm_det)),0),0))}
+    ${sec("6A · Exports",o.exp.reduce((s,g)=>s+g.inv.length,0),T.exp,o.exp.reduce((s,g)=>s+g.inv.reduce((a,i)=>a+taxOf(i.itms),0),0))}
+    ${sec("7 · B2C small (rate & state-wise)",T.count.b2cs,T.b2cs,taxOf(o.b2cs))}
+    ${sec("8 · Nil / exempt / non-GST",o.nil.length,T.nil,0)}
+    ${sec("9B · Credit/debit notes (registered)",T.count.cdnr,o.cdnr.reduce((s,g)=>s+g.nt.reduce((a,n)=>a+(n.ntty==="D"?1:-1)*n.itms.reduce((b,x)=>b+x.itm_det.txval,0),0),0),0)}
+    ${sec("9B · Credit/debit notes (unregistered)",T.count.cdnur,o.cdnur.reduce((a,n)=>a+(n.ntty==="D"?1:-1)*n.itms.reduce((b,x)=>b+x.itm_det.txval,0),0),0)}
+    ${sec("12 · HSN summary (B2B / B2C)",hb.length+" / "+hc.length,hb.concat(hc).reduce((s,h)=>s+h.txval,0),taxOf(hb.concat(hc)))}
+    ${sec("13 · Documents issued",o.docs.length+" series",0,0)}</table></div></div>
+  <div class="card"><h2>Validation ${e.length?`<span class="tag bad">${e.length} errors</span>`:'<span class="tag ok">No errors</span>'}${w.length?`<span class="tag warn">${w.length} warnings</span>`:""}</h2>
+    ${iss.map(issueRow).join("")||'<div class="note ok">Everything checks out against the GST portal\'s main validations.</div>'}</div>
+  <div class="card"><h2>Table 12 · HSN summary</h2>${hsnTable("B2B",hb)}${hsnTable("B2C",hc)}</div>
+  <div class="card"><h2>Generate file</h2>
+    <p class="muted" style="margin-top:0">Creates the JSON in the format of the GST Offline Tool for upload through <b>Returns Dashboard → GSTR-1 → Prepare Offline → Upload</b>.${client().freq==="Q"&&!/(03|06|09|12)/.test(DB.period.slice(0,2))?" For QRMP months 1 and 2, use the same file in <b>IFF</b> (B2B and notes only).":""}</p>
+    <div class="btns"><button class="btn ok" id="genR1" ${e.length?"disabled style='opacity:.5'":""}>⬇ Download GSTR-1 JSON</button><button class="btn alt" id="genR1x">⬇ Working (CSV)</button><button class="btn ghost" id="viewJ">Preview JSON</button></div>
+    ${e.length?'<div class="note">Fix the errors above to enable the JSON download. The portal rejects files with these problems.</div>':""}
+    <pre id="jprev" class="hide" style="max-height:320px;overflow:auto;background:var(--sf2);padding:10px;border-radius:10px;font-size:11.5px;white-space:pre-wrap;word-break:break-all"></pre></div>`;
+}
+const hsnTable=(t,a)=>`<h3 style="margin:8px 0 6px">${t} <span class="tag">${a.length}</span></h3>`+(a.length?`<div class="tw"><table><tr><th class="l">HSN</th><th class="l">Description</th><th class="l">UQC</th><th>Qty</th><th>Rate</th><th>Taxable</th><th>IGST</th><th>CGST</th><th>SGST</th><th>Cess</th></tr>
+  ${a.map(h=>`<tr><td class="l">${esc(h.hsn_sc)}</td><td class="l">${esc(h.desc)}</td><td class="l">${h.uqc}</td><td>${h.qty}</td><td>${h.rt}%</td><td>${inr(h.txval)}</td><td>${inr(h.iamt)}</td><td>${inr(h.camt)}</td><td>${inr(h.samt)}</td><td>${inr(h.csamt)}</td></tr>`).join("")}</table></div>`:'<p class="muted">None</p>');
+function v3B(){
+  const b=build3B(),it=R().itc||{},f=(k,ph)=>`<input data-itc="${k}" value="${it[k]??""}" inputmode="decimal" placeholder="${ph||"0"}" style="width:110px;text-align:right">`;
+  const row4=(l,p,impg)=>`<tr><td class="l">${l}</td><td>${f(p+"_i")}</td><td>${impg?"—":f(p+"_c")}</td><td>${impg?"—":f(p+"_s")}</td><td>${f(p+"_cs")}</td></tr>`;
+  const t=(o,keys)=>keys.map(k=>`<td>${inr(o[k]||0)}</td>`).join("");
+  const nm={i:"IGST",c:"CGST",s:"SGST",cs:"Cess"};
+  return`<div class="card"><h2>3.1 · Outward supplies <span class="tag">from GSTR-1</span></h2>
+    <div class="tw"><table><tr><th class="l">Nature</th><th>Taxable</th><th>IGST</th><th>CGST</th><th>SGST</th><th>Cess</th></tr>
+    <tr><td class="l">(a) Taxable (other than zero, nil, exempt)</td>${t(b.osup,["txval","iamt","camt","samt","csamt"])}</tr>
+    <tr><td class="l">(b) Zero rated (exports, SEZ)</td><td>${inr(b.zero.txval)}</td><td>${inr(b.zero.iamt)}</td><td>—</td><td>—</td><td>${inr(b.zero.csamt)}</td></tr>
+    <tr><td class="l">(c) Nil rated & exempted</td><td>${inr(b.nilT)}</td><td colspan="4"></td></tr>
+    <tr><td class="l">(d) Inward liable to reverse charge</td>${t(b.rcm,["txval","iamt","camt","samt","csamt"])}</tr>
+    <tr><td class="l">(e) Non-GST</td><td>${inr(b.ngT)}</td><td colspan="4"></td></tr></table></div>
+    <div class="grid g4" style="margin-top:10px"><label class="f"><span>3.1(d) RCM taxable</span>${f("rcm_tx")}</label><label class="f"><span>RCM IGST</span>${f("rcm_i")}</label><label class="f"><span>RCM CGST</span>${f("rcm_c")}</label><label class="f"><span>RCM SGST</span>${f("rcm_s")}</label></div></div>
+  <div class="card"><h2>3.2 · Inter-state supplies to unregistered persons</h2>${b.unreg.length?`<div class="tw"><table><tr><th class="l">Place of supply</th><th>Taxable</th><th>IGST</th></tr>${b.unreg.map(u=>`<tr><td class="l">${u.pos} - ${STATES[u.pos]}</td><td>${inr(u.txval)}</td><td>${inr(u.iamt)}</td></tr>`).join("")}</table></div>`:'<p class="muted">None</p>'}</div>
+  <div class="card"><h2>4 · Eligible ITC <span class="tag">as per GSTR-2B</span></h2>
+    <div class="tw"><table class="items"><tr><th class="l">Details</th><th>IGST</th><th>CGST</th><th>SGST</th><th>Cess</th></tr>
+    ${row4("(A)(1) Import of goods","imp_g",1)}${row4("(A)(2) Import of services","imp_s",1)}${row4("(A)(3) Inward liable to reverse charge","rc")}${row4("(A)(4) From ISD","isd")}${row4("(A)(5) All other ITC","oth")}
+    ${row4("(B)(1) Reversed: Rules 38, 42, 43 & Sec 17(5)","rev1")}${row4("(B)(2) Reversed: others","rev2")}
+    <tr><td class="l"><b>(C) Net ITC available</b></td><td><b>${inr(b.net.iamt)}</b></td><td><b>${inr(b.net.camt)}</b></td><td><b>${inr(b.net.samt)}</b></td><td><b>${inr(b.net.csamt)}</b></td></tr>
+    ${row4("(D)(1) Ineligible: Sec 16(4) & PoS rules","in1")}${row4("(D)(2) Ineligible: others","in2")}</table></div></div>
+  <div class="card"><h2>5 · Exempt, nil & non-GST inward · 5.1 Interest</h2><div class="grid g4">
+    <label class="f"><span>Exempt/nil inward: inter</span>${f("ex_inter")}</label><label class="f"><span>Exempt/nil inward: intra</span>${f("ex_intra")}</label><label class="f"><span>Non-GST inward: inter</span>${f("ng_inter")}</label><label class="f"><span>Non-GST inward: intra</span>${f("ng_intra")}</label>
+    <label class="f"><span>Interest IGST</span>${f("int_i")}</label><label class="f"><span>Interest CGST</span>${f("int_c")}</label><label class="f"><span>Interest SGST</span>${f("int_s")}</label><label class="f"><span>Interest cess</span>${f("int_cs")}</label></div>
+    <div class="btns" style="margin-top:10px"><button class="btn alt" id="itcSave">Recalculate</button></div></div>
+  <div class="card"><h2>6 · Payment of tax <span class="tag">set-off worked out</span></h2>
+    <div class="tw"><table><tr><th class="l"></th><th>IGST</th><th>CGST</th><th>SGST</th><th>Cess</th></tr>
+    <tr><td class="l">Tax liability</td><td>${inr(b.L.i)}</td><td>${inr(b.L.c)}</td><td>${inr(b.L.s)}</td><td>${inr(b.L.cs)}</td></tr>
+    <tr><td class="l">of which reverse charge (cash only)</td><td>${inr(b.rcm.iamt)}</td><td>${inr(b.rcm.camt)}</td><td>${inr(b.rcm.samt)}</td><td>${inr(b.rcm.csamt)}</td></tr>
+    ${["i","c","s","cs"].map(k=>`<tr><td class="l">Paid from ${nm[k]} credit</td>${["i","c","s","cs"].map(t=>{const u=b.so.U.filter(x=>x[0]===k&&x[1]===t).reduce((a,x)=>a+x[2],0);return`<td>${u?inr(u):"—"}</td>`;}).join("")}</tr>`).join("")}
+    <tr><td class="l"><b>Pay in cash</b></td><td><b>${inr(b.cash.i)}</b></td><td><b>${inr(b.cash.c)}</b></td><td><b>${inr(b.cash.s)}</b></td><td><b>${inr(b.cash.cs)}</b></td></tr>
+    <tr><td class="l">ITC carried forward</td><td>${inr(b.so.left.i)}</td><td>${inr(b.so.left.c)}</td><td>${inr(b.so.left.s)}</td><td>${inr(b.so.left.cs)}</td></tr></table></div>
+    <div class="note info">Order of set-off (Sec 49, 49A, 49B & Rule 88A): IGST credit first against IGST, then CGST and SGST; CGST credit against CGST then IGST; SGST credit against SGST then IGST. CGST and SGST credits never cross. Reverse-charge tax is paid only in cash. The portal's own set-off screen is final.</div>
+    <div class="btns" style="margin-top:12px"><button class="btn ok" id="gen3b">⬇ Download GSTR-3B JSON</button><button class="btn ghost" id="view3b">Preview JSON</button></div>
+    <pre id="j3prev" class="hide" style="max-height:320px;overflow:auto;background:var(--sf2);padding:10px;border-radius:10px;font-size:11.5px;white-space:pre-wrap;word-break:break-all"></pre></div>`;
+}
+function vPortal(){
+  const meta=(R()||{}).meta||{};
+  return`<div class="card"><h2>File on the GST portal</h2><p class="muted" style="margin-top:0">Filing happens on the official portal with your own login, OTP and DSC/EVC. TaxSphere never asks for or stores your portal password.</p>
+    <div class="portal"><a class="btn" href="https://services.gst.gov.in/services/login" target="${IN_APP?"_top":"_blank"}" rel="noopener">🔐 Log in to the GST portal</a>
+      <a class="btn alt" href="https://return.gst.gov.in/returns/auth/dashboard" target="${IN_APP?"_top":"_blank"}" rel="noopener">📊 Returns dashboard (after login)</a>
+      <a class="btn ghost" href="https://services.gst.gov.in/services/searchtp" target="${IN_APP?"_top":"_blank"}" rel="noopener">🔎 Search taxpayer / verify GSTIN</a></div></div>
+  <div class="card"><h2>Upload GSTR-1 JSON</h2><ol class="how">
+    <li>Log in and open <b>Services → Returns → Returns Dashboard</b>. Select the financial year, quarter and period, then <b>Search</b>.</li>
+    <li>On the <b>GSTR-1</b> tile (or IFF for QRMP months 1–2), click <b>Prepare Offline</b>.</li>
+    <li>On the <b>Upload</b> tab, choose the JSON file you downloaded from TaxSphere and upload it.</li>
+    <li>Wait until the status shows <b>Processed</b>. If it says <b>Processed with error</b>, use <b>Generate error report</b>, fix those entries here and upload again.</li>
+    <li>Back on GSTR-1, click <b>Prepare Online</b> to review the tables, then <b>Generate Summary</b>.</li>
+    <li>Tick the declaration, select the authorised signatory and <b>File with DSC or EVC</b> (OTP).</li></ol></div>
+  <div class="card"><h2>Upload GSTR-3B JSON</h2><ol class="how">
+    <li>On the Returns Dashboard, open the <b>GSTR-3B</b> tile and choose <b>Prepare Offline → Upload</b>, then select the GSTR-3B JSON.</li>
+    <li>Open <b>Prepare Online</b> and compare with the system-generated values (auto-filled from GSTR-1 and GSTR-2B). Fix any big differences before you proceed.</li>
+    <li><b>Save</b>, then <b>Proceed to payment</b>. Check the set-off, create a challan for the cash amount if the cash ledger is short, and pay.</li>
+    <li><b>File GSTR-3B with DSC or EVC</b>. A filed GSTR-3B can't be revised.</li></ol></div>
+  <div class="card"><h2>Status for this period</h2><div class="btns"><button class="btn ${meta.uploaded?"ok":"alt"}" id="markUp">${meta.uploaded?"✓ Marked as uploaded":"Mark GSTR-1 as uploaded"}</button></div></div>`;
+}
+
+/* ======================================================= events */
+function bind(){
+  $$("#tabs [data-t]").forEach(b=>b.onclick=()=>go(b.dataset.t));
+  $$("[data-go]").forEach(b=>b.onclick=()=>{const id=b.dataset.edit;go(b.dataset.go);if(id){const k=b.dataset.go,doc=R()[k]&&R()[k].find(x=>x.id===id);if(doc){EDIT={kind:k,doc:JSON.parse(JSON.stringify(doc))};render();}}});
+  // clients
+  if($("#cG")){const chk=()=>{const g=$("#cG").value.toUpperCase().trim();$("#cG").value=g;const r=gstinCheck(g);$("#cMsg").innerHTML=!g?"":r==="ok"?`<div class="note ok">✓ Valid GSTIN · ${STATES[g.slice(0,2)]} · PAN ${g.slice(2,12)}</div>`:`<div class="note">${gMsg[r]}</div>`;$("#cG").classList.toggle("err",!!g&&r!=="ok");};$("#cG").oninput=chk;chk();
+    $("#cSave").onclick=()=>{const g=$("#cG").value.trim().toUpperCase();if(gstinCheck(g)!=="ok"||!GSTIN_RE.test(g)){toast("Enter a valid GSTIN");return;}
+      const c={gstin:g,name:$("#cN").value.trim()||g,freq:$("#cF").value,band:$("#cB").value};const i=DB.clients.findIndex(x=>x.gstin===g);if(i>=0)DB.clients[i]=c;else DB.clients.push(c);
+      DB.cur=g;if(!DB.period)DB.period=periods()[2][0];persist();EDIT=null;toast("Saved");go("home");};
+    if($("#cDel"))$("#cDel").onclick=e=>armed(e.target,"Delete business & data",()=>{const g=$("#cG").value.trim().toUpperCase();DB.clients=DB.clients.filter(x=>x.gstin!==g);Object.keys(DB.data).filter(k=>k.startsWith(g+"_")).forEach(k=>delete DB.data[k]);DB.cur=DB.clients[0]?.gstin||null;persist();EDIT=null;render();});}
+  $$("[data-use]").forEach(b=>b.onclick=()=>{DB.cur=b.dataset.use;persist();go("home");});
+  $$("[data-cedit]").forEach(b=>b.onclick=()=>{EDIT={client:{...DB.clients.find(x=>x.gstin===b.dataset.cedit)}};render();});
+  // registers
+  $$("[data-new]").forEach(b=>b.onclick=()=>{EDIT={kind:b.dataset.new,doc:emptyDoc(b.dataset.new)};render();});
+  $$("tr[data-edit]").forEach(r=>r.onclick=()=>{const doc=R()[TAB].find(x=>x.id===r.dataset.edit);if(doc){EDIT={kind:TAB,doc:JSON.parse(JSON.stringify(doc))};render();}});
+  if($("#flt"))$("#flt").oninput=e=>{FILTER=e.target.value;const p=e.target.selectionStart;render();const f=$("#flt");f.focus();f.setSelectionRange(p,p);};
+  if(EDIT&&EDIT.doc){const d=EDIT.doc,kind=EDIT.kind,calc=()=>docCalc(d,kind==="exports"?"exp":kind==="notes"?"note":"sale");
+    const upd=()=>{$("#docTot").innerHTML=docTotals(calc());};
+    $$("[data-f]").forEach(el=>el.oninput=el.onchange=()=>{let v=el.value;if(["ctin","etin","sbpcode"].includes(el.dataset.f)){v=v.toUpperCase();el.value=v;}d[el.dataset.f]=v;
+      if(el.dataset.f==="ctin"){const r=gstinCheck(v);$("#gMsg").innerHTML=v&&r!=="ok"?`<div class="note">${gMsg[r]}</div>`:"";el.classList.toggle("err",!!v&&r!=="ok");
+        if(r==="ok"&&GSTIN_RE.test(v)){d.pos=v.slice(0,2);const ps=$('[data-f="pos"]');if(ps)ps.value=d.pos;}}upd();});
+    $$("[data-i]").forEach(el=>el.oninput=el.onchange=()=>{d.items[+el.dataset.i][el.dataset.k]=el.dataset.k==="hsn"||el.dataset.k==="desc"||el.dataset.k==="uqc"?el.value:el.value;
+      if(el.dataset.k==="hsn"&&/^99/.test(el.value)){d.items[+el.dataset.i].uqc="NA";const u=$(`[data-i="${el.dataset.i}"][data-k="uqc"]`);if(u)u.value="NA";}upd();});
+    $$("[data-rm]").forEach(b=>b.onclick=()=>{d.items.splice(+b.dataset.rm,1);render();});
+    $("#addLine").onclick=()=>{const l=d.items[d.items.length-1]||{};d.items.push({hsn:l.hsn||"",desc:"",uqc:l.uqc||"NOS",qty:1,tx:"",rt:l.rt??18,cs:0});render();};
+    $("#dSave").onclick=()=>{if(!d.no){toast("Enter the number");return;}const list=R()[kind],i=list.findIndex(x=>x.id===d.id);
+      if(list.some(x=>x.id!==d.id&&x.no.toUpperCase()===d.no.toUpperCase())){toast("That number already exists");return;}
+      d.items=d.items.filter(it=>num(it.tx)||it.hsn);if(i>=0)list[i]=d;else list.push(d);R().meta.r1json=false;persist();EDIT=null;toast("Saved");render();};
+    if($("#dCopy"))$("#dCopy").onclick=()=>{EDIT={kind,doc:Object.assign(JSON.parse(JSON.stringify(d)),{id:uid(),no:nextNo(d.no)})};render();toast("Copy created: check the number and save");};
+    if($("#dDel"))$("#dDel").onclick=e=>armed(e.target,"Delete",()=>{R()[kind]=R()[kind].filter(x=>x.id!==d.id);persist();EDIT=null;render();});
+    $("#dCancel").onclick=()=>{EDIT=null;render();};}
+  // others
+  $$("[data-nil]").forEach(el=>el.onchange=()=>{const n=R().nil;n[el.dataset.nil]=n[el.dataset.nil]||{};n[el.dataset.nil][el.dataset.k]=el.value;persist();});
+  if($("#mdAdd"))$("#mdAdd").onclick=()=>{const t=num($("#mdTot").value),c=num($("#mdC").value);if(!$("#mdF").value||!$("#mdT").value||!t){toast("Fill from, to and total");return;}
+    R().docsManual.push({nature:$("#mdN").value,from:$("#mdF").value.trim(),to:$("#mdT").value.trim(),totnum:t,cancel:c});persist();render();};
+  $$("[data-rmdoc]").forEach(b=>b.onclick=()=>{R().docsManual.splice(+b.dataset.rmdoc,1);persist();render();});
+  // import
+  $$("[data-tpl]").forEach(b=>b.onclick=()=>downloadTpl(b.dataset.tpl,false));$$("[data-tpls]").forEach(b=>b.onclick=()=>downloadTpl(b.dataset.tpls,true));
+  if($("#impGo")){
+    const run=text=>{try{const r=importRows($("#impK").value,parseTable(text));toast(`Imported ${r.n} documents (${r.lines} lines)`);$("#impTxt").value="";go($("#impK").value==="sales"?"sales":$("#impK").value);}catch(e){toast(e.message,4000);}};
+    $("#impGo").onclick=()=>run($("#impTxt").value);
+    if($("#impFile"))$("#impFile").onchange=async e=>{const f=e.target.files[0];if(f)run(await f.text());e.target.value="";};
+    $("#impSample").onclick=loadSample;
+    $("#bk").onclick=()=>save("SEMI_GST_backup_"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(DB));
+    $("#rs").onclick=e=>armed(e.target,"Restore",()=>{try{const x=JSON.parse($("#rsTxt").value);if(!x.clients)throw 0;DB=x;persist();toast("Restored");go("home");}catch(_){toast("That isn't a valid backup");}});}
+  // GSTR-1
+  if($("#genR1")){
+    $("#genR1").onclick=()=>{if(validate().some(i=>i.t==="e")){toast("Fix errors first");return;}const j=r1JSON();save(`GSTR1_${DB.cur}_${DB.period}.json`,JSON.stringify(j));R().meta.r1json=true;persist();render();};
+    $("#viewJ").onclick=()=>{const p=$("#jprev");p.classList.toggle("hide");p.textContent=JSON.stringify(r1JSON(),null,2);};
+    $("#genR1x").onclick=()=>{const o=buildR1(),rows=[["Table","GSTIN/POS","Number","Date","Rate","Taxable","IGST","CGST","SGST","Cess"]];
+      o.b2b.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>rows.push(["B2B",g.ctin,i.inum,i.idt,x.itm_det.rt,x.itm_det.txval,x.itm_det.iamt||0,x.itm_det.camt||0,x.itm_det.samt||0,x.itm_det.csamt||0]))));
+      o.b2cl.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>rows.push(["B2CL",g.pos,i.inum,i.idt,x.itm_det.rt,x.itm_det.txval,x.itm_det.iamt||0,0,0,x.itm_det.csamt||0]))));
+      o.b2cs.forEach(x=>rows.push(["B2CS",x.pos,"","",x.rt,x.txval,x.iamt||0,x.camt||0,x.samt||0,x.csamt||0]));
+      o.exp.forEach(g=>g.inv.forEach(i=>i.itms.forEach(x=>rows.push(["EXP-"+g.exp_typ,"",i.inum,i.idt,x.rt,x.txval,x.iamt,0,0,x.csamt]))));
+      o.cdnr.forEach(g=>g.nt.forEach(n=>n.itms.forEach(x=>rows.push(["CDNR-"+n.ntty,g.ctin,n.nt_num,n.nt_dt,x.itm_det.rt,x.itm_det.txval,x.itm_det.iamt||0,x.itm_det.camt||0,x.itm_det.samt||0,x.itm_det.csamt||0]))));
+      o.cdnur.forEach(n=>n.itms.forEach(x=>rows.push(["CDNUR-"+n.ntty,n.typ,n.nt_num,n.nt_dt,x.itm_det.rt,x.itm_det.txval,x.itm_det.iamt||0,0,0,x.itm_det.csamt||0])));
+      save(`GSTR1_working_${DB.cur}_${DB.period}.csv`,"\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv");};}
+  // GSTR-3B
+  $$("[data-itc]").forEach(el=>el.onchange=()=>{R().itc[el.dataset.itc]=el.value;persist();});
+  if($("#itcSave"))$("#itcSave").onclick=()=>{persist();render();toast("Recalculated");};
+  if($("#gen3b")){$("#gen3b").onclick=()=>save(`GSTR3B_${DB.cur}_${DB.period}.json`,JSON.stringify(r3JSON()));
+    $("#view3b").onclick=()=>{const p=$("#j3prev");p.classList.toggle("hide");p.textContent=JSON.stringify(r3JSON(),null,2);};}
+  if($("#markUp"))$("#markUp").onclick=()=>{const m=R().meta;m.uploaded=!m.uploaded;persist();render();};
+}
+const nextNo=no=>{const m=String(no).match(/^(.*?)(\d+)(\D*)$/);return m?m[1]+String(+m[2]+1).padStart(m[2].length,"0")+m[3]:no+"-1";};
+$("#selClient").onchange=e=>{if(e.target.value==="__new"){EDIT={client:{gstin:"",name:"",freq:"M",band:"upto5"}};TAB="clients";render();return;}DB.cur=e.target.value;persist();go(TAB==="clients"?"home":TAB);};
+$("#selPeriod").onchange=e=>{DB.period=e.target.value;persist();go(TAB);};
+
+/* ======================================================= demo data */
+function loadSample(){demo();toast("Sample loaded in “Demo Fashions (sample)”. Your own businesses are untouched.");go("home");}
+const SAMPLE_BAR=()=>`<div class="note info" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 12px"><span>${DB.cur==="27AAPFU0939F1ZV"?"You're viewing the <b>sample business</b>. Switch business at the top to see your own.":"New here? Load a sample business with invoices, a credit note and an export to see how it works."}</span><button class="btn ${DB.cur==="27AAPFU0939F1ZV"?"ghost":""}" onclick="loadSample()">${DB.cur==="27AAPFU0939F1ZV"?"Reload sample":"Load sample"}</button></div>`;
+function demo(){
+  /* sample always goes into its own sample business, never into a real client's return; reloading replaces it */
+  const SG="27AAPFU0939F1ZV";
+  if(!DB.clients.some(c=>c.gstin===SG))DB.clients.push({gstin:SG,name:"Demo Fashions (sample)",freq:"M",band:"upto5"});
+  DB.cur=SG;delete DB.data[pkey()];
+  const [mm,yy]=[DB.period.slice(0,2),DB.period.slice(2)],D=n=>`${yy}-${mm}-${String(n).padStart(2,"0")}`,d=R();
+  d.sales.push({id:uid(),no:"INV/101",dt:D(3),ctin:"29ABCDE1234F1ZW",cname:"Sample Traders",pos:"29",rc:"N",typ:"R",etin:"",items:[{hsn:"6204",desc:"Ladies kurta",uqc:"PCS",qty:40,tx:60000,rt:5,cs:0},{hsn:"6109",desc:"T-shirt",uqc:"PCS",qty:50,tx:20000,rt:5,cs:0}]},
+    {id:uid(),no:"INV/102",dt:D(6),ctin:"27AABCS9999Q1Z0",cname:"Shree Garments (sample)",pos:"27",rc:"N",typ:"R",etin:"",items:[{hsn:"6204",desc:"Ladies kurta",uqc:"PCS",qty:100,tx:150000,rt:5,cs:0}]},
+    {id:uid(),no:"INV/103",dt:D(9),ctin:"",cname:"Walk-in",pos:"27",rc:"N",typ:"R",etin:"",items:[{hsn:"6204",desc:"Ladies kurta",uqc:"PCS",qty:3,tx:4500,rt:5,cs:0}]},
+    {id:uid(),no:"INV/105",dt:D(12),ctin:"",cname:"Online customer",pos:"07",rc:"N",typ:"R",etin:"",items:[{hsn:"6204",desc:"Designer lehenga",uqc:"PCS",qty:2,tx:120000,rt:5,cs:0}]},
+    {id:uid(),no:"INV/106",dt:D(15),ctin:"",cname:"Customer",pos:"33",rc:"N",typ:"R",etin:"",items:[{hsn:"998314",desc:"Styling consultation",uqc:"NA",qty:0,tx:8000,rt:18,cs:0}]});
+  d.notes.push({id:uid(),no:"CN/01",dt:D(20),ntty:"C",ctin:"29ABCDE1234F1ZW",cname:"Sample Traders",pos:"29",rc:"N",typ:"R",utyp:"",etin:"",items:[{hsn:"6204",desc:"Return",uqc:"PCS",qty:4,tx:6000,rt:5,cs:0}]});
+  d.exports.push({id:uid(),no:"EXP/01",dt:D(18),exp:"WOPAY",sbpcode:"INBOM1",sbnum:"4567891",sbdt:D(19),items:[{hsn:"6204",desc:"Cotton kurta",uqc:"PCS",qty:300,tx:240000,rt:5,cs:0}]});
+  d.itc={oth_i:5200,oth_c:3100,oth_s:3100};persist();
+}
+
+/* ======================================================= boot */
+load();
+if(!DB.period)DB.period=periods()[2][0];
+if(!DB.cur&&DB.clients.length)DB.cur=DB.clients[0].gstin;
+render();
+window.GSTSTUDIO={buildR1,r1JSON,r3JSON,build3B,validate,gstinCheck,setoff,importRows,parseTable,demo,DB:()=>DB};
+</script>
+<div class="semi-credit" style="text-align:center;padding:16px 12px 26px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b><div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div><style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

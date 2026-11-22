@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AOC-4 Late Filing Penalty Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --ink:#1b2a38; --ink-2:#28394a; --brass:#9c7a34; --brass-light:#c9a256;
+  --paper:#fbfaf6; --paper-line:#e2dcc9; --canvas:#eef1f2; --line:#d6dde2;
+  --text:#232b31; --muted:#66727b; --accent-red:#7a2734; --focus:#2f6f8f;
+  --ok:#1f7a3d; --ok-bg:#e6f4ea; --ok-bd:#b7dfc3;
+  --soon:#8a6d1f; --soon-bg:#fff3d6; --soon-bd:#f0d38a;
+  --late:#a33a3a; --late-bg:#fdeaea; --late-bd:#f3c6c6;
+  --info-bg:#eef4f8; --info-fg:#1c5578; --info-bd:#cfe3ee;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;font-family:'Inter',system-ui,Arial,sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, #26445c22, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #9c7a3422, transparent 55%),
+    var(--canvas);
+  color:var(--text);font-size:14px;line-height:1.45;overflow-x:hidden;
+}
+header.top{
+  background:linear-gradient(120deg,#04070c 0%,#081a30 30%,#0e2c52 55%,#13437a 78%,#1b5fa6 100%);
+  background-size:240% 240%;animation:gflow 16s ease infinite;color:#fff;
+  padding:22px 28px 20px;box-shadow:0 14px 30px -14px rgba(0,0,0,.65), inset 0 -1px 0 rgba(255,255,255,.06);
+  position:relative;z-index:5;
+}
+@keyframes gflow{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+header.top .crest{display:flex;align-items:center;gap:14px;}
+header.top .mark{
+  width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(155deg,#0f2340 0%,#020509 70%);
+  border:1px solid rgba(70,150,220,.6);display:flex;align-items:center;justify-content:center;
+  font-family:'Source Serif 4',serif;font-weight:700;font-size:15px;color:#6cb2ea;flex:0 0 auto;
+  box-shadow:0 10px 18px -8px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -6px 10px rgba(0,0,0,.5), 0 0 14px -4px rgba(40,120,200,.55);
+}
+header.top h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.2px;text-shadow:0 1px 0 rgba(0,0,0,.25);}
+header.top p.tag{margin:3px 0 0;font-size:12.3px;color:#c8d2da;}
+header.top .disclaimer{margin-top:14px;font-size:11.8px;color:#dbe3e8;border-top:1px solid rgba(255,255,255,.15);padding-top:10px;}
+.crumbs{max-width:1180px;margin:14px auto 0;padding:0 20px;font-size:11.5px;}
+.crumbs a{color:var(--focus);text-decoration:none;font-weight:600;}
+.crumbs a:hover{text-decoration:underline;}
+.wrap{max-width:1180px;margin:22px auto 60px;padding:0 20px;}
+.grid2{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:22px;align-items:flex-start;}
+@media (max-width:980px){.grid2{grid-template-columns:1fr;}}
+
+.calc-card,.panel{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+}
+.calc-card{padding:22px 24px 26px;}
+.calc-card h2{margin:0 0 4px;font-size:17px;color:var(--ink);}
+.calc-card .g-sub{font-size:12.4px;color:var(--muted);margin:0 0 18px;font-style:italic;}
+
+fieldset.grp{
+  border:1px solid var(--line);border-radius:9px;padding:14px 16px 16px;margin:0 0 16px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfbfa 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 8px 16px -12px rgba(20,30,45,.22), 0 1px 2px rgba(20,30,45,.04);
+}
+fieldset.grp legend{font-size:12px;font-weight:700;color:var(--ink);padding:0 6px;letter-spacing:.3px;}
+.frow{display:flex;flex-wrap:wrap;gap:12px 14px;margin-bottom:10px;}
+.frow:last-child{margin-bottom:0;}
+.fitem{flex:1 1 200px;display:flex;flex-direction:column;gap:4px;}
+.fitem.full{flex-basis:100%;}
+.fitem label{font-size:12px;font-weight:600;color:#374149;}
+.fitem .hint{font-size:11px;color:var(--muted);font-weight:400;}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  border:1px solid var(--line);border-radius:6px;padding:9px 10px;font-size:13.4px;font-family:inherit;
+  color:var(--text);width:100%;background:#fdfdfc;
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), inset 0 -1px 0 rgba(255,255,255,.6);
+  transition:box-shadow .2s ease, border-color .2s ease;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--focus);box-shadow:inset 0 1px 3px rgba(20,30,45,.07), 0 0 0 3px rgba(47,111,143,.16);}
+.note-box{font-size:12px;color:#6b4c00;background:linear-gradient(180deg,#fffaf0,#fff3d9);border:1px solid #ecd396;border-radius:6px;padding:8px 10px;margin-top:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 3px 6px -3px rgba(140,100,0,.2);}
+.cond-section{display:none;} .cond-section.show{display:block;} .frow.cond-section.show{display:flex;}
+
+.btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.btn{appearance:none;border:none;border-radius:8px;padding:11px 18px;font-size:13.3px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .12s ease, box-shadow .12s ease;}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:linear-gradient(180deg,#1b5fa6,#0e3f78);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 8px 18px -8px rgba(14,63,120,.6), 0 2px 0 #0a3162;}
+.btn-ghost{background:linear-gradient(180deg,#fff,#f3f4f5);border:1px solid var(--line);color:#3d454c;box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(20,30,45,.2);}
+.foot-note{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5;}
+
+.result-wrap{margin-top:6px;}
+.result-empty{font-size:12.6px;color:var(--muted);font-style:italic;padding:6px 2px;}
+.rline{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--paper-line);font-size:13.2px;}
+.rline .k{color:#455160;}
+.rline .v{font-weight:700;color:var(--ink);white-space:nowrap;}
+.rline.total{border-bottom:none;border-top:2px solid var(--ink);margin-top:4px;padding-top:12px;font-size:15px;}
+.rline.total .v{color:var(--ink);font-size:17px;}
+.result-box{
+  background:linear-gradient(180deg,#fbfaf7,#f2f1ec);border:1px solid var(--paper-line);
+  border-radius:9px;padding:16px 18px 12px;margin-top:14px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 10px 22px -14px rgba(20,30,45,.3);
+}
+.result-box.status-ok{border-left:5px solid var(--ok);}
+.result-box.status-soon{border-left:5px solid var(--soon-bd);background:#fffdf5;}
+.result-box.status-late{border-left:5px solid var(--late);background:#fff9f9;}
+.badge{display:inline-block;font-size:10.6px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:3px 9px;border-radius:20px;margin-bottom:8px;}
+.badge.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-bd);}
+.badge.soon{background:var(--soon-bg);color:var(--soon);border:1px solid var(--soon-bd);}
+.badge.late{background:var(--late-bg);color:var(--late);border:1px solid var(--late-bd);}
+.badge.info{background:var(--info-bg);color:var(--info-fg);border:1px solid var(--info-bd);}
+
+.tl-item{display:flex;gap:14px;align-items:flex-start;padding:13px 15px;border-radius:9px;margin-bottom:10px;border:1px solid var(--line);background:#fff;box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 8px 16px -14px rgba(20,30,45,.3);}
+.tl-item.ok{border-left:5px solid var(--ok);} .tl-item.soon{border-left:5px solid var(--soon-bd);background:#fffdf5;}
+.tl-item.late{border-left:5px solid var(--late);background:#fff9f9;} .tl-item.info{border-left:5px solid var(--focus);}
+.tl-date{flex:0 0 100px;text-align:center;} .tl-date .dnum{font-size:19px;font-weight:700;color:var(--ink);line-height:1.1;}
+.tl-date .dsub{font-size:10.3px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+.tl-body{flex:1 1 auto;min-width:0;} .tl-form{font-size:13.2px;font-weight:700;color:var(--ink);}
+.tl-desc{font-size:12.2px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.tl-status{flex:0 0 auto;font-size:10.6px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:4px 10px;border-radius:20px;white-space:nowrap;height:fit-content;}
+.tl-status.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-bd);}
+.tl-status.soon{background:var(--soon-bg);color:var(--soon);border:1px solid var(--soon-bd);}
+.tl-status.late{background:var(--late-bg);color:var(--late);border:1px solid var(--late-bd);}
+.tl-status.info{background:var(--info-bg);color:var(--info-fg);border:1px solid var(--info-bd);}
+
+.side-panel{padding:22px 24px 26px;}
+.side-panel h3{margin:0 0 10px;font-size:14px;color:var(--ink);}
+.side-panel ul{margin:0 0 4px 18px;padding:0;font-size:12.8px;line-height:1.65;color:#374149;}
+.side-panel li{margin-bottom:5px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.chip{border:1px solid var(--line);background:#f7f9fa;border-radius:20px;padding:5px 11px;font-size:11.3px;font-weight:600;color:var(--muted);}
+
+table.reftab{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px;}
+table.reftab th{background:var(--ink);color:#fff;padding:7px 9px;text-align:left;font-weight:600;font-size:11.3px;}
+table.reftab td{border:1px solid var(--line);padding:6px 9px;background:#fff;}
+
+.related{margin-top:24px;}
+.related h3{font-size:14px;color:var(--ink);margin:0 0 10px;}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
+.related a{
+  display:block;background:#fff;border:1px solid var(--line);border-radius:8px;padding:11px 13px;
+  font-size:12.3px;font-weight:600;color:var(--ink);text-decoration:none;box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 6px 14px -10px rgba(20,30,45,.25);
+}
+.related a:hover{border-color:var(--focus);color:var(--focus);}
+
+.app-footer{margin-top:40px;background:linear-gradient(120deg,#000000 0%,#050912 28%,#0a1830 52%,#123a6b 76%,#1a4fa8 100%);
+  background-size:240% 240%;animation:gflow 18s ease infinite;color:#dce8ff;padding:20px 28px 16px;
+  box-shadow:0 -14px 30px -18px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06);}
+.app-footer .foot-wrap{max-width:1180px;margin:0 auto;font-size:11.3px;color:#9db4dd;line-height:1.6;}
+
+.legal-ref{
+  display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;
+  background:var(--info-bg);border:1px solid var(--info-bd);border-radius:8px;
+  padding:10px 14px;margin:0 0 18px;font-size:11.8px;color:var(--info-fg);
+}
+.legal-ref .lr-item{display:flex;gap:5px;align-items:baseline;}
+.legal-ref .lr-item b{font-weight:700;}
+.legal-ref a.lr-link{margin-left:auto;font-weight:700;color:var(--info-fg);text-decoration:none;border-bottom:1px dashed var(--info-fg);white-space:nowrap;}
+.legal-ref a.lr-link:hover{color:var(--focus);border-color:var(--focus);}
+
+@media (max-width:480px){
+  .fitem{flex-basis:100%;} header.top{padding:16px 16px 14px;} .wrap{padding:0 12px;}
+  .related-grid{grid-template-columns:1fr;}
+  .legal-ref a.lr-link{margin-left:0;}
+}
+@media print{
+  header.top .disclaimer,.btnrow,.app-footer,.related{display:none !important;}
+  body{background:#fff;}
+}
+
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="crest">
+    <div class="mark">A4</div>
+    <div>
+      <h1>AOC-4 Late Filing Penalty Calculator</h1>
+      <p class="tag">Company Act Tools &middot; Additional fee for delayed filing of financial statements (AOC-4)</p>
+    </div>
+  </div>
+  <div class="disclaimer">This calculator provides an approximate estimate based on current MCA/ROC fee rules and commonly followed state stamp-duty slabs. Actual fees may vary with state notifications or MCA updates &mdash; always confirm on <strong>mca.gov.in</strong> before filing. Figures reviewed 29 October 2026.</div>
+</header>
+
+<div class="wrap">
+<div class="legal-ref">
+  <div class="lr-item"><b>Act:</b> <span>Section 137 (Financial Statements)</span></div>
+  <div class="lr-item"><b>Rule:</b> <span>Companies (Registration Offices &amp; Fees) Rules, 2014 &mdash; Rule 12 (as amended, 2018)</span></div>
+  <div class="lr-item"><b>Form:</b> <span>AOC-4</span></div>
+  
+</div>
+
+<div class="grid2">
+  <div class="calc-card">
+    <h2>AOC-4 Late Filing Penalty Calculator</h2>
+    <p class="g-sub">Estimate the additional (late) fee for delayed filing of Form AOC-4 (Financial Statements) &mdash; charged at &#8377;100 per day of delay, with no upper cap.</p>
+    <fieldset class="grp">
+      <legend>Filing dates</legend>
+      <div class="frow">
+        <div class="fitem">
+          <label>Due date of filing</label>
+          <input type="date" id="dueDate">
+        </div>
+        <div class="fitem">
+          <label>Actual / proposed filing date</label>
+          <input type="date" id="fileDate">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>Normal filing fee (&#8377;, as per authorised capital slab)</label>
+          <input type="number" id="normalFee" value="600" min="0">
+        </div>
+      </div>
+    </fieldset>
+    <div class="btnrow">
+      <button class="btn btn-primary" type="button" onclick="calc()">Calculate Penalty</button>
+      <button class="btn btn-ghost" type="button" onclick="window.print()">Print</button>
+    </div>
+    <div class="foot-note">Additional fee of &#8377;100/day applies from the day after the due date, per Section 403 read with the Companies (Registration Offices &amp; Fees) Rules, 2014 (as amended, 2018).</div>
+  </div>
+  <div class="panel side-panel">
+    <h3>Estimated Penalty</h3>
+    <div id="out" class="result-wrap"><div class="result-empty">Enter both dates and click Calculate.</div></div>
+  </div>
+</div>
+
+<div class="related">
+  <h3>Explore Related Company Act Tools</h3>
+  <div class="related-grid">
+    <a href="../../index.html#/company" target="_top" style="border-color:var(--focus);color:var(--focus);">&#8592; All Company Act Tools</a>
+<a href="mca-late-filing-fee-calculator.html">MCA Late Filing Fee Calculator</a>
+<a href="mgt-7-penalty-calculator.html">MGT-7 / MGT-7A Penalty Calculator</a>
+
+
+<a href="mca-compliance-calendar.html">MCA Compliance Calendar Generator</a>
+  </div>
+</div>
+</div>
+
+<footer class="app-footer">
+  <div class="foot-wrap">
+    Free Company Act tool by TaxSphere &middot; For general guidance only, not professional advice &middot; Always verify current fee slabs and stamp duty on <strong>mca.gov.in</strong> or with a practising CS/CA before filing.
+  </div>
+</footer>
+
+<script>
+function esc(s){ return (s===undefined||s===null) ? "" : String(s); }
+function inr(n){
+  n = Math.round(n);
+  var s = n.toString();
+  var last3 = s.substring(s.length-3);
+  var other = s.substring(0, s.length-3);
+  if (other !== '') last3 = ',' + last3;
+  var formatted = other.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + last3;
+  return "₹" + formatted;
+}
+
+function calc(){
+  var due=document.getElementById("dueDate").value;
+  var fil=document.getElementById("fileDate").value;
+  var normalFee=parseFloat(document.getElementById("normalFee").value)||0;
+  var out=document.getElementById("out");
+  if(!due||!fil){ out.innerHTML='<div class="result-empty">Please select both dates.</div>'; return; }
+  var d1=new Date(due+"T00:00:00"), d2=new Date(fil+"T00:00:00");
+  var days=Math.round((d2-d1)/86400000);
+  if(days<=0){
+    out.innerHTML='<div class="badge ok">On time</div><div class="rline total"><span class="k">Additional fee</span><span class="v">'+inr(0)+'</span></div>'+
+      '<div class="rline"><span class="k">Normal filing fee payable</span><span class="v">'+inr(normalFee)+'</span></div>';
+    return;
+  }
+  var penalty=days*100;
+  var total=normalFee+penalty;
+  out.innerHTML =
+    '<div class="badge late">'+days+' day'+(days===1?'':'s')+' late</div>'+
+    '<div class="rline"><span class="k">Days of delay</span><span class="v">'+days+'</span></div>'+
+    '<div class="rline"><span class="k">Additional fee (&#8377;100 &times; '+days+')</span><span class="v">'+inr(penalty)+'</span></div>'+
+    '<div class="rline"><span class="k">Normal filing fee</span><span class="v">'+inr(normalFee)+'</span></div>'+
+    '<div class="rline total"><span class="k">Total payable</span><span class="v">'+inr(total)+'</span></div>';
+}
+
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

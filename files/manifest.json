@@ -1,0 +1,13 @@
+{
+  "name": "TaxSphere",
+  "short_name": "TaxSphere",
+  "description": "Income tax, GST, accounting, costing and finance tools, notes and quizzes for CA, CMA and CS students.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f5fb",
+  "theme_color": "#6d4aff",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

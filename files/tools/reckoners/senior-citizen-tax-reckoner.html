@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Senior Citizen Tax Reckoner — Exemptions, Higher Thresholds &amp; Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#F1F3F7;
+    --ink:#000000;
+    --ink-2:#000000;
+    --ink-3:#4A4A4A;
+    --navy:#132449;
+    --navy-2:#1C3566;
+    --gold:#C0952F;
+    --gold-light:#DCAF4C;
+    --gold-soft:#FBF2DC;
+    --border:#E6E8EF;
+    --border-strong:#D6DAE4;
+    --add:#2E9C57;
+    --add-soft:#E7F6EC;
+    --less:#D14B4B;
+    --less-soft:#FBEAEA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:'Public Sans', sans-serif;
+    -webkit-font-smoothing:antialiased; padding:0 0 80px 0;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 0;}
+
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding-bottom:22px; margin-bottom:22px;}
+  .header-main{display:flex; align-items:flex-start; gap:14px;}
+  .app-mark{
+    flex:none; width:44px;height:44px; border-radius:12px;
+    background:linear-gradient(155deg, var(--navy-2), var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px -4px rgba(19,36,73,0.45);
+  }
+  .app-mark span{font-family:'Fraunces',serif; font-weight:700; font-size:12px; color:var(--gold-light);}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); display:flex; align-items:center; gap:6px;
+    margin-bottom:6px; font-weight:600;
+  }
+  h1{font-family:'Fraunces', serif; font-weight:600; font-size:clamp(24px,5vw,31px); line-height:1.12; margin:0 0 6px 0; letter-spacing:-.01em; color:var(--ink);}
+  header p{font-size:13.5px; color:var(--ink-2); max-width:560px; margin:0; line-height:1.55;}
+  .reg-no{
+    flex:none; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-3);
+    background:var(--surface-2); border:1px solid var(--border); padding:6px 10px;
+    border-radius:8px; text-align:right; line-height:1.6; white-space:nowrap;
+  }
+
+  .tabs{display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; background:var(--surface-2); padding:5px; border-radius:12px; border:1px solid var(--border);}
+  .tab{
+    font-family:'Public Sans', sans-serif; font-size:12.5px; font-weight:600; padding:9px 13px;
+    background:transparent; color:var(--ink-2); border:none; cursor:pointer; border-radius:8px;
+    display:flex; align-items:baseline; gap:6px; transition:background .15s, color .15s;
+  }
+  .tab .num{color:var(--ink-3); font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:10px;}
+  .tab.active{background:var(--navy); color:#fff; box-shadow:0 2px 8px -2px rgba(19,36,73,0.35);}
+  .tab.active .num{color:var(--gold-light);}
+  .tab:not(.active):hover{background:#EBEDF3; color:var(--ink);}
+
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:26px 24px 28px; box-shadow:0 1px 2px rgba(16,24,40,0.03), 0 12px 32px -16px rgba(16,24,40,0.10);
+  }
+  .view{display:none;} .view.active{display:block;}
+
+  h2{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 4px; color:var(--ink);}
+  .sub{font-size:12px; color:var(--ink-3); margin:0 0 20px; font-family:'IBM Plex Mono', monospace;}
+  h3{font-family:'Fraunces', serif; font-size:15px; font-weight:600; margin:24px 0 10px; color:var(--ink);}
+  p, li{font-size:13.5px; line-height:1.65; color:var(--ink-2);}
+  .note{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--gold-light); padding:10px 13px; background:var(--gold-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+  .warn{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--less); padding:10px 13px; background:var(--less-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+
+  .section-head-row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .sample-btn{
+    font-family:'Public Sans',sans-serif; font-size:11.5px; font-weight:600;
+    background:var(--surface); color:var(--gold); border:1px solid var(--gold-light);
+    border-radius:20px; padding:6px 13px; cursor:pointer; white-space:nowrap; flex:none;
+    transition:background .15s;
+  }
+  .sample-btn:hover{background:var(--gold-soft);}
+  .sample-btn.applied{background:var(--add-soft); color:var(--add); border-color:#C9EAD2;}
+  .calc-actions{display:flex; gap:8px; margin:14px 0 4px;}
+  .btn-compute{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600;
+    background:var(--navy); color:#fff; border:1px solid var(--navy);
+    border-radius:8px; padding:9px 18px; cursor:pointer; transition:background .15s;
+  }
+  .btn-compute:hover{background:var(--navy-2);}
+  .btn-clear{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600;
+    background:var(--surface); color:var(--ink-3); border:1px solid var(--border-strong);
+    border-radius:8px; padding:9px 18px; cursor:pointer; transition:background .15s, color .15s;
+  }
+  .btn-clear:hover{background:var(--surface-2); color:var(--ink);}
+
+  .profile-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;}
+  .profile-field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:150px;}
+  .profile-field label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3);}
+  .profile-field input, .profile-field select{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--ink);
+  }
+  .profile-field input:focus, .profile-field select:focus{outline:2px solid var(--gold-light); border-color:var(--gold);}
+  .toggle-group{display:flex; gap:6px; flex-wrap:wrap;}
+  .toggle-btn{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600; padding:8px 16px;
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-2);
+    cursor:pointer; border-radius:8px;
+  }
+  .toggle-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .toggle-label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-3); align-self:center; margin-right:6px;}
+
+  table.thresh{width:100%; border-collapse:collapse; margin-top:8px; font-size:12.5px;}
+  table.thresh th, table.thresh td{border:1px solid var(--border); padding:9px 10px; vertical-align:middle;}
+  table.thresh th{background:var(--navy); color:#fff; font-family:'Public Sans',sans-serif; font-size:10.5px; font-weight:600; text-align:center;}
+  table.thresh td{background:var(--surface);}
+  table.thresh td.tname{font-weight:600; color:var(--ink); font-size:12.5px;}
+  table.thresh td.tformula{font-size:11px; color:var(--ink-3); font-family:'IBM Plex Mono',monospace;}
+  table.thresh td.tval{text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--navy); background:var(--surface-2);}
+  .pill{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.02em;}
+  .pill.ok{background:var(--add-soft); color:var(--add);}
+  .pill.req{background:var(--less-soft); color:var(--less);}
+  .pill.warn2{background:var(--gold-soft); color:var(--gold);}
+  .pill.na{background:var(--surface-2); color:var(--ink-3);}
+
+  .verdict-card{margin-top:16px; border-radius:12px; padding:16px 18px; background:linear-gradient(135deg, var(--navy), var(--navy-2));}
+  .verdict-card .vk{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.05em;}
+  .verdict-card .vv{font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:#fff; margin-top:4px;}
+  .verdict-card .vv small{font-size:12px; font-weight:500; color:#9FACC9;}
+  .verdict-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+  .verdict-chip{
+    flex:1; min-width:150px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+    border-radius:8px; padding:9px 11px;
+  }
+  .verdict-chip .vck{font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.04em;}
+  .verdict-chip .vcv{font-size:13px; font-weight:700; margin-top:3px;}
+  .verdict-chip .vcv.ok{color:#8BE0A8;} .verdict-chip .vcv.req{color:#F0A6A6;} .verdict-chip .vcv.na{color:#B9C4DE;} .verdict-chip .vcv.warn2{color:#F3D28A;}
+
+  .mat-slabs{display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px;}
+  .mat-slab{display:flex; justify-content:space-between; gap:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 13px; font-size:12px;}
+  .mat-slab b{color:var(--ink); font-weight:600;}
+  .mat-slab .formula{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:700;}
+
+  .def-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.def-grid{grid-template-columns:1fr;}}
+  .def-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .def-card .clno{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700;}
+  .def-card b{font-size:13px; color:var(--ink); display:block; margin:2px 0 3px;}
+  .def-card p{margin:0; font-size:12px; line-height:1.5;}
+
+  .rate-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:700px){.rate-grid{grid-template-columns:1fr;}}
+  .rate-card{border-radius:10px; padding:13px 15px; border:1px solid var(--border);}
+  .rate-card .rate-pct{font-family:'Fraunces',serif; font-size:20px; font-weight:700; color:var(--navy);}
+  .rate-card .rate-label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); margin-bottom:4px;}
+  .rate-card p{margin:6px 0 0; font-size:12px;}
+  .rate-card.nil{background:var(--surface-2);}
+  .rate-card.merit{background:var(--add-soft);}
+  .rate-card.std{background:var(--gold-soft);}
+  .rate-card.demerit{background:var(--less-soft);}
+
+  .guide-list{counter-reset:guide; margin-top:14px;}
+  .guide-item{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);}
+  .guide-item:last-child{border-bottom:none;}
+  .guide-num{
+    counter-increment:guide; flex:none; width:28px; height:28px; border-radius:50%;
+    background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700;
+  }
+  .guide-num::before{content:counter(guide);}
+  .guide-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:3px;}
+  .guide-body p{margin:0; font-size:12px;}
+
+  .role-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.role-grid{grid-template-columns:1fr;}}
+  .role-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 15px;}
+  .role-card .rc-head{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--gold); font-weight:700; margin-bottom:8px;}
+  .role-card ul{margin:0; padding-left:18px;}
+  .role-card li{font-size:12px; margin-bottom:6px;}
+
+  table.simple{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+  table.simple th, table.simple td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); color:var(--ink-2);}
+  table.simple th{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); font-weight:600;}
+  table.simple td b{color:var(--ink);}
+
+  .exclude-list{margin-top:10px; padding-left:0; list-style:none;}
+  .exclude-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .exclude-list li::before{content:"✕"; position:absolute; left:0; top:1px; color:var(--less); font-size:11px; font-weight:700;}
+  .check-list{margin-top:10px; padding-left:0; list-style:none;}
+  .check-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .check-list li::before{content:"✓"; position:absolute; left:0; top:1px; color:var(--add); font-size:11px; font-weight:700;}
+
+  .exempt-box{margin-top:16px; background:var(--gold-soft); border:1px solid #EEDCA6; border-radius:10px; padding:14px 16px;}
+  .exempt-box b{color:var(--gold); font-size:12.5px; display:block; margin-bottom:6px;}
+
+  .it-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:640px){.it-grid{grid-template-columns:1fr;}}
+  .it-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .it-card .it-head{font-family:'Fraunces',serif; font-size:14px; font-weight:600; color:var(--navy); margin-bottom:4px;}
+  .it-card .it-sec{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px;}
+  .it-card p{margin:0; font-size:12.5px; line-height:1.6;}
+
+  .disclaimer{margin-top:30px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--ink-3); line-height:1.6; font-family:'IBM Plex Mono', monospace;}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-main">
+      <div class="app-mark"><span>60+</span></div>
+      <div>
+        <div class="eyebrow">Income-tax Act, 2025 · Chapter VIII &amp; TDS</div>
+        <h1>Senior Citizen Tax Reckoner</h1>
+        <p>Every age-based exemption, higher threshold and extra deduction available to resident senior &amp; super senior citizens — advance tax relief, 80TTB/153 interest deduction, higher TDS thresholds, 80D/126 &amp; 80DDB/128 medical limits, and the Section 194P return-filing exemption — plus an eligibility calculator.</p>
+      </div>
+    </div>
+    <div class="reg-no">v1.0<br>Aug 2026</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="calc"><span class="num">01</span> Calculator</div>
+    <div class="tab" data-tab="overview"><span class="num">02</span> Overview</div>
+    <div class="tab" data-tab="advtax"><span class="num">03</span> Advance Tax Exemption</div>
+    <div class="tab" data-tab="slabs"><span class="num">04</span> Basic Exemption &amp; Slabs</div>
+    <div class="tab" data-tab="ttb"><span class="num">05</span> Interest Deduction (153)</div>
+    <div class="tab" data-tab="tds"><span class="num">06</span> TDS Threshold on Interest</div>
+    <div class="tab" data-tab="med"><span class="num">07</span> Medical Deductions (126 &amp; 128)</div>
+    <div class="tab" data-tab="filing"><span class="num">08</span> ITR Filing Relief (194P)</div>
+    <div class="tab" data-tab="other"><span class="num">09</span> Other Benefits</div>
+    <div class="tab" data-tab="mapping"><span class="num">10</span> Section Mapping</div>
+  </div>
+
+  <div class="panel">
+
+    <!-- ============ TAB 1: CALCULATOR ============ -->
+    <div class="view active" id="view-calc">
+      <div class="section-head-row">
+        <div>
+          <h2>Senior citizen benefit eligibility calculator</h2>
+          <p class="sub">Advance tax, basic exemption, 80TTB/153, 80D/126, 80DDB/128 and Section 194P — in one pass</p>
+        </div>
+        <button class="sample-btn" id="loadSampleBtn">Load sample data</button>
+      </div>
+
+      <h3>Profile</h3>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Age (completed, as on 31 March of the tax year)</label>
+          <input type="number" id="age" value="65" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Tax regime</label>
+          <select id="regime">
+            <option value="new">New regime (default, Sec 202)</option>
+            <option value="old">Old regime (opted)</option>
+          </select>
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="toggle-group" style="flex:1;">
+          <span class="toggle-label">Resident in India?</span>
+          <button class="toggle-btn active" id="res-yes">Yes</button>
+          <button class="toggle-btn" id="res-no">No</button>
+        </div>
+        <div class="toggle-group" style="flex:1;">
+          <span class="toggle-label">Income from business/profession?</span>
+          <button class="toggle-btn" id="biz-yes">Yes</button>
+          <button class="toggle-btn active" id="biz-no">No</button>
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="toggle-group" style="flex:1;">
+          <span class="toggle-label">Only pension + interest, same bank (for 75+)?</span>
+          <button class="toggle-btn" id="pen-yes">Yes</button>
+          <button class="toggle-btn active" id="pen-no">No</button>
+        </div>
+        <div class="toggle-group" style="flex:1;">
+          <span class="toggle-label">Have a health insurance policy?</span>
+          <button class="toggle-btn active" id="ins-yes">Yes</button>
+          <button class="toggle-btn" id="ins-no">No</button>
+        </div>
+      </div>
+
+      <h3>Amounts for the tax year</h3>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Interest income — savings/FD/RD, banks &amp; post office (₹)</label>
+          <input type="number" id="interest" value="0" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Health insurance premium paid (₹)</label>
+          <input type="number" id="premium" value="0" min="0">
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Medical expenditure if uninsured (₹)</label>
+          <input type="number" id="medexp" value="0" min="0">
+        </div>
+        <div class="profile-field">
+          <label>Specified-disease treatment cost, net of any reimbursement (₹, Sec 128)</label>
+          <input type="number" id="disease" value="0" min="0">
+        </div>
+      </div>
+
+      <div class="calc-actions">
+        <button class="btn-compute" id="computeBtn">Compute</button>
+        <button class="btn-clear" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="verdict-card">
+        <div class="vk">Snapshot</div>
+        <div class="vv" id="snapshot-headline">—</div>
+        <div class="verdict-row" id="snapshot-chips"></div>
+      </div>
+
+      <div class="mat-slabs" id="lf-results" style="margin-top:16px;">
+        <div class="mat-slab"><span>Interest deduction — Sec 80TTA/153 (general) or 80TTB/153 (senior citizen)</span><b class="formula" id="r-ttb">₹ 0</b></div>
+        <div class="mat-slab"><span>Health insurance/medical deduction — Sec 80D/126</span><b class="formula" id="r-80d">₹ 0</b></div>
+        <div class="mat-slab"><span>Specified-disease deduction — Sec 80DDB/128</span><b class="formula" id="r-80ddb">₹ 0</b></div>
+        <div class="mat-slab"><span>Old-regime basic exemption applicable</span><b class="formula" id="r-slab">₹ 0</b></div>
+      </div>
+      <div class="note" id="calc-note">Enter details above and press Compute.</div>
+    </div>
+
+    <!-- ============ TAB 2: OVERVIEW ============ -->
+    <div class="view" id="view-overview">
+      <h2>Overview</h2>
+      <p class="sub">Who counts as a senior citizen, and what changes for them</p>
+      <p>Indian income tax gives resident individuals extra relief purely on account of age. None of this changes the tax base or the definition of income — it simply raises certain thresholds, adds certain deductions, and removes certain compliance burdens once a person crosses 60 (and again at 75 and 80). These benefits sit across the Income-tax Act, 2025 (Chapter VIII deductions, advance tax, TDS) and are almost entirely restricted to <b>residents</b> — a non-resident senior citizen gets none of the age-based reliefs below except where a section says otherwise.</p>
+
+      <div class="def-grid">
+        <div class="def-card"><div class="clno">Age 60–79</div><b>Senior Citizen</b><p>Resident individual who is 60 years or older at any time during the tax year.</p></div>
+        <div class="def-card"><div class="clno">Age 80+</div><b>Super Senior Citizen</b><p>Resident individual who is 80 years or older at any time during the tax year — an additional, higher tier of benefits.</p></div>
+        <div class="def-card"><div class="clno">Age 75+</div><b>"Specified" senior citizen</b><p>The narrower category used only for the Section 194P return-filing exemption (pension + same-bank interest only).</p></div>
+        <div class="def-card"><div class="clno">Residency</div><b>Must be resident</b><p>Age-based basic-exemption slabs, advance tax relief, and the higher TDS threshold are all conditioned on being a resident in the tax year.</p></div>
+      </div>
+
+      <h3>At a glance — where age changes the outcome</h3>
+      <table class="simple">
+        <tr><th>Benefit</th><th>General taxpayer</th><th>Senior citizen (60+)</th></tr>
+        <tr><td>Advance tax (no business income)</td><td>Must pay if liability ≥ ₹10,000</td><td><b>Exempt</b> — pay at self-assessment stage</td></tr>
+        <tr><td>Basic exemption (old regime)</td><td>₹2,50,000</td><td><b>₹3,00,000</b> (₹5,00,000 if 80+)</td></tr>
+        <tr><td>Interest deduction (80TTA/80TTB → Sec 153)</td><td>₹10,000, savings interest only</td><td><b>₹50,000</b>, all deposit interest</td></tr>
+        <tr><td>TDS threshold on bank/post-office interest</td><td>₹50,000</td><td><b>₹1,00,000</b></td></tr>
+        <tr><td>Health insurance deduction (80D → Sec 126)</td><td>₹25,000</td><td><b>₹50,000</b> (incl. medical expenditure if uninsured)</td></tr>
+        <tr><td>Specified-disease treatment (80DDB → Sec 128)</td><td>₹40,000</td><td><b>₹1,00,000</b></td></tr>
+        <tr><td>ITR filing (75+, pension + same-bank interest only)</td><td>Must file</td><td><b>Exempt</b> under Sec 194P mechanism</td></tr>
+      </table>
+      <div class="warn">Section numbers under the Income-tax Act, 2025 are still settling in secondary literature — this tool flags every renumbered reference and notes where different publishers cite slightly different clause numbers. Always confirm the exact section against the Act, the Income-tax Rules, 2026, and the applicable Finance Act before filing.</div>
+    </div>
+
+    <!-- ============ TAB 3: ADVANCE TAX EXEMPTION ============ -->
+    <div class="view" id="view-advtax">
+      <h2>Advance tax exemption — Section 404 (erstwhile Section 207)</h2>
+      <p class="sub">Who is excused from paying advance tax instalments</p>
+      <p>Ordinarily, under Section 404 of the Income-tax Act, 2025 (carrying forward old Section 208), any person whose estimated tax liability for the tax year is <b>₹10,000 or more</b> must pay it in advance, in quarterly instalments, rather than in one lump sum at return-filing time.</p>
+      <div class="exempt-box">
+        <b>The senior-citizen carve-out</b>
+        A <b>resident senior citizen</b> (60 years or older at any time in the tax year) who has <b>no income from business or profession</b> is not liable to pay advance tax at all — regardless of how large the tax liability is. The entire amount can instead be paid as self-assessment tax when the return is filed, with no interest under Sections 234B/234C-equivalent provisions for "non-payment" of advance tax.
+      </div>
+
+      <h3>Conditions — both must be satisfied</h3>
+      <div class="check-list">
+        <li><b>Resident</b> in India for the tax year (a non-resident senior citizen does not qualify).</li>
+        <li><b>Aged 60 or above</b> at any time during the tax year (not necessarily on 1 April).</li>
+        <li><b>No income chargeable under "Profits and gains of business or profession."</b> Rental income, pension, interest, capital gains and salary do not disqualify the exemption — a proprietorship, freelance consultancy, or trading activity does.</li>
+      </div>
+
+      <h3>Worked examples</h3>
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="rc-head">Exempt</div>
+          <ul>
+            <li>Resident, aged 68, earns ₹40,000/month in rent and has a fixed-deposit interest income — no business income → <b>fully exempt</b> from advance tax, whatever the tax liability.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="rc-head">Not exempt</div>
+          <ul>
+            <li>Resident, aged 61, runs a small proprietorship business alongside retirement income → <b>must pay advance tax</b> in full, like any other taxpayer, because of the business income.</li>
+            <li>Resident, aged 59, large interest income → <b>must pay</b>, since the age condition (60+) isn't met.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note">This is relief from the <i>instalment schedule</i> only — it does not reduce the actual tax payable. All of it is still due, just at self-assessment stage rather than in four advance instalments through the year.</div>
+    </div>
+
+    <!-- ============ TAB 4: BASIC EXEMPTION & SLABS ============ -->
+    <div class="view" id="view-slabs">
+      <h2>Basic exemption limit &amp; slab rates</h2>
+      <p class="sub">Age-based enhancement exists only under the old regime</p>
+      <div class="rate-grid">
+        <div class="rate-card nil"><div class="rate-label">General (&lt; 60)</div><div class="rate-pct">₹2.5L</div><p>Old-regime basic exemption for individuals below 60.</p></div>
+        <div class="rate-card merit"><div class="rate-label">Senior citizen (60–79)</div><div class="rate-pct">₹3L</div><p>Higher old-regime basic exemption — resident only.</p></div>
+        <div class="rate-card std"><div class="rate-label">Super senior citizen (80+)</div><div class="rate-pct">₹5L</div><p>Highest old-regime basic exemption tier.</p></div>
+      </div>
+      <div class="exempt-box">
+        <b>New (default) regime — Section 202 — is age-blind</b>
+        Under the new regime, every individual — 25 or 85 — is taxed on the <b>same slabs</b>, with a flat basic exemption of <b>₹4,00,000</b>. There is no higher slab-start for senior or super senior citizens here. What does help retirees under this regime is the <b>Section 87A rebate</b> — up to ₹60,000, effectively making income up to ₹12,00,000 (₹12,75,000 for salary/pension income, after the ₹75,000 standard deduction) tax-free for residents, regardless of age.
+      </div>
+      <p class="note">Choosing between the two regimes is a case-by-case computation — the old regime's higher age-based exemption plus 80TTB/80D/80DDB deductions can beat the new regime for a senior citizen with large interest, medical or insurance outgo, while the new regime's rebate often wins for those with modest income and few deductions. Run both before filing.</p>
+    </div>
+
+    <!-- ============ TAB 5: INTEREST DEDUCTION (153) ============ -->
+    <div class="view" id="view-ttb">
+      <h2>Interest-income deduction — Section 153 (erstwhile 80TTA/80TTB)</h2>
+      <p class="sub">Old regime only — not available if the new regime is chosen</p>
+      <div class="it-grid">
+        <div class="it-card"><div class="it-head">General taxpayer</div><div class="it-sec">Erstwhile Sec 80TTA</div><p>Deduction capped at <b>₹10,000</b>, and only for interest on a <b>savings account</b> (bank, co-operative bank or post office) — fixed-deposit interest is not covered.</p></div>
+        <div class="it-card"><div class="it-head">Senior citizen (60+)</div><div class="it-sec">Erstwhile Sec 80TTB</div><p>Deduction capped at <b>₹50,000</b>, covering interest from <b>savings accounts, fixed deposits and recurring deposits</b> with banks, co-operative banks or the post office. Replaces 80TTA entirely — a senior citizen cannot claim both.</p></div>
+      </div>
+      <p class="note">Both provisions now sit together under Section 153 of the Income-tax Act, 2025, in Chapter VIII. Some recent commentary flags a proposed increase of the senior-citizen cap to ₹1,00,000 — this had not consistently been confirmed across sources at the time this tool was built, so treat ₹50,000 as the settled figure and verify the current-year cap before filing.</p>
+      <div class="warn">Section 153 (like the rest of Chapter VIII) is available only if the <b>old tax regime</b> is opted for. Under the new (default) regime, this deduction cannot be claimed at all — interest income is fully taxable there, offset only by the basic exemption and the Section 87A rebate.</div>
+    </div>
+
+    <!-- ============ TAB 6: TDS THRESHOLD ============ -->
+    <div class="view" id="view-tds">
+      <h2>TDS threshold on interest income</h2>
+      <p class="sub">A deduction-at-source concession, not a tax exemption — all TDS provisions now sit under the consolidated Section 393</p>
+      <table class="thresh">
+        <tr><th>Payee</th><th>TDS threshold per payer, per year</th></tr>
+        <tr><td class="tname">General taxpayer</td><td class="tval">₹50,000</td></tr>
+        <tr><td class="tname">Resident senior citizen (60+)</td><td class="tval">₹1,00,000</td></tr>
+      </table>
+      <div class="warn">This threshold only decides <b>when the bank deducts TDS</b> — it does not make the interest itself tax-free. Interest above the basic exemption and applicable deductions remains fully taxable; a senior citizen must still report all interest income in the return and pay any tax due, even if no TDS was deducted below the threshold.</div>
+      <p>A resident senior citizen whose total income (after deductions) is expected to be nil can also submit <b>Form 15H</b> to each bank at the start of the tax year, so that no TDS is deducted at all during the year — this is different from, and additional to, the ₹1,00,000 threshold above.</p>
+    </div>
+
+    <!-- ============ TAB 7: MEDICAL DEDUCTIONS ============ -->
+    <div class="view" id="view-med">
+      <h2>Medical deductions — Sections 126 &amp; 128</h2>
+      <p class="sub">Health insurance premium, uninsured medical expenditure, and specified-disease treatment — old regime only</p>
+
+      <h3>Health insurance / medical expenditure — Section 126 (erstwhile 80D)</h3>
+      <table class="simple">
+        <tr><th>Category</th><th>Deduction cap</th></tr>
+        <tr><td>Premium for self/family, below 60</td><td><b>₹25,000</b></td></tr>
+        <tr><td>Premium for self/family, senior citizen (60+)</td><td><b>₹50,000</b></td></tr>
+        <tr><td>Premium paid for senior-citizen parents (separate limit, in addition to the above)</td><td><b>₹50,000</b></td></tr>
+        <tr><td>No insurance policy — actual medical expenditure incurred, senior citizen only</td><td>Within the same <b>₹50,000</b> cap</td></tr>
+      </table>
+      <p class="note">If a senior citizen (or their senior-citizen parent) has no health insurance policy, actual medical expenditure incurred can be claimed instead — subject to the same overall ₹50,000 ceiling; premium and medical expenditure are not both fully allowed on top of each other.</p>
+
+      <h3>Specified-disease treatment — Section 128 (erstwhile 80DDB)</h3>
+      <table class="simple">
+        <tr><th>Category</th><th>Deduction cap</th></tr>
+        <tr><td>Below 60</td><td><b>₹40,000</b></td></tr>
+        <tr><td>Senior citizen or super senior citizen (60+)</td><td><b>₹1,00,000</b></td></tr>
+      </table>
+      <p>Available for expenditure actually incurred on the medical treatment of specified diseases and ailments (as prescribed by rule) for the taxpayer or a dependent — reduced by any amount received under insurance or from an employer.</p>
+    </div>
+
+    <!-- ============ TAB 8: ITR FILING RELIEF ============ -->
+    <div class="view" id="view-filing">
+      <h2>Return-filing relief — Section 194P mechanism</h2>
+      <p class="sub">For resident "specified" senior citizens aged 75 and above</p>
+      <p>A resident individual aged <b>75 or above</b>, whose <b>only</b> sources of income are a <b>pension</b> and <b>interest income from the very same bank</b> that pays the pension, can be relieved of the obligation to file an income-tax return at all — provided the conditions below are met.</p>
+      <h3>Conditions</h3>
+      <div class="check-list">
+        <li>Resident individual, aged 75 years or above during the tax year.</li>
+        <li>Income consists only of pension, and interest income from the same bank that credits the pension.</li>
+        <li>The bank is a "specified bank" notified for this purpose.</li>
+        <li>A declaration in the prescribed form is submitted to that bank.</li>
+      </div>
+      <p>Once the declaration is filed, the specified bank itself computes total income, applies the deductions available under Chapter VIII (e.g. Sections 126/128/153) and the Section 87A rebate, works out the final tax liability, and deducts it as TDS — at which point the senior citizen is not required to separately file a return of income for that year.</p>
+      <div class="warn">This is a narrow administrative concession — a single rupee of any other income (rent, capital gains, dividend from another source, freelance income) takes the person out of this relief and back into the normal return-filing requirement.</div>
+    </div>
+
+    <!-- ============ TAB 9: OTHER BENEFITS ============ -->
+    <div class="view" id="view-other">
+      <h2>Other age-linked benefits</h2>
+      <div class="it-grid">
+        <div class="it-card"><div class="it-head">Paper filing for super senior citizens</div><div class="it-sec">Return filing</div><p>A super senior citizen (80+) filing a simple return (equivalent to old ITR-1/ITR-4) may file in <b>paper mode</b> instead of mandatory e-filing.</p></div>
+        <div class="it-card"><div class="it-head">Form 15H</div><div class="it-sec">TDS</div><p>A resident senior citizen whose final tax liability for the year is expected to be nil can submit Form 15H to each payer of interest, stopping TDS deduction entirely for the year.</p></div>
+        <div class="it-card"><div class="it-head">Reverse mortgage receipts</div><div class="it-sec">Exempt income</div><p>Periodic or lump-sum amounts received by a senior citizen under a notified reverse mortgage scheme are not treated as taxable income — commonly relied on for equity release from a self-occupied house.</p></div>
+        <div class="it-card"><div class="it-head">Standard deduction on pension</div><div class="it-sec">Not age-specific, but pension-relevant</div><p>₹75,000 under the new regime / ₹50,000 under the old regime against salary and (most) pension income — available to everyone, but especially relevant since pension is the dominant income source for most senior citizens.</p></div>
+        <div class="it-card"><div class="it-head">Section 87A rebate</div><div class="it-sec">Age-blind, but retiree-relevant</div><p>Up to ₹60,000 (new regime, income up to ₹12 lakh) or ₹12,500 (old regime, income up to ₹5 lakh) — available to all resident individuals regardless of age, often eliminating tax entirely for retirees with modest income.</p></div>
+        <div class="it-card"><div class="it-head">Senior Citizens' Savings Scheme (SCSS)</div><div class="it-sec">Not a tax exemption</div><p>SCSS deposits qualify for the Section 123 (erstwhile 80C) deduction on investment, but the quarterly interest received remains fully taxable — a common point of confusion.</p></div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 10: SECTION MAPPING ============ -->
+    <div class="view" id="view-mapping">
+      <h2>Section mapping — 1961 Act → Income-tax Act, 2025</h2>
+      <p class="sub">Quick reference for every provision covered in this tool</p>
+      <table class="simple">
+        <tr><th>Benefit</th><th>1961 Act section</th><th>2025 Act section</th></tr>
+        <tr><td>Advance tax — general threshold (₹10,000)</td><td>208</td><td><b>404</b></td></tr>
+        <tr><td>Advance tax — senior-citizen exemption</td><td>207</td><td><b>Within Ch. XIX-B, advance tax provisions (Sec 404 group)</b></td></tr>
+        <tr><td>Investment deductions (PPF, ELSS, LIC, etc.)</td><td>80C</td><td><b>123</b> (+ Schedule XV)</td></tr>
+        <tr><td>Additional NPS deduction</td><td>80CCD(1B)</td><td><b>124</b></td></tr>
+        <tr><td>Health insurance / medical expenditure</td><td>80D</td><td><b>126</b></td></tr>
+        <tr><td>Specified-disease treatment</td><td>80DDB</td><td><b>128</b></td></tr>
+        <tr><td>Education-loan interest</td><td>80E</td><td><b>129</b></td></tr>
+        <tr><td>Interest-income deduction (general/senior)</td><td>80TTA / 80TTB</td><td><b>153</b></td></tr>
+        <tr><td>Rebate for resident individuals</td><td>87A</td><td>Carried forward (Chapter VIII); clause number varies by publisher</td></tr>
+        <tr><td>All TDS provisions (incl. Sec 194A interest TDS and the Sec 194P mechanism)</td><td>192–196D, incl. 194A, 194P</td><td><b>Consolidated under Section 393</b></td></tr>
+        <tr><td>Exempt-income list (Section 10)</td><td>10</td><td><b>Schedule II</b></td></tr>
+        <tr><td>New (default) tax regime</td><td>115BAC</td><td><b>202</b></td></tr>
+      </table>
+      <div class="note">Deduction limits, eligibility conditions and the underlying tax policy are carried forward unchanged — this is a renumbering and drafting simplification exercise, not a rewrite of senior-citizen tax policy. Where secondary sources disagree on an exact clause number (this happens most often with 87A and the Section 194P mechanism), this tool flags it rather than guessing.</div>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    Working tool for illustrative reference and computation only — not tax advice. The Income-tax Act, 2025 (effective 1 April 2026), the Income-tax Rules, 2026, and annual Finance Act amendments are the authoritative sources — always verify current section numbers, thresholds and forms against them, or with a chartered accountant, before relying on this for an actual filing.
+  </div>
+</div>
+
+<script>
+  // ---- Tabs ----
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('.view');
+  tabs.forEach(t=>{
+    t.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      views.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('view-'+t.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Toggle helpers ----
+  function makeToggle(yesId, noId, initial){
+    const yesBtn = document.getElementById(yesId);
+    const noBtn = document.getElementById(noId);
+    let state = initial;
+    function set(val){
+      state = val;
+      yesBtn.classList.toggle('active', val);
+      noBtn.classList.toggle('active', !val);
+    }
+    yesBtn.addEventListener('click', ()=>set(true));
+    noBtn.addEventListener('click', ()=>set(false));
+    set(initial);
+    return { get: ()=>state, set };
+  }
+  const resToggle = makeToggle('res-yes','res-no', true);
+  const bizToggle = makeToggle('biz-yes','biz-no', false);
+  const penToggle = makeToggle('pen-yes','pen-no', false);
+  const insToggle = makeToggle('ins-yes','ins-no', true);
+
+  function fmtInr(n){
+    if(isNaN(n)) n = 0;
+    return '₹ ' + Math.round(n).toLocaleString('en-IN');
+  }
+  function chip(label, value, cls){
+    return `<div class="verdict-chip"><div class="vck">${label}</div><div class="vcv ${cls}">${value}</div></div>`;
+  }
+
+  function compute(){
+    const age = parseFloat(document.getElementById('age').value)||0;
+    const regime = document.getElementById('regime').value;
+    const resident = resToggle.get();
+    const hasBiz = bizToggle.get();
+    const pensionOnly = penToggle.get();
+    const hasIns = insToggle.get();
+    const interest = parseFloat(document.getElementById('interest').value)||0;
+    const premium = parseFloat(document.getElementById('premium').value)||0;
+    const medexp = parseFloat(document.getElementById('medexp').value)||0;
+    const disease = parseFloat(document.getElementById('disease').value)||0;
+
+    const isSenior = resident && age >= 60;
+    const isSuperSenior = resident && age >= 80;
+    const isSpecifiedSenior = resident && age >= 75;
+
+    let category = 'Not a resident senior citizen';
+    if(isSuperSenior) category = 'Super Senior Citizen (80+)';
+    else if(isSenior) category = 'Senior Citizen (60–79)';
+
+    // Advance tax
+    const advTaxExempt = resident && age >= 60 && !hasBiz;
+
+    // 194P filing relief
+    const filingExempt = isSpecifiedSenior && pensionOnly;
+
+    // 80TTB/153
+    const ttbCap = isSenior ? 50000 : 10000;
+    const ttbDeduction = (regime === 'old') ? Math.min(interest, ttbCap) : 0;
+
+    // 80D/126
+    const dCap = isSenior ? 50000 : 25000;
+    let dDeduction = 0;
+    if(regime === 'old'){
+      if(isSenior && !hasIns){
+        dDeduction = Math.min(medexp, dCap);
+      } else {
+        dDeduction = Math.min(premium, dCap);
+      }
+    }
+
+    // 80DDB/128
+    const ddbCap = isSenior ? 100000 : 40000;
+    const ddbDeduction = (regime === 'old') ? Math.min(disease, ddbCap) : 0;
+
+    // Basic exemption (old regime)
+    let slab = 250000;
+    if(isSuperSenior) slab = 500000;
+    else if(isSenior) slab = 300000;
+
+    // ---- Render snapshot ----
+    document.getElementById('snapshot-headline').textContent = category;
+    let chips = '';
+    chips += chip('Advance tax (Sec 404)', advTaxExempt ? 'Exempt' : 'Liable', advTaxExempt ? 'ok' : 'req');
+    chips += chip('ITR filing (Sec 194P)', filingExempt ? 'Exempt (bank deducts)' : 'Must file normally', filingExempt ? 'ok' : 'na');
+    chips += chip('Tax regime used for deductions', regime === 'old' ? 'Old regime' : 'New regime (Sec 153/126/128 unavailable)', regime === 'old' ? 'ok' : 'warn2');
+    chips += chip('Resident senior citizen?', isSenior ? 'Yes' : 'No', isSenior ? 'ok' : 'na');
+    document.getElementById('snapshot-chips').innerHTML = chips;
+
+    document.getElementById('r-ttb').textContent = fmtInr(ttbDeduction) + (regime==='old' ? ` (cap ${fmtInr(ttbCap)})` : ' — regime disallows');
+    document.getElementById('r-80d').textContent = fmtInr(dDeduction) + (regime==='old' ? ` (cap ${fmtInr(dCap)})` : ' — regime disallows');
+    document.getElementById('r-80ddb').textContent = fmtInr(ddbDeduction) + (regime==='old' ? ` (cap ${fmtInr(ddbCap)})` : ' — regime disallows');
+    document.getElementById('r-slab').textContent = fmtInr(slab) + (regime==='new' ? ' (new regime uses a flat ₹4,00,000 instead — see Tab 04)' : '');
+
+    let msg = '';
+    if(!resident){
+      msg = 'None of the resident-only, age-based reliefs (advance tax exemption, higher old-regime slab, higher TDS threshold, Section 194P) apply to a non-resident.';
+    } else if(hasBiz && age >= 60){
+      msg = 'Age 60+ alone is not enough for the advance-tax exemption — business/professional income takes this person back into the normal quarterly advance-tax schedule.';
+    } else if(age < 60){
+      msg = 'Below 60, none of the age-based reliefs on this page apply — only the general (non-senior) limits are available.';
+    } else {
+      msg = `As a resident ${category.toLowerCase()}, advance tax is ${advTaxExempt ? 'not payable' : 'payable as normal'}, and `;
+      msg += filingExempt ? 'the Section 194P mechanism can relieve the return-filing requirement itself. ' : 'a normal return must still be filed. ';
+      msg += regime === 'old' ? 'The old regime has been used, so Sections 153/126/128 deductions are reflected above.' : 'The new regime has been used — Chapter VIII deductions (153/126/128) do not apply; only the flat basic exemption and Section 87A rebate reduce tax.';
+    }
+    document.getElementById('calc-note').textContent = msg;
+  }
+
+  document.getElementById('computeBtn').addEventListener('click', compute);
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    document.getElementById('age').value = 0;
+    document.getElementById('regime').value = 'new';
+    resToggle.set(true);
+    bizToggle.set(false);
+    penToggle.set(false);
+    insToggle.set(true);
+    document.getElementById('interest').value = 0;
+    document.getElementById('premium').value = 0;
+    document.getElementById('medexp').value = 0;
+    document.getElementById('disease').value = 0;
+    document.getElementById('calc-note').textContent = 'Enter details above and press Compute.';
+    compute();
+  });
+
+  const loadSampleBtn = document.getElementById('loadSampleBtn');
+  loadSampleBtn.addEventListener('click', ()=>{
+    document.getElementById('age').value = 68;
+    document.getElementById('regime').value = 'old';
+    resToggle.set(true);
+    bizToggle.set(false);
+    penToggle.set(false);
+    insToggle.set(false);
+    document.getElementById('interest').value = 62000;
+    document.getElementById('premium').value = 0;
+    document.getElementById('medexp').value = 38000;
+    document.getElementById('disease').value = 120000;
+    compute();
+    loadSampleBtn.textContent = 'Sample loaded ✓';
+    loadSampleBtn.classList.add('applied');
+    setTimeout(()=>{ loadSampleBtn.textContent='Load sample data'; loadSampleBtn.classList.remove('applied'); }, 1800);
+  });
+
+  // ---- init ----
+  compute();
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

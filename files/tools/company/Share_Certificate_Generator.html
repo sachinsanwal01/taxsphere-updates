@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Share Certificate &amp; Transfer Form Generator | Forms SH-1 &amp; SH-4 &middot; Companies Act, 2013</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1b2a38;
+  --ink-2:#28394a;
+  --brass:#9c7a34;
+  --brass-light:#c9a256;
+  --paper:#fbfaf6;
+  --paper-line:#e2dcc9;
+  --canvas:#eef1f2;
+  --line:#d6dde2;
+  --text:#232b31;
+  --muted:#66727b;
+  --accent-red:#7a2734;
+  --focus:#2f6f8f;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Inter',system-ui,Arial,sans-serif;
+  background:
+    radial-gradient(1100px 500px at 15% -10%, #26445c22, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #9c7a3422, transparent 55%),
+    var(--canvas);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.45;
+}
+header.top{
+  background:linear-gradient(120deg,#04070c 0%,#081a30 30%,#0e2c52 55%,#13437a 78%,#1b5fa6 100%);
+  background-size:240% 240%;
+  animation:gflow 16s ease infinite;
+  color:#fff;
+  padding:22px 28px 20px;
+  box-shadow:0 14px 30px -14px rgba(0,0,0,.65), inset 0 -1px 0 rgba(255,255,255,.06);
+  position:relative;
+  z-index:5;
+}
+@keyframes gflow{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+header.top .crest{display:flex;align-items:center;gap:14px;}
+header.top .mark{
+  width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(155deg,#0f2340 0%,#020509 70%);
+  border:1px solid rgba(70,150,220,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Source Serif 4',serif;font-weight:700;font-size:16px;color:#6cb2ea;
+  flex:0 0 auto;
+  box-shadow:
+    0 10px 18px -8px rgba(0,0,0,.65),
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -6px 10px rgba(0,0,0,.5),
+    0 0 14px -4px rgba(40,120,200,.55);
+  transform-style:preserve-3d;
+  transition:transform .35s ease;
+}
+header.top .crest:hover .mark{ transform:rotateY(14deg) rotateX(6deg) translateZ(2px); }
+header.top h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px;text-shadow:0 1px 0 rgba(0,0,0,.25);}
+header.top p.tag{margin:3px 0 0;font-size:12.5px;color:#c8d2da;}
+header.top .disclaimer{
+  margin-top:14px;font-size:12px;color:#dbe3e8;
+  border-top:1px solid rgba(255,255,255,.15);padding-top:10px;
+}
+
+.app{
+  max-width:1360px;margin:26px auto 60px;padding:0 20px;
+  display:grid;grid-template-columns:minmax(340px,460px) 1fr;gap:24px;
+  align-items:flex-start;
+  perspective:1800px;
+}
+.app.hide{display:none;}
+@media (max-width: 980px){ .app{grid-template-columns:1fr;} }
+
+.toptabs{
+  background:linear-gradient(180deg,#0d1721,#0a141d);
+  display:flex;gap:2px;padding:0 24px;
+  box-shadow:0 6px 16px -10px rgba(0,0,0,.6);
+  position:relative;z-index:4;
+}
+.toptabs button{
+  appearance:none;border:none;background:transparent;
+  color:rgba(255,255,255,.6);padding:12px 18px;font-size:13px;font-weight:700;
+  cursor:pointer;border-bottom:3px solid transparent;font-family:inherit;
+  transition:color .2s ease, border-color .2s ease;
+}
+.toptabs button:hover{ color:#fff; }
+.toptabs button.active{ color:#fff;border-bottom-color:#1b5fa6;background:rgba(255,255,255,.04); }
+
+.guide-wrap{max-width:1080px;margin:26px auto 60px;padding:0 20px;display:none;}
+.guide-wrap.show{display:block;}
+.guide-card{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:28px 32px 36px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+}
+.guide-card .g-title{font-size:19px;font-weight:700;color:var(--ink);margin:0 0 4px;}
+.guide-card .g-sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;font-style:italic;}
+.guide-note{
+  background:linear-gradient(180deg,#eef7fb,#e2f0f6);border:1px solid #bcdcea;color:#1c5578;
+  border-radius:7px;padding:12px 16px;font-size:12.5px;margin-bottom:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+}
+.guide-card h2{
+  background:linear-gradient(120deg,#0e2c52,#04070c);
+  color:#fff;padding:9px 14px;border-radius:6px;font-size:14px;letter-spacing:.3px;
+  margin:30px 0 14px;
+  box-shadow:0 6px 14px -8px rgba(10,20,35,.5);
+}
+.guide-card h2:first-of-type{margin-top:4px;}
+.guide-card p{font-size:13.3px;line-height:1.6;margin:0 0 12px;color:#2b333a;}
+.guide-card ul{font-size:13.3px;line-height:1.6;margin:0 0 14px 20px;padding:0;color:#2b333a;}
+.guide-card li{margin-bottom:5px;}
+.gtable-wrap{overflow-x:auto;margin:10px 0 20px;}
+table.gtable{border-collapse:collapse;width:100%;font-size:12.6px;min-width:520px;}
+table.gtable th{ background:var(--ink);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11.8px;border:1px solid #0a141d; }
+table.gtable td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;background:#fff;}
+table.gtable td.b{font-weight:700;background:#f5f7f8;}
+.guide-foot{font-size:11.5px;color:var(--muted);margin-top:20px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 18px 34px -22px rgba(20,30,45,.35), 0 4px 10px -6px rgba(20,30,45,.18);
+  transition:box-shadow .3s ease, transform .3s ease;
+}
+.panel-form{padding:22px 22px 26px;}
+.panel-form:hover{ box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 26px 46px -22px rgba(20,30,45,.4), 0 6px 14px -6px rgba(20,30,45,.2); }
+.panel-preview{
+  position:sticky; top:20px;
+  padding:0; overflow:hidden;
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 40px);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 30px 55px -24px rgba(20,30,45,.45), 0 8px 18px -8px rgba(20,30,45,.22);
+}
+.preview-head{
+  padding:14px 20px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,#fbfaf7,#f2f1ec);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+  gap:10px;flex-wrap:wrap;
+}
+.preview-head span.lbl{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.preview-head span.fmt{font-size:11.5px;color:var(--muted);}
+.preview-tools{display:flex;align-items:center;gap:10px;}
+.autosave-status{ font-size:11px;color:#3a7a4e;font-weight:600;display:flex;align-items:center;gap:5px; }
+.autosave-status::before{ content:'';width:7px;height:7px;border-radius:50%;background:#3a7a4e;box-shadow:0 0 0 3px rgba(58,122,78,.18); }
+.autosave-status.saving{color:#8a6d1f;}
+.autosave-status.saving::before{background:#c9a256;box-shadow:0 0 0 3px rgba(201,162,86,.22);}
+.edit-toggle{
+  border:1px solid var(--focus);background:linear-gradient(180deg,#eef7fb,#dff0f7);
+  color:#1c5578;font-size:12px;font-weight:700;padding:7px 13px;border-radius:7px;cursor:pointer;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 3px 8px -4px rgba(47,111,143,.4);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.edit-toggle:hover{ filter:brightness(1.03); }
+.edit-toggle:active{ transform:translateY(1px); }
+.edit-toggle.active{ background:linear-gradient(180deg,#1c5578,#123a54);color:#fff;border-color:#123a54; }
+.edit-banner{
+  display:none;
+  background:linear-gradient(180deg,#eef7fb,#e2f0f6);
+  border-bottom:1px solid #bcdcea;
+  color:#1c5578;font-size:12px;padding:9px 20px;
+  align-items:center;gap:10px;flex-wrap:wrap;
+}
+.edit-banner.show{display:flex;}
+.edit-banner button{ border:none;border-radius:6px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer;background:#1c5578;color:#fff; }
+.edit-banner button.ghostlink{ background:transparent;color:#1c5578;text-decoration:underline;padding:5px 4px;font-weight:600; }
+.preview-scroll{
+  overflow-y:auto;padding:34px 26px;
+  background:
+    radial-gradient(700px 260px at 50% 0%, rgba(20,30,45,.05), transparent 65%),
+    var(--canvas);
+}
+
+.cert-copy{
+  background:linear-gradient(180deg,#fffdf9 0%, var(--paper) 100%);
+  border:1px solid var(--paper-line);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 2px 3px rgba(20,30,40,.05), 0 18px 34px -16px rgba(20,30,40,.35), 0 40px 60px -30px rgba(20,30,40,.25);
+  max-width:740px;margin:0 auto;
+  padding:46px 50px 54px;
+  font-family:'Source Serif 4',Georgia,serif;
+  transform:rotateX(0.5deg);
+  transition:transform .12s ease-out, box-shadow .45s ease;
+  transform-style:preserve-3d;
+  color:#20272c;
+}
+.cert-copy:hover{
+  transform:rotateX(0deg) translateY(-2px);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 2px 3px rgba(20,30,40,.05), 0 24px 44px -16px rgba(20,30,40,.4), 0 54px 70px -30px rgba(20,30,40,.3);
+}
+.cert-copy[contenteditable="true"]{ outline:2px dashed #7fb2d1;outline-offset:10px;cursor:text;background:linear-gradient(180deg,#fffef9 0%, #fefcf5 100%); }
+.cert-copy[contenteditable="true"]:focus{ outline-color:#2f6f8f; }
+.cert-copy .co-name{font-size:18px;font-weight:700;text-align:center;letter-spacing:.3px;}
+.cert-copy .co-meta{font-size:12.5px;text-align:center;color:#4a5158;margin-top:3px;}
+.cert-copy .rule{border:none;border-top:2px solid var(--brass);margin:16px 0 16px;}
+.cert-copy .cert-title{ text-align:center;font-size:12px;letter-spacing:.4px;color:#3a414a;margin-bottom:3px; }
+.cert-copy .cert-title.big{font-size:17px;font-weight:700;letter-spacing:1.5px;margin:2px 0 3px;}
+.cert-copy .authcap{ text-align:center;font-size:12px;font-style:italic;color:#4a5158;margin:10px 0 4px; }
+.cert-copy .placement-row{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:12.8px;color:#2b333a;flex-wrap:wrap;}
+.cert-copy .placement-row span{font-weight:600;}
+.cert-copy .placement-row span b{font-weight:700;color:#111;}
+.cert-copy .res-body{margin-top:20px;}
+.cert-copy .res-body p{font-size:13.9px;margin:0 0 13px;text-align:justify;}
+.cert-copy .meeting-line{font-size:13.5px;margin:20px 0 4px;text-align:center;}
+.cert-copy .sign-block{margin-top:34px;font-size:13.5px;}
+.cert-copy .sign-block .for-co{margin-bottom:38px;font-weight:700;}
+.cert-copy .sign-row{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-end;}
+.cert-copy .sign-line{border-top:1px solid #444;width:190px;margin-bottom:6px;}
+.cert-copy .sign-meta{font-size:12.3px;color:#20272c;line-height:1.4;}
+.cert-copy .sign-meta b{display:block;font-weight:700;}
+.cert-copy .seal-box{
+  width:88px;height:88px;border:1.5px dashed var(--brass);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:9.5px;color:var(--brass);text-transform:uppercase;letter-spacing:.6px;font-family:'Inter',sans-serif;font-weight:700;
+  flex:0 0 auto;
+}
+.cert-copy .stamp-box{
+  width:112px;min-height:86px;border:1.5px dashed var(--brass);border-radius:6px;padding:6px;
+  display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;
+  font-size:9.5px;color:var(--brass);text-transform:uppercase;letter-spacing:.4px;font-family:'Inter',sans-serif;font-weight:700;
+  flex:0 0 auto;
+}
+.cert-copy .sub-heading{font-weight:700;font-size:12.5px;letter-spacing:.3px;margin:26px 0 10px;font-family:'Inter',sans-serif;color:var(--ink);}
+.cert-copy .sign-block .sub-heading:first-child{margin-top:0;}
+.cert-copy .cert-foot{font-size:11px;color:#6b7681;margin-top:26px;padding-top:12px;border-top:1px solid var(--paper-line);line-height:1.55;font-family:'Inter',sans-serif;}
+.cert-copy .cert-foot + .cert-foot{margin-top:12px;padding-top:0;border-top:none;}
+.cert-copy table.fintable{border-collapse:collapse;width:100%;font-size:11.5px;margin:10px 0 4px;font-family:'Inter',sans-serif;}
+.cert-copy table.fintable th{background:#eef1f2;border:1px solid var(--paper-line);padding:6px 7px;text-align:left;font-weight:700;}
+.cert-copy table.fintable td{border:1px solid var(--paper-line);padding:11px 7px;text-align:left;}
+.cert-copy .annex-divider{margin:44px 0 4px;padding-top:22px;border-top:3px double var(--brass);}
+.cert-copy .annex-tag{display:block;text-align:center;font-size:11px;letter-spacing:1.5px;color:var(--brass);font-weight:700;margin-bottom:4px;}
+.cert-copy .annex-heading{text-align:center;font-size:15px;font-weight:700;margin-bottom:2px;}
+.cert-copy .annex-sub{text-align:center;font-size:11.5px;color:#4a5158;font-style:italic;margin-bottom:16px;font-family:'Inter',sans-serif;}
+.ph{color:#a9917e;font-style:italic;}
+
+fieldset.grp{
+  border:1px solid var(--line);border-radius:9px;
+  padding:14px 16px 16px;margin:0 0 16px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfbfa 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 8px 16px -12px rgba(20,30,45,.22), 0 1px 2px rgba(20,30,45,.04);
+  transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+}
+fieldset.grp:focus-within,fieldset.grp:hover{
+  transform:translateY(-2px);border-color:#c7d0d7;
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 16px 26px -14px rgba(20,30,45,.3), 0 2px 4px rgba(20,30,45,.06);
+}
+fieldset.grp legend{ font-size:12px;font-weight:700;color:var(--ink);padding:0 6px;letter-spacing:.3px; }
+.frow{display:flex;flex-wrap:wrap;gap:12px 14px;margin-bottom:10px;}
+.frow:last-child{margin-bottom:0;}
+.fitem{flex:1 1 200px;display:flex;flex-direction:column;gap:4px;}
+.fitem.full{flex-basis:100%;}
+.fitem label{font-size:12px;font-weight:600;color:#374149;}
+.fitem .hint{font-size:11px;color:var(--muted);font-weight:400;}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  border:1px solid var(--line);border-radius:6px;
+  padding:8px 9px;font-size:13px;font-family:inherit;color:var(--text);width:100%;
+  background:#fdfdfc;
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), inset 0 -1px 0 rgba(255,255,255,.6);
+  transition:box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+textarea{resize:vertical;min-height:44px;font-family:inherit;}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--focus);
+  box-shadow:inset 0 1px 3px rgba(20,30,45,.07), 0 0 0 3px rgba(47,111,143,.16);
+  transform:translateY(-1px);
+}
+.note-box{
+  font-size:12px;color:#6b4c00;background:linear-gradient(180deg,#fffaf0,#fff3d9);
+  border:1px solid #ecd396;border-radius:6px;padding:8px 10px;margin-top:4px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 3px 6px -3px rgba(140,100,0,.2);
+}
+.cond-row{display:none;}
+.cond-row.show{display:flex;}
+
+.agenda-check{
+  display:flex;align-items:flex-start;gap:9px;padding:8px 9px;border-radius:7px;
+  cursor:pointer;transition:background .15s ease;
+}
+.agenda-check:hover{ background:#f2f6f5; }
+.agenda-check input{ margin-top:2px;flex:0 0 auto;width:auto; }
+.agenda-check span{font-size:12.8px;color:var(--text);line-height:1.4;}
+
+.jh-block{
+  border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;background:#fbfcfc;position:relative;
+}
+.jh-block .frow{margin-bottom:8px;}
+.jh-block .jh-remove{
+  position:absolute;top:8px;right:8px;border:none;background:#fdeaea;color:#a33a3a;width:22px;height:22px;border-radius:50%;
+  cursor:pointer;font-size:13px;line-height:1;
+}
+.jh-block .jh-remove:hover{background:#f8d3d3;}
+.jh-label{font-size:11px;font-weight:700;color:var(--brass);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+
+.actions{ display:flex;flex-wrap:wrap;gap:9px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line); }
+.btn{ border:none;border-radius:8px;padding:11px 17px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;position:relative;transition:transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+.btn:hover{ filter:brightness(1.04); }
+.btn:active{ transform:translateY(2px); }
+.btn-primary{
+  background:linear-gradient(180deg,#2e4256,var(--ink) 60%,#152029);
+  color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 1px 0 rgba(255,255,255,.06), 0 8px 16px -6px rgba(10,16,22,.55), 0 3px 0 #0d151c;
+}
+.btn-primary:active{ box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px -2px rgba(10,16,22,.5), 0 1px 0 #0d151c; }
+.btn-outline{
+  background:linear-gradient(180deg,#ffffff,#f4f5f6);
+  border:1px solid var(--line);color:var(--text);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(20,30,45,.3), 0 2px 0 #cfd6db;
+}
+.btn-outline:active{ box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px -1px rgba(20,30,45,.3); }
+.btn-brass{
+  background:linear-gradient(180deg,#fffaf0,#fbf1da);
+  border:1px solid var(--brass);color:#7d611f;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(156,122,52,.4), 0 2px 0 #b9944c;
+}
+.btn-brass:active{ box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px -1px rgba(156,122,52,.4); }
+.btn-danger{
+  background:linear-gradient(180deg,#fff5f5,#fbe9ea);
+  border:1px solid var(--accent-red);color:var(--accent-red);
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 4px 10px -6px rgba(122,39,52,.35), 0 2px 0 #c98d95;
+}
+.btn-danger:active{ box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px -1px rgba(122,39,52,.35); }
+.btn-sm{ padding:8px 12px;font-size:12px;border-radius:7px; }
+
+.foot-note{ font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5; }
+
+.app-footer{
+  margin-top:40px;
+  background:linear-gradient(120deg,#000000 0%,#050912 28%,#0a1830 52%,#123a6b 76%,#1a4fa8 100%);
+  background-size:240% 240%;
+  animation:gflow 18s ease infinite;
+  color:#dce8ff;
+  padding:26px 28px 18px;
+  box-shadow:0 -14px 30px -18px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06);
+  position:relative;
+  z-index:5;
+}
+.app-footer .foot-wrap{
+  max-width:1360px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:22px;
+}
+.app-footer h3{
+  margin:0 0 6px;
+  font-family:'Source Serif 4',serif;
+  font-size:19px;font-weight:700;letter-spacing:.3px;
+  color:#a9c8ff;
+  text-shadow:
+    1px 1px 0 #04122a,
+    2px 2px 0 #04122a,
+    3px 3px 0 #020a1a,
+    4px 4px 0 #000,
+    5px 5px 8px rgba(0,0,0,.6);
+}
+.app-footer .foot-badges{display:flex;gap:12px;flex-wrap:wrap;}
+.app-footer .foot-badge{
+  display:inline-flex;align-items:center;
+  background:linear-gradient(155deg,#12356b 0%,#040a14 75%);
+  border:1px solid rgba(90,150,255,.35);
+  border-radius:8px;
+  padding:9px 15px;
+  font-weight:600;font-size:12px;color:#cfe0ff;
+  box-shadow:0 4px 0 #000, 0 9px 16px -6px rgba(0,10,40,.7), inset 0 1px 0 rgba(255,255,255,.12);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.app-footer .foot-badge:hover{ transform:translateY(-2px); box-shadow:0 6px 0 #000, 0 14px 22px -8px rgba(0,10,40,.75), inset 0 1px 0 rgba(255,255,255,.15); }
+.app-footer .foot-bottom{
+  max-width:1360px;margin:20px auto 0;padding-top:14px;
+  border-top:1px solid rgba(90,150,255,.2);
+  font-size:11.5px;color:#7590bd;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+}
+.app-footer .foot-signature{
+  max-width:1360px;margin:16px auto 0;
+  display:flex;justify-content:center;
+}
+.app-footer .foot-mark{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(155deg,#0f2340 0%,#020509 70%);
+  border:1px solid rgba(70,150,220,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Source Serif 4',serif;font-weight:700;font-size:11px;letter-spacing:.2px;color:#6cb2ea;
+  box-shadow:
+    0 6px 12px -6px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -4px 8px rgba(0,0,0,.5),
+    0 0 10px -3px rgba(40,120,200,.55);
+  transition:transform .25s ease;
+}
+.app-footer .foot-mark:hover{ transform:translateY(-2px) scale(1.05); }
+
+@media print{
+  header.top,.panel-form,.preview-head,.actions,.foot-note,.edit-banner,.toptabs,.guide-wrap,.app-footer{display:none !important;}
+  body{background:#fff;}
+  .app{display:block;max-width:none;margin:0;padding:0;}
+  .panel-preview{position:static;box-shadow:none;border:none;max-height:none;}
+  .preview-scroll{padding:0;background:#fff;}
+  .cert-copy{box-shadow:none;border:none;max-width:none;margin:0;padding:14mm 16mm;transform:none;}
+}
+</style>
+<style id="rk-mobile-fix">@media (max-width:700px){.app,.grid2{grid-template-columns:minmax(0,1fr)!important}.app>*,.grid2>*,.panel,.panel-form,.panel-preview,.calc-card,.side-panel,.fld{min-width:0!important;max-width:100%!important}.panel-preview{overflow-x:auto}nav.toptabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}nav.toptabs>*{flex:0 0 auto}table.thresh{display:block;overflow-x:auto;max-width:100%}.fld input,.fld select,.fld .inw{max-width:100%;min-width:0}header.top .brand{min-width:0;flex-wrap:wrap}header.top .brand *{white-space:normal;min-width:0}.unibar,.pager,.fbar .grid{flex-wrap:wrap}.fbar .fld{flex:1 1 100%}.unibar input{min-width:0;flex:1 1 100%}fieldset{min-width:0!important;max-width:100%}fieldset *{max-width:100%}}</style></head>
+<body>
+
+<header class="top">
+  <div class="crest">
+    <div class="mark">SH</div>
+    <div>
+      <h1>Share Certificate &amp; Transfer Generator</h1>
+      <p class="tag">Form SH-1 (Certificate of Shares), Form SH-4 (Securities Transfer Form) &amp; Form SH-5 (Notice for Transfer of Partly Paid Securities) &mdash; under Sections 46 &amp; 56 of the Companies Act, 2013 and the Companies (Share Capital and Debentures) Rules, 2014</p>
+    </div>
+  </div>
+  <div class="disclaimer">
+    Fill in the particulars on the left &mdash; the document on the right updates as you type, in the statutory Form
+    SH-1 / SH-4 layout. Free template for general convenience &mdash; not a substitute for professional advice. A
+    share certificate must be issued under the authority of a Board resolution and entered in the Register of Members
+    under Section 88; a transfer must be lodged on a duly stamped Form SH-4, executed by both parties and witnessed.
+    Have every draft vetted by a practising Company Secretary before it is printed, stamped and signed.
+  </div>
+</header>
+
+<nav class="toptabs">
+  <button type="button" class="active" id="tabBtnGenerator" onclick="showTopTab('generator')">Share Certificate (SH-1)</button>
+  <button type="button" id="tabBtnTransfer" onclick="showTopTab('transfer')">Transfer Form (SH-4)</button>
+  <button type="button" id="tabBtnFive" onclick="showTopTab('five')">Partly-Paid Notice (SH-5)</button>
+  <button type="button" id="tabBtnCompliances" onclick="showTopTab('compliances')">Compliances</button>
+  <button type="button" id="tabBtnGuide" onclick="showTopTab('guide')">Compliance Guide</button>
+</nav>
+
+<div class="app" id="appGenerator">
+
+  <!-- ============ FORM PANEL ============ -->
+  <div class="panel panel-form" id="formPanel">
+
+    <fieldset class="grp">
+      <legend>Company</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Company name (in full)</label>
+          <input type="text" id="companyName" placeholder="Sample Ventures Private Limited">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>CIN</label>
+          <input type="text" id="cin" placeholder="U74999DL2015PTC280001">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Registered office</label>
+          <textarea id="regOffice" placeholder="301, Tech Park, Baner Road, Pune, Maharashtra – 411045"></textarea>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full">
+          <label>Authorised share capital <span class="hint">(optional &mdash; prints as a line under the title)</span></label>
+          <input type="text" id="authCapital" placeholder="Rs. 1,00,00,000 divided into 10,00,000 Equity Shares of Rs. 10 each">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Certificate &amp; Folio</legend>
+      <div class="frow">
+        <div class="fitem"><label>Certificate No.</label><input type="text" id="certNo" placeholder="0007"></div>
+        <div class="fitem"><label>Folio No.</label><input type="text" id="folioNo" placeholder="0005"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Distinctive Nos. &mdash; From</label><input type="text" id="distFrom" placeholder="60001"></div>
+        <div class="fitem"><label>Distinctive Nos. &mdash; To</label><input type="text" id="distTo" placeholder="65000"></div>
+      </div>
+      <div class="fitem hint" style="padding:0 2px 4px;">Distinctive numbers apply to shares held in physical form. Leave both blank for dematerialised shares (the line is omitted automatically).</div>
+      <div class="frow">
+        <div class="fitem"><label>Date of issue</label><input type="date" id="issueDate"></div>
+        <div class="fitem"><label>Place of issue</label><input type="text" id="issuePlace" placeholder="Pune"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Registered Holder</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Name of holder</label><input type="text" id="holderName" placeholder="Mr. Rohan Arvind Deshmukh"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>Relation</label>
+          <select id="holderRelation">
+            <option value="">&mdash; none &mdash;</option>
+            <option value="S/o">S/o (Son of)</option>
+            <option value="D/o">D/o (Daughter of)</option>
+            <option value="W/o">W/o (Wife of)</option>
+            <option value="H/o">H/o (Husband of)</option>
+          </select>
+        </div>
+        <div class="fitem"><label>Father's / Husband's name</label><input type="text" id="holderRelativeName" placeholder="Arvind M. Deshmukh"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Occupation</label><input type="text" id="holderOccupation" placeholder="Service"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Address</label><textarea id="holderAddress" placeholder="B-204, Riverdale Residency, Kothrud, Pune, Maharashtra – 411038"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full">
+          <div id="jointHolderList"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addJointHolder()">+ Add joint holder</button>
+          <div class="hint" style="margin-top:6px;">Only needed when the shares are held jointly by more than one person &mdash; the certificate lists every holder in the order added.</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Share Particulars</legend>
+      <div class="frow">
+        <div class="fitem">
+          <label>Class of shares</label>
+          <select id="shareClass" onchange="applyConditionals()">
+            <option value="Equity Shares">Equity Shares</option>
+            <option value="Preference Shares">Preference Shares</option>
+            <option value="__other">Other (specify)</option>
+          </select>
+        </div>
+        <div class="fitem cond-row" id="rowShareClassOther"><label>Specify class</label><input type="text" id="shareClassOther" placeholder="0.01% Compulsorily Convertible Preference Shares"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Number of shares</label><input type="number" id="numShares" placeholder="5000" min="0"></div>
+        <div class="fitem"><label>Nominal (face) value per share (Rs.)</label><input type="number" id="nominalValue" placeholder="10" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>Paid-up status</label>
+          <select id="paidStatus" onchange="applyConditionals()">
+            <option value="full">Fully paid-up</option>
+            <option value="partly">Partly paid-up</option>
+          </select>
+        </div>
+        <div class="fitem"><label>Amount paid-up per share (Rs.)</label><input type="number" id="paidUpValue" placeholder="10" min="0"></div>
+      </div>
+      <div class="frow cond-row" id="rowUnpaid">
+        <div class="fitem"><label>Amount remaining unpaid per share (Rs.)</label><input type="number" id="unpaidValue" placeholder="0" min="0"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Signatories &amp; Seal</legend>
+      <div class="frow">
+        <div class="fitem"><label>Director 1 &mdash; name</label><input type="text" id="dir1Name" placeholder="Anjali R. Deshmukh"></div>
+        <div class="fitem"><label>Director 1 &mdash; DIN</label><input type="text" id="dir1Din" placeholder="01234567"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Director 2 &mdash; name <span class="hint">(leave blank for an OPC)</span></label><input type="text" id="dir2Name" placeholder="Karan S. Mehta"></div>
+        <div class="fitem"><label>Director 2 &mdash; DIN</label><input type="text" id="dir2Din" placeholder="07654321"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>Third signatory role <span class="hint">(optional)</span></label>
+          <select id="thirdSigRole">
+            <option value="Company Secretary">Company Secretary</option>
+            <option value="Authorised Signatory">Authorised Signatory</option>
+          </select>
+        </div>
+        <div class="fitem"><label>Third signatory &mdash; name</label><input type="text" id="thirdSigName" placeholder="Leave blank to omit"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:6px 9px;"><input type="checkbox" id="includeSeal" checked><span>Affix / print the Common Seal &mdash; untick if the company has resolved not to maintain a common seal (optional since the Companies (Amendment) Act, 2015)</span></label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Options</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label class="agenda-check" style="padding:6px 9px;"><input type="checkbox" id="includeReverse"><span>Include reverse endorsement page &mdash; a blank "Particulars of Transfer" ledger for future transfers</span></label>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="safePrint()">Print / Save as PDF</button>
+      <button type="button" class="btn btn-outline" onclick="downloadWord()">Download Word (.doc)</button>
+      <button type="button" class="btn btn-outline" onclick="copyCertText()">Copy Text</button>
+      <button type="button" class="btn btn-brass" onclick="loadSample()">Load Sample</button>
+      <button type="button" class="btn btn-danger" onclick="clearForm()">Clear form</button>
+    </div>
+    <p class="foot-note" id="dlHelpNote">In the print dialog, choose &ldquo;Save as PDF&rdquo; to download a PDF, or a printer to print on letterhead / pre-printed certificate stock. <strong>Download Word (.doc)</strong> opens the certificate as an editable Word file. <strong>If a download button doesn't respond,</strong> you're probably viewing this inside an embedded preview &mdash; open the saved HTML file directly in a browser tab and try again, or use &ldquo;Copy Text&rdquo; as a fallback.</p>
+  </div>
+
+  <!-- ============ PREVIEW PANEL ============ -->
+  <div class="panel panel-preview">
+    <div class="preview-head">
+      <div>
+        <span class="lbl">Live preview</span>
+        <span class="fmt">&middot; Form SH-1 &middot; A4</span>
+      </div>
+      <div class="preview-tools">
+        <span class="autosave-status" id="autosaveStatus">Autosave on</span>
+        <button type="button" class="edit-toggle" id="editToggleBtn" onclick="toggleEditMode()">Edit directly</button>
+      </div>
+    </div>
+    <div class="edit-banner" id="editBanner">
+      You're editing the certificate directly &mdash; type anywhere below like a word processor. Changes autosave automatically.
+      <button type="button" onclick="exitEditMode()">Done editing</button>
+      <button type="button" class="ghostlink" onclick="regenerateFromForm()">Regenerate from form instead</button>
+    </div>
+    <div class="preview-scroll">
+      <div class="cert-copy" id="previewContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="app hide" id="appTransfer">
+
+  <!-- ============ TRANSFER FORM PANEL ============ -->
+  <div class="panel panel-form" id="transferFormPanel">
+
+    <fieldset class="grp">
+      <legend>Company &amp; Execution</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Company name (in full)</label><input type="text" id="tfCompanyName" placeholder="Sample Ventures Private Limited"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>CIN</label><input type="text" id="tfCin" placeholder="U74999DL2015PTC280001"></div>
+        <div class="fitem"><label>Stock exchange <span class="hint">(if listed)</span></label><input type="text" id="tfStockExchange" placeholder="Leave blank if unlisted"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Date of execution</label><input type="date" id="tfExecDate"></div>
+        <div class="fitem"><label>Registered Folio No. (transferor's)</label><input type="text" id="tfFolioNo" placeholder="0005"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Securities Being Transferred</legend>
+      <div class="frow">
+        <div class="fitem">
+          <label>Kind / Class of securities</label>
+          <select id="tfKind" onchange="applyTransferConditionals()">
+            <option value="Equity Shares">Equity Shares</option>
+            <option value="Preference Shares">Preference Shares</option>
+            <option value="Debentures">Debentures</option>
+            <option value="__other">Other (specify)</option>
+          </select>
+        </div>
+        <div class="fitem cond-row" id="rowTfKindOther"><label>Specify kind</label><input type="text" id="tfKindOther" placeholder="Compulsorily Convertible Debentures"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Nominal value / unit (Rs.)</label><input type="number" id="tfNominalValue" placeholder="10" min="0"></div>
+        <div class="fitem"><label>Called-up / unit (Rs.)</label><input type="number" id="tfCalledUp" placeholder="10" min="0"></div>
+        <div class="fitem"><label>Paid-up / unit (Rs.)</label><input type="number" id="tfPaidUp" placeholder="10" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>No. of securities transferred</label><input type="number" id="tfNumSecurities" placeholder="1000" min="0"></div>
+        <div class="fitem"><label>Consideration (Rs.)</label><input type="number" id="tfConsideration" placeholder="10000" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Distinctive Nos. &mdash; From</label><input type="text" id="tfDistFrom" placeholder="60001"></div>
+        <div class="fitem"><label>Distinctive Nos. &mdash; To</label><input type="text" id="tfDistTo" placeholder="61000"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Corresponding Certificate No(s).</label><input type="text" id="tfCertNos" placeholder="0007"></div>
+        <div class="fitem"><label>Value of stamp duty affixed (Rs.)</label><input type="number" id="tfStampValue" placeholder="Auto: 0.015% of consideration" min="0"></div>
+      </div>
+      <div class="note-box">Stamp duty on a share transfer is <strong>0.015% of the consideration</strong>, under the amended Indian Stamp Act, 1899 (in force from 1 July 2020) &mdash; leave the field above blank and this generator fills it in automatically. Affix the stamp on the executed form and cancel it with signature and date.</div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Transferor(s) &amp; Witness</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Transferor 1 &mdash; name in full</label><input type="text" id="tfTransferor1" placeholder="Mr. Rohan Arvind Deshmukh"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Transferor 2 <span class="hint">(optional &mdash; joint holding)</span></label><input type="text" id="tfTransferor2" placeholder="Leave blank if none"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Witness &mdash; name</label><input type="text" id="tfWitnessName" placeholder="Suresh N. Patil"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Witness &mdash; address</label><textarea id="tfWitnessAddress" placeholder="14, Anand Society, Kothrud, Pune, Maharashtra – 411038"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Transferee</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Name in full</label><input type="text" id="tfeName" placeholder="Ms. Priya A. Deshmukh"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem">
+          <label>Relation</label>
+          <select id="tfeRelation">
+            <option value="">&mdash; none &mdash;</option>
+            <option value="S/o">S/o (Son of)</option>
+            <option value="D/o">D/o (Daughter of)</option>
+            <option value="W/o">W/o (Wife of)</option>
+            <option value="H/o">H/o (Husband of)</option>
+          </select>
+        </div>
+        <div class="fitem"><label>Father's / Mother's / Spouse name</label><input type="text" id="tfeRelativeName" placeholder="Arvind M. Deshmukh"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Occupation</label><input type="text" id="tfeOccupation" placeholder="Service"></div>
+        <div class="fitem"><label>Existing folio <span class="hint">(if any)</span></label><input type="text" id="tfeExistingFolio" placeholder="Leave blank if a new member"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Address</label><textarea id="tfeAddress" placeholder="B-204, Riverdale Residency, Kothrud, Pune, Maharashtra – 411038"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>E-mail</label><input type="text" id="tfeEmail" placeholder="priya.deshmukh@example.com"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Declaration &amp; Enclosures</legend>
+      <div class="frow">
+        <div class="fitem full">
+          <label>FEMA declaration (by the Transferee)</label>
+          <select id="tfFema">
+            <option value="not_required">Government approval NOT required for this transfer</option>
+            <option value="required">Government approval required &mdash; obtained &amp; enclosed</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Enclosures</label><textarea id="tfEnclosures" placeholder="Original Share Certificate No. 0007"></textarea></div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="safePrint()">Print / Save as PDF</button>
+      <button type="button" class="btn btn-outline" onclick="downloadTransferWord()">Download Word (.doc)</button>
+      <button type="button" class="btn btn-outline" onclick="copyTransferText()">Copy Text</button>
+      <button type="button" class="btn btn-brass" onclick="loadTransferSample()">Load Sample</button>
+      <button type="button" class="btn btn-danger" onclick="clearTransferForm()">Clear form</button>
+    </div>
+    <p class="foot-note">This form must be duly stamped (0.015% of consideration), executed by the Transferor(s) and Transferee, witnessed, and delivered to the Company with the certificate within <strong>60 days</strong> of execution. <strong>If a download button doesn't respond,</strong> open the saved HTML file directly in a browser tab and try again, or use &ldquo;Copy Text&rdquo; as a fallback.</p>
+  </div>
+
+  <!-- ============ TRANSFER PREVIEW PANEL ============ -->
+  <div class="panel panel-preview">
+    <div class="preview-head">
+      <div>
+        <span class="lbl">Live preview</span>
+        <span class="fmt">&middot; Form SH-4 &middot; A4</span>
+      </div>
+      <div class="preview-tools">
+        <span class="autosave-status" id="autosaveStatusTF">Autosave on</span>
+        <button type="button" class="edit-toggle" id="editToggleBtnTF" onclick="toggleEditModeTransfer()">Edit directly</button>
+      </div>
+    </div>
+    <div class="edit-banner" id="editBannerTF">
+      You're editing the form directly &mdash; type anywhere below like a word processor. Changes autosave automatically.
+      <button type="button" onclick="exitEditModeTransfer()">Done editing</button>
+      <button type="button" class="ghostlink" onclick="regenerateFromFormTransfer()">Regenerate from form instead</button>
+    </div>
+    <div class="preview-scroll">
+      <div class="cert-copy" id="transferPreviewContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="app hide" id="appFive">
+
+  <!-- ============ SH-5 NOTICE FORM PANEL ============ -->
+  <div class="panel panel-form" id="fiveFormPanel">
+
+    <fieldset class="grp">
+      <legend>Company</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Company name (in full)</label><input type="text" id="fvCompanyName" placeholder="Sample Ventures Private Limited"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>CIN</label><input type="text" id="fvCin" placeholder="U74999DL2015PTC280001"></div>
+        <div class="fitem"><label>Date of notice</label><input type="date" id="fvNoticeDate"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Registered office</label><textarea id="fvRegOffice" placeholder="301, Tech Park, Baner Road, Pune, Maharashtra – 411045"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Transferor &amp; Transferee</legend>
+      <div class="frow">
+        <div class="fitem full"><label>Transferor &mdash; name</label><input type="text" id="fvTransferorName" placeholder="Mr. Rohan Arvind Deshmukh"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Transferor &mdash; address</label><textarea id="fvTransferorAddress" placeholder="B-204, Riverdale Residency, Kothrud, Pune, Maharashtra – 411038"></textarea></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Transferee &mdash; name <span class="hint">(this notice is addressed to them)</span></label><input type="text" id="fvTransfereeName" placeholder="Ms. Priya Anil Kulkarni"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem full"><label>Transferee &mdash; address</label><textarea id="fvTransfereeAddress" placeholder="C-12, Lakeview Apartments, Aundh, Pune, Maharashtra – 411007"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Partly-Paid Securities</legend>
+      <div class="frow">
+        <div class="fitem"><label>Kind / Class of securities</label><input type="text" id="fvKind" placeholder="Equity Shares"></div>
+        <div class="fitem"><label>Quantity</label><input type="number" id="fvQuantity" placeholder="1000" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Distinctive Nos. &mdash; From</label><input type="text" id="fvDistFrom" placeholder="60001"></div>
+        <div class="fitem"><label>Distinctive Nos. &mdash; To</label><input type="text" id="fvDistTo" placeholder="61000"></div>
+        <div class="fitem"><label>Certificate No.</label><input type="text" id="fvCertNo" placeholder="0007"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Nominal value / security (Rs.)</label><input type="number" id="fvNominalValue" placeholder="10" min="0"></div>
+        <div class="fitem"><label>Issue price / security (Rs.)</label><input type="number" id="fvIssuePrice" placeholder="10" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fitem"><label>Called &amp; paid / security (Rs.)</label><input type="number" id="fvCalledPaid" placeholder="5" min="0"></div>
+        <div class="fitem"><label>Called but unpaid / security (Rs.)</label><input type="number" id="fvCalledUnpaid" placeholder="0" min="0"></div>
+        <div class="fitem"><label>Not yet called / security (Rs.)</label><input type="number" id="fvUncalled" placeholder="5" min="0"></div>
+      </div>
+      <div class="note-box">Under Section 56(3), a transfer of <strong>partly paid</strong> securities cannot be registered unless the Company first gives this notice to the transferee, who then has <strong>two weeks</strong> from receipt to object &mdash; the notice tells the transferee exactly how much remains unpaid, so they knowingly take on that liability.</div>
+    </fieldset>
+
+    <fieldset class="grp">
+      <legend>Signatory</legend>
+      <div class="frow">
+        <div class="fitem"><label>Signed by &mdash; name</label><input type="text" id="fvSignatoryName" placeholder="Anjali R. Deshmukh"></div>
+        <div class="fitem"><label>Designation</label><input type="text" id="fvSignatoryDesignation" placeholder="Company Secretary"></div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="safePrint()">Print / Save as PDF</button>
+      <button type="button" class="btn btn-outline" onclick="downloadFiveWord()">Download Word (.doc)</button>
+      <button type="button" class="btn btn-outline" onclick="copyFiveText()">Copy Text</button>
+      <button type="button" class="btn btn-brass" onclick="loadFiveSample()">Load Sample</button>
+      <button type="button" class="btn btn-danger" onclick="clearFiveForm()">Clear form</button>
+    </div>
+    <p class="foot-note">This notice must go out before a partly-paid transfer is registered. If the transferee raises no objection within two weeks of receipt, the Company proceeds to register the transfer in the ordinary course. <strong>If a download button doesn't respond,</strong> open the saved HTML file directly in a browser tab and try again, or use &ldquo;Copy Text&rdquo; as a fallback.</p>
+  </div>
+
+  <!-- ============ SH-5 PREVIEW PANEL ============ -->
+  <div class="panel panel-preview">
+    <div class="preview-head">
+      <div>
+        <span class="lbl">Live preview</span>
+        <span class="fmt">&middot; Form SH-5 &middot; A4</span>
+      </div>
+      <div class="preview-tools">
+        <span class="autosave-status" id="autosaveStatusFV">Autosave on</span>
+        <button type="button" class="edit-toggle" id="editToggleBtnFV" onclick="toggleEditModeFive()">Edit directly</button>
+      </div>
+    </div>
+    <div class="edit-banner" id="editBannerFV">
+      You're editing the notice directly &mdash; type anywhere below like a word processor. Changes autosave automatically.
+      <button type="button" onclick="exitEditModeFive()">Done editing</button>
+      <button type="button" class="ghostlink" onclick="regenerateFromFormFive()">Regenerate from form instead</button>
+    </div>
+    <div class="preview-scroll">
+      <div class="cert-copy" id="fivePreviewContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="guide-wrap" id="appCompliances">
+  <div class="guide-card">
+    <p class="g-title">Compliance Calendar &mdash; Forms &amp; Filing Due Dates</p>
+    <p class="g-sub">Every certificate, transfer instrument and allotment return this generator touches, with the form, the statutory time limit and the governing provision in one table &mdash; plus a closer look at Form PAS-3, the Return of Allotment.</p>
+
+    <div class="guide-note">This calendar is general awareness material, not legal advice. Fees, penalty amounts and time limits are as commonly reported by professional sources and are subject to amendment &mdash; always verify the current figures on the MCA portal before a filing.</div>
+
+    <h2>1. Compliance Calendar</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Event</th><th>Form / Document</th><th>Time Limit</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td class="b">Incorporation &mdash; subscriber shares</td><td>SH-1</td><td>Certificate <strong>within 2 months of incorporation</strong></td><td>Section 56(4)(a)</td></tr>
+        <tr><td class="b">Fresh allotment (rights / bonus / ESOP / further issue)</td><td>SH-1 + PAS-3</td><td>Certificate <strong>within 2 months of allotment</strong>; PAS-3 <strong>within 30 days of allotment</strong></td><td>Section 56(4)(b); Section 39(4) &amp; Rule 12</td></tr>
+        <tr><td class="b">Private placement / preferential allotment</td><td>PAS-3 (+ PAS-4 offer letter on record)</td><td>PAS-3 <strong>within 15 days of allotment</strong></td><td>Section 42(8) &amp; Rule 14(6)</td></tr>
+        <tr><td class="b">Transfer of physical shares</td><td>SH-4</td><td>Executed &amp; stamped instrument delivered to the company <strong>within 60 days of execution</strong></td><td>Section 56(1)</td></tr>
+        <tr><td class="b">Transfer of <em>partly paid</em> securities &mdash; transferee notice</td><td>SH-5</td><td>Company gives notice before registering the transfer; transferee has <strong>2 weeks from receipt</strong> to object</td><td>Section 56(3), Rule 11(3)</td></tr>
+        <tr><td class="b">Certificate after transfer</td><td>SH-1 (endorsement or fresh certificate)</td><td><strong>Within 1 month of receipt</strong> of the transfer instrument</td><td>Section 56(4)(c)</td></tr>
+        <tr><td class="b">Transmission</td><td>Succession certificate / probate / letters of administration, as applicable, with a Board Resolution</td><td>Certificate <strong>within 1 month of intimation</strong></td><td>Section 56(2)/(3)/(4)(d)</td></tr>
+        <tr><td class="b">Duplicate certificate</td><td>SH-1 marked "Duplicate", indemnity/affidavit, Board approval</td><td><strong>Within 3 months</strong> of documents being complete (shorter for listed companies under SEBI LODR)</td><td>Rule 6</td></tr>
+        <tr><td class="b">Annual return</td><td>MGT-7 (MGT-7A for an OPC / small company)</td><td><strong>Within 60 days</strong> of the AGM (or of the date it should have been held)</td><td>Section 92(4)</td></tr>
+        <tr><td class="b">Financial statements</td><td>AOC-4 (AOC-4 XBRL where applicable)</td><td><strong>Within 30 days</strong> of the AGM</td><td>Section 137</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>2. Form PAS-3: Return of Allotment</h2>
+    <p>Form PAS-3 is the return every company files with the Registrar to record that it has allotted securities &mdash; equity or preference shares, debentures, or any other security &mdash; and to whom. It is distinct from the share certificate: PAS-3 is the company's filing to the ROC; SH-1 is the certificate the company issues to the allottee. Both flow from the same allotment, on different clocks.</p>
+
+    <h2>3. PAS-3 Due Dates</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Route of allotment</th><th>Due date</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td class="b">General allotment &mdash; rights issue, bonus shares, ESOP exercise, sweat equity, conversion of debentures/loans</td><td>Within <strong>30 days</strong> of allotment</td><td>Section 39(4) &amp; Rule 12, Companies (Prospectus and Allotment of Securities) Rules, 2014</td></tr>
+        <tr><td class="b">Private placement / preferential allotment</td><td>Within <strong>15 days</strong> of allotment</td><td>Section 42(8) &amp; Rule 14(6)</td></tr>
+      </tbody>
+    </table></div>
+    <p>Until PAS-3 is actually filed for a private placement, the company cannot use the money it raised &mdash; Section 42(4) blocks utilisation of private-placement proceeds pending the return, even though the shares have already been allotted.</p>
+
+    <h2>4. PAS-3 Attachments &amp; Certification</h2>
+    <ul>
+      <li>List of allottees &mdash; name, address, PAN, and the number and class of securities allotted to each.</li>
+      <li>The Board (and, where required, shareholders') resolution approving the allotment, and its SRN from Form MGT-14 if separately filed.</li>
+      <li>Valuation report, where the consideration was other than cash.</li>
+      <li>For private placement: reference to the PAS-4 private placement offer letter and the special resolution under Section 42.</li>
+      <li>Certification by a practising Company Secretary, Chartered Accountant or Cost Accountant &mdash; mandatory except for a One Person Company or a small company.</li>
+    </ul>
+
+    <h2>5. PAS-3 Fees &amp; Additional Fees for Delay</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Nominal share capital</th><th>Base filing fee</th></tr></thead>
+      <tbody>
+        <tr><td class="b">Less than Rs. 1,00,000</td><td>Rs. 200</td></tr>
+        <tr><td class="b">Rs. 1,00,000 &ndash; Rs. 5,00,000</td><td>Rs. 300</td></tr>
+        <tr><td class="b">Rs. 5,00,000 &ndash; Rs. 25,00,000</td><td>Rs. 400</td></tr>
+        <tr><td class="b">Rs. 25,00,000 &ndash; Rs. 1 crore</td><td>Rs. 500</td></tr>
+        <tr><td class="b">Rs. 1 crore or more</td><td>Rs. 600</td></tr>
+      </tbody>
+    </table></div>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Delay beyond the due date</th><th>Additional fee</th><th>Repeated default (within a rolling period)</th></tr></thead>
+      <tbody>
+        <tr><td class="b">Up to 30 days</td><td>2&times; the base fee</td><td>3&times; the base fee</td></tr>
+        <tr><td class="b">31&ndash;60 days</td><td>4&times; the base fee</td><td>6&times; the base fee</td></tr>
+        <tr><td class="b">61&ndash;90 days</td><td>6&times; the base fee</td><td>9&times; the base fee</td></tr>
+        <tr><td class="b">91&ndash;180 days</td><td>10&times; the base fee</td><td>15&times; the base fee</td></tr>
+        <tr><td class="b">Beyond 180 days</td><td>12&times; the base fee</td><td>18&times; the base fee</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>6. Penalty for Late or Non-Filing of PAS-3</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Route</th><th>Penalty</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td class="b">General allotment (Section 39)</td><td>Company and every officer in default: Rs. 1,000 for each day of default, capped at Rs. 1 lakh</td><td>Section 39(5)</td></tr>
+        <tr><td class="b">Private placement (Section 42)</td><td>Company, its promoters and directors: Rs. 1,000 for each day of default, capped at Rs. 25 lakh</td><td>Section 42(9)</td></tr>
+        <tr><td class="b">Private placement violations (e.g. exceeding investor limits, unauthorised public offer)</td><td>The amount raised may have to be refunded with interest, in addition to penalty</td><td>Section 42(10)</td></tr>
+      </tbody>
+    </table></div>
+
+    <p class="guide-foot">
+      This calendar is provided for general awareness alongside the drafts in the other tabs. It does not constitute
+      legal advice, and it does not replace a proper reading of Sections 39, 42, 56, 92 and 137, the Companies
+      (Prospectus and Allotment of Securities) Rules, 2014, the Companies (Share Capital and Debentures) Rules, 2014,
+      and the MCA's current fee and additional-fee schedule. Confirm every due date and fee on the MCA portal, and have
+      your filings reviewed by a practising Company Secretary.
+    </p>
+  </div>
+</div>
+
+<div class="guide-wrap" id="appGuide">
+  <div class="guide-card">
+    <p class="g-title">Share Certificate &amp; Transfer Compliance Guide</p>
+    <p class="g-sub">What Sections 46 &amp; 56 and the Companies (Share Capital and Debentures) Rules, 2014 require when a company issues a share certificate (Form SH-1), registers a transfer (Form SH-4), or notifies a transferee of partly-paid securities (Form SH-5) &mdash; read this before relying on the drafts in the other tabs.</p>
+
+    <div class="guide-note">This guide is general awareness material, not legal advice. Timelines, penalty amounts and signing rules below reflect the Companies Act, 2013 as commonly summarised by professional sources; always check the current text of the Act, the Rules and your company's Articles before acting.</div>
+
+    <h2>1. What Form SH-1 Is</h2>
+    <p>Form No. SH-1 is the format prescribed by Rule 5(2) of the Companies (Share Capital and Debentures) Rules, 2014 for a certificate of shares issued under Section 46 of the Companies Act, 2013. A share certificate is prima facie evidence of a member's title to the shares named in it, and it is issued under the common seal, if any, of the company (or otherwise as authorised by its Articles) specifying the shares held, their distinctive numbers (for physical shares) and the amount paid-up.</p>
+
+    <h2>2. When a Certificate Must Be Issued</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Occasion</th><th>Time limit</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td class="b">Subscribers to the Memorandum, on incorporation</td><td>Within 2 months of incorporation</td><td>Section 56(4)(a)</td></tr>
+        <tr><td class="b">Allotment of shares</td><td>Within 2 months of allotment</td><td>Section 56(4)(b)</td></tr>
+        <tr><td class="b">Transfer / transmission of shares</td><td>Within 1 month of receipt of the instrument of transfer, or of intimation of transmission</td><td>Section 56(4)(c)/(d)</td></tr>
+        <tr><td class="b">Allotment of debentures</td><td>Within 6 months of allotment</td><td>Section 56(4)(d)</td></tr>
+        <tr><td class="b">Duplicate certificate</td><td>Within 3 months of the documents being complete (unlisted); a shorter period may apply for listed companies under SEBI (LODR)</td><td>Rule 6</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>3. Who Must Sign</h2>
+    <p>Under Rule 5(3)/(4), a share certificate must be signed by two directors, or by one director and the company secretary where the company has appointed one. In a One Person Company, a single director's signature suffices, together with the company secretary if one is appointed. The signatures are usually facsimile or manual, per the Articles, and the certificate is issued under the common seal, if the company has one.</p>
+
+    <h2>4. Common Seal</h2>
+    <p>Since the Companies (Amendment) Act, 2015, a common seal is optional. Where a company has a common seal, it should be affixed to the certificate in the presence of the signing directors/officer. Where a company has resolved not to have a common seal, the certificate is validly issued without one, so long as it is signed as the Articles require.</p>
+
+    <h2>5. Distinctive Numbers &amp; Dematerialised Shares</h2>
+    <p>Distinctive numbers identify each physical share and must appear on a certificate for shares held in physical form. Shares held in dematerialised form through a depository do not carry distinctive numbers or a physical certificate at all &mdash; the depository's records, not a Form SH-1, are the evidence of title. Use this generator only for physical share certificates.</p>
+
+    <h2>6. Register of Members</h2>
+    <p>The particulars of every share certificate issued &mdash; folio, distinctive numbers, class, amount paid-up and the holder's details &mdash; must be entered in the Register of Members under Section 88 at or about the same time the certificate is issued, and the certificate should be issued pursuant to a resolution of the Board (or a committee authorised by the Board).</p>
+
+    <h2>7. Duplicate Certificates</h2>
+    <p>Rule 6 governs duplicate certificates issued in place of one that is proved to have been lost, destroyed, defaced, mutilated or torn. The usual requirements are Board approval, a letter of indemnity (with surety where the paid-up value exceeds the prescribed threshold), an affidavit in cases of loss or destruction, applicable fees, and an entry in the Register of Renewed and Duplicate Share Certificates maintained under Rule 6(3)(b). Every duplicate certificate must be marked "Duplicate issued in lieu of Certificate No. ___". Issuing a duplicate certificate with intent to defraud is an offence under Section 46(5), attracting fine on the company and action under Section 447 against every officer in default &mdash; check the current quantum before advising, as penalty figures have been revised by amendment.</p>
+
+    <h2>8. Stamp Duty</h2>
+    <p>Stamp duty on the issue of a share certificate (payable by the company on issue, typically under the state Stamp Act or the Indian Stamp Act as applicable) is distinct from the stamp duty payable on a subsequent transfer of shares (traditionally borne by the transferee/transferor on the transfer instrument). Rates vary by state and have also been affected by the centralised stamp duty regime introduced from 1 July 2020 for listed/dematerialised securities &mdash; verify the applicable rate before relying on this generator for stamping purposes.</p>
+
+    <h2>9. Penalty for Default</h2>
+    <p>Where a company fails to issue certificates within the timelines in Section 56(4), it and every officer in default is liable to the penalty prescribed under Section 56(6), in addition to any liability under Section 447 where fraud is involved. Professional sources commonly cite a company-level fine in the range of roughly Rs. 25,000 to Rs. 5,00,000 and an officer-level fine in the range of roughly Rs. 10,000 to Rs. 1,00,000, but always confirm the current figures (these provisions have been amended over time) before advising a client.</p>
+
+    <h2>10. Overview &amp; Concept of Transfer of Securities</h2>
+    <p>"Transfer of securities" is the voluntary act of a member conveying title in their shares, debentures or other securities to another person &mdash; by sale, gift, settlement or exchange &mdash; by delivering a duly executed instrument of transfer. It is deliberately distinct from <strong>transmission</strong>, which vests title by operation of law (on death, succession, inheritance, insolvency or lunacy of the holder) without any instrument of transfer, and which the company recognises on production of proof such as a succession certificate, probate or letters of administration rather than a Form SH-4. Both are dealt with together under Section 56 of the Companies Act, 2013, but only a transfer needs this generator.</p>
+    <p>Section 44 makes the shares, debentures and other interests of any member movable property, transferable in the manner provided by the company's Articles &mdash; the starting legal proposition that lets securities change hands at all. Section 56 then lays down the mechanics: the company may not register a transfer of, or the interest of a member in, securities unless a proper instrument of transfer (Form SH-4) in the prescribed form has been delivered to it, duly stamped, dated and executed, within the prescribed time and accompanied by the certificate (or letter of allotment). "Securities" for this purpose covers equity shares, preference shares and debentures, and other instruments as defined in Section 2(81) read with Section 2(h) of the Securities Contracts (Regulation) Act, 1956.</p>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th></th><th>Transfer</th><th>Transmission</th></tr></thead>
+      <tbody>
+        <tr><td class="b">How it arises</td><td>Voluntary act of the parties (sale, gift, settlement)</td><td>Operation of law (death, succession, insolvency, lunacy)</td></tr>
+        <tr><td class="b">Instrument required</td><td>Form SH-4, duly stamped and executed</td><td>None &mdash; proof of entitlement (succession certificate, probate, letters of administration, etc.)</td></tr>
+        <tr><td class="b">Stamp duty</td><td>Payable &mdash; 0.015% of consideration</td><td>Not applicable</td></tr>
+        <tr><td class="b">Consideration</td><td>Usually present (may be nil for a gift)</td><td>Not applicable</td></tr>
+        <tr><td class="b">Company's role</td><td>May refuse for sufficient cause, subject to Section 58</td><td>Recognises the legal representative on satisfactory proof; refusal is narrowly circumscribed</td></tr>
+        <tr><td class="b">Governing provision</td><td>Section 56(1), Rule 11</td><td>Section 56(2)/(3)</td></tr>
+      </tbody>
+    </table></div>
+    <p>Physical and dematerialised securities move differently. A <strong>physical</strong> transfer is effected only through Form SH-4 lodged with the company; this generator produces that form. A <strong>dematerialised</strong> transfer takes place off the company's books entirely &mdash; the transferor instructs their depository participant (via a delivery instruction slip or its electronic equivalent) and the depository records the change of beneficial ownership under the Depositories Act, 1996, and applicable SEBI (Depositories and Participants) Regulations; no Form SH-4, no stamped instrument delivered to the company, and no company-level 60-day clock apply to that leg of the transaction.</p>
+    <p>Transferability is not unlimited. Under Section 58(2), the securities of a public company are freely transferable, though contracts or arrangements between members (e.g. a shareholders' agreement) remain enforceable as ordinary contracts. Private companies almost always restrict transfer through their Articles &mdash; commonly a right of first refusal or pre-emption right in favour of existing members, and a Board power to decline registration &mdash; consistent with the definition of a private company under Section 2(68). Listed companies layer on SEBI (LODR) Regulations, depository rules and any lock-in conditions from the offer document. Under Section 58(1)/(4), a Board that refuses to register a transfer must communicate its reasons within thirty days, and the aggrieved transferor or transferee may appeal to the National Company Law Tribunal, which can direct registration, or rectification of the Register of Members under Section 59, on being satisfied the refusal was without sufficient cause.</p>
+
+    <h2>11. Form SH-4: What It Is &amp; When It's Used</h2>
+    <p>Form No. SH-4 is the "Securities Transfer Form" prescribed by Rule 11(1) of the Companies (Share Capital and Debentures) Rules, 2014 for a transfer of shares (or debentures) under Section 56(1) of the Companies Act, 2013. It is the instrument of transfer that must accompany every physical share transfer &mdash; the company cannot register a transfer of physical shares without a duly stamped, dated and executed Form SH-4, except where the law specifically dispenses with it (e.g. transmission by operation of law, or transfers of dematerialised securities effected through a depository, which bypass SH-4 entirely).</p>
+
+    <h2>12. Stamping, Execution &amp; Delivery</h2>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Requirement</th><th>What the Rules/Act say</th></tr></thead>
+      <tbody>
+        <tr><td class="b">Stamp duty</td><td>0.015% of the consideration (or such other rate as centrally notified), under the Indian Stamp Act, 1899 as amended with effect from 1 July 2020 &mdash; verify the current rate before relying on this generator for stamping.</td></tr>
+        <tr><td class="b">Execution</td><td>Signed by or on behalf of the transferor and the transferee, and attested by a witness who gives their name and address.</td></tr>
+        <tr><td class="b">Delivery to the company</td><td>Within 60 days from the date of execution, along with the share certificate (or the letter of allotment, if no certificate has been issued) &mdash; Section 56(1)/(4).</td></tr>
+        <tr><td class="b">Dematerialised securities</td><td>Not applicable &mdash; transfers of shares held in a depository are effected by instructions to the depository participant, not by Form SH-4.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>13. FEMA Declaration (Transfers Involving a Non-Resident)</h2>
+    <p>Where a transferee is a person resident outside India (or a transferor is), the transferee must confirm whether prior approval under the Foreign Exchange Management (Non-Debt Instruments) Rules, 2019 is required for the transfer, and if so, that it has been obtained and is enclosed. Most resident-to-resident transfers will simply confirm that no such approval is required; cross-border transfers should be checked against the current FEMA/RBI framework (and sectoral caps, where applicable) before the form is executed.</p>
+
+    <h2>14. Board Approval &amp; the Register of Members</h2>
+    <p>Once a duly executed and stamped SH-4 is lodged (for a private company, always; for other companies, unless dematerialised) the Board (or a delegate under Section 179(3)) approves the transfer, the old holder's entry in the Register of Members is updated and a new/updated folio is opened for the transferee, and the company issues a fresh certificate (or endorses the existing one) to the transferee &mdash; within one month of receipt of the instrument of transfer, per Section 56(4)(c).</p>
+
+    <h2>15. Form SH-5: Notice for Transfer of Partly Paid Securities</h2>
+    <p>Not every share is fully paid on issue &mdash; a company can call up the price of a share in instalments, leaving a balance the holder must pay when later "called" by the Board. Form No. SH-5, prescribed by Rule 11(3) of the Companies (Share Capital and Debentures) Rules, 2014 under Section 56(3) of the Act, exists for exactly this situation: whenever a transferor lodges a transfer application <em>alone</em> for securities that are only <strong>partly paid</strong>, the company cannot register that transfer until it has first sent this notice to the transferee, spelling out precisely how much remains called-but-unpaid and not-yet-called on the securities they are about to receive.</p>
+    <p>The transferee then has <strong>two weeks from receipt of the notice</strong> to raise an objection. Silence is treated as consent &mdash; if no objection reaches the company within that window, the company proceeds to register the transfer in the ordinary course, and the transferee becomes bound to pay the outstanding calls as and when the Board makes them. If the transferee does object within the two weeks, the company holds the transfer pending resolution of that objection rather than registering it. This mechanism exists purely to protect the transferee from unknowingly inheriting a call liability &mdash; it has no equivalent when both transferor and transferee jointly execute the transfer application, since in that case the transferee's signature on the SH-4 already signifies informed acceptance of the partly-paid status.</p>
+    <div class="gtable-wrap"><table class="gtable">
+      <thead><tr><th>Trigger</th><th>What happens</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td class="b">Transferor alone applies to transfer partly-paid securities</td><td>Company must send Form SH-5 to the transferee before registering</td><td>Section 56(3)</td></tr>
+        <tr><td class="b">Transferee's objection window</td><td>Two weeks from receipt of the notice</td><td>Rule 11(3)</td></tr>
+        <tr><td class="b">No objection received</td><td>Company registers the transfer; transferee becomes liable for unpaid calls</td><td>Rule 11(3)</td></tr>
+        <tr><td class="b">Fully paid securities, or transfer jointly executed by both parties</td><td>Form SH-5 not required</td><td>&mdash;</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>16. Using This Generator</h2>
+    <ul>
+      <li><strong>Share Certificate (SH-1) tab</strong> &mdash; fill in the Company, Certificate &amp; Folio, Registered Holder, Share Particulars and Signatories sections; the certificate on the right updates as you type. Leave Director 2 blank for a One Person Company, and leave the Distinctive Nos. fields blank for dematerialised shares.</li>
+      <li><strong>Transfer Form (SH-4) tab</strong> &mdash; fill in the Company &amp; Execution, Securities, Transferor(s) &amp; Witness, Transferee, and Declaration &amp; Enclosures sections. Leave "Value of stamp duty affixed" blank to auto-calculate 0.015% of the consideration.</li>
+      <li><strong>Partly-Paid Notice (SH-5) tab</strong> &mdash; fill in the Company, Transferor &amp; Transferee, and Partly-Paid Securities sections; the notice on the right computes the two-week objection deadline automatically from the date of notice.</li>
+      <li>Use "Edit directly" on any tab to fine-tune the wording by hand once the draft is close, or "Load Sample" to see a filled example first.</li>
+      <li>Tick "Include reverse endorsement page" on the SH-1 tab to add a blank transfer ledger, useful when printing on both sides of certificate stock.</li>
+    </ul>
+
+    <p class="guide-foot">
+      This guide is provided for general awareness alongside the drafts in the other tabs. It does not
+      constitute legal advice, and it does not replace a proper reading of Sections 46, 56 and 58, the Rules, the
+      Indian Stamp Act, and your company's Articles of Association for your company's specific facts. Have every
+      completed certificate, transfer form and notice vetted by a practising Company Secretary before it is sealed,
+      stamped and signed.
+    </p>
+  </div>
+</div>
+
+<footer class="app-footer">
+  <div class="foot-wrap">
+    <div>
+      <h3>Share Certificate &amp; Transfer Generator</h3>
+    </div>
+    <div class="foot-badges">
+      <span class="foot-badge">SH-1 &middot; Section 46 &amp; Rule 5</span>
+      <span class="foot-badge">SH-4 &middot; Section 56 &amp; Rule 11</span>
+      <span class="foot-badge">SH-5 &middot; Section 56(3) &amp; Rule 11(3)</span>
+      <span class="foot-badge">Draft-only &mdash; nothing leaves your browser</span>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>&copy; <span id="footYear"></span> Share Certificate &amp; Transfer Generator &mdash; for general awareness only, not legal advice.</span>
+    <span>Have every certificate and transfer form vetted by a practising Company Secretary before it is sealed, stamped and signed.</span>
+  </div>
+  <div class="foot-signature">
+    <span class="foot-mark" title="S.S">S.S</span>
+  </div>
+</footer>
+
+<script>
+/* ================= Helpers ================= */
+function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function v(val, placeholder) {
+  if (val === undefined || val === null || String(val).trim() === '') return '<span class="ph">' + esc(placeholder) + '</span>';
+  return esc(val);
+}
+function fieldVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+function fmtNum(n) {
+  n = String(n === undefined || n === null ? '' : n).replace(/[^0-9.]/g, '');
+  if (n === '') return '';
+  var parts = n.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{2})+(?!\d)(?=(\d{3})(?!\d)))/g, ',').replace(/^(\d)(\d{2}(?:,\d{2})*),(\d{3})$/, '$1,$2,$3');
+  var x = parts[0], last3 = x.substring(x.length - 3);
+  var rest = x.substring(0, x.length - 3);
+  if (rest !== '') last3 = ',' + last3;
+  var out = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + last3;
+  return parts.length > 1 ? out + '.' + parts[1] : out;
+}
+function fmtDate(dstr) {
+  if (!dstr) return '';
+  var d = new Date(dstr + 'T00:00:00');
+  if (isNaN(d.getTime())) return dstr;
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return { day: d.getDate(), ord: ordinal(d.getDate()), month: months[d.getMonth()], year: d.getFullYear() };
+}
+function ordinal(n) {
+  var s = ['th','st','nd','rd'], v2 = n % 100;
+  return n + (s[(v2 - 20) % 10] || s[v2] || s[0]);
+}
+
+/* ---- Indian-system number to words, for share counts ---- */
+var ONES = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+var TENS = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+function twoDigits(n) {
+  if (n < 20) return ONES[n];
+  return TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : '');
+}
+function threeDigits(n) {
+  var h = Math.floor(n / 100), r = n % 100;
+  return (h ? ONES[h] + ' Hundred' + (r ? ' ' : '') : '') + (r ? twoDigits(r) : '');
+}
+function numberToWordsIndian(num) {
+  num = Math.floor(Number(num) || 0);
+  if (num === 0) return 'Zero';
+  if (num < 0) return 'Minus ' + numberToWordsIndian(-num);
+  var crore = Math.floor(num / 10000000); num %= 10000000;
+  var lakh = Math.floor(num / 100000); num %= 100000;
+  var thousand = Math.floor(num / 1000); num %= 1000;
+  var hundred = num;
+  var parts = [];
+  if (crore) parts.push(threeDigits(crore) + ' Crore');
+  if (lakh) parts.push(twoDigits(lakh) + ' Lakh');
+  if (thousand) parts.push(twoDigits(thousand) + ' Thousand');
+  if (hundred) parts.push(threeDigits(hundred));
+  return parts.join(' ').trim();
+}
+
+/* ================= Conditional field rows ================= */
+function applyConditionals() {
+  var cls = fieldVal('shareClass');
+  document.getElementById('rowShareClassOther').classList.toggle('show', cls === '__other');
+  var paid = fieldVal('paidStatus');
+  document.getElementById('rowUnpaid').classList.toggle('show', paid === 'partly');
+  renderPreview();
+}
+function applyTransferConditionals() {
+  var kind = fieldVal('tfKind');
+  document.getElementById('rowTfKindOther').classList.toggle('show', kind === '__other');
+  renderTransferPreview();
+}
+
+/* ================= Joint holders (dynamic rows) ================= */
+var jhCounter = 0;
+function addJointHolder(data) {
+  jhCounter++;
+  var id = jhCounter;
+  var wrap = document.createElement('div');
+  wrap.className = 'jh-block';
+  wrap.setAttribute('data-jh', id);
+  wrap.innerHTML =
+    '<button type="button" class="jh-remove" onclick="removeJointHolder(' + id + ')" title="Remove">&times;</button>' +
+    '<div class="jh-label">Joint holder</div>' +
+    '<div class="frow">' +
+      '<div class="fitem full"><label>Name</label><input type="text" class="jh-name" placeholder="Ms. Priya A. Deshmukh"></div>' +
+    '</div>' +
+    '<div class="frow">' +
+      '<div class="fitem"><label>Relation</label><select class="jh-relation">' +
+        '<option value="">&mdash; none &mdash;</option><option value="S/o">S/o</option><option value="D/o">D/o</option><option value="W/o">W/o</option><option value="H/o">H/o</option>' +
+      '</select></div>' +
+      '<div class="fitem"><label>Relative\'s name</label><input type="text" class="jh-relative" placeholder="Arvind M. Deshmukh"></div>' +
+    '</div>';
+  document.getElementById('jointHolderList').appendChild(wrap);
+  if (data) {
+    wrap.querySelector('.jh-name').value = data.name || '';
+    wrap.querySelector('.jh-relation').value = data.relation || '';
+    wrap.querySelector('.jh-relative').value = data.relativeName || '';
+  }
+  renderPreview(); scheduleSave();
+}
+function removeJointHolder(id) {
+  var el = document.querySelector('.jh-block[data-jh="' + id + '"]');
+  if (el) el.remove();
+  renderPreview(); scheduleSave();
+}
+function collectJointHolders() {
+  var out = [];
+  document.querySelectorAll('#jointHolderList .jh-block').forEach(function (b) {
+    var name = b.querySelector('.jh-name').value.trim();
+    if (!name) return;
+    out.push({ name: name, relation: b.querySelector('.jh-relation').value, relativeName: b.querySelector('.jh-relative').value.trim() });
+  });
+  return out;
+}
+function clearJointHolders() { document.getElementById('jointHolderList').innerHTML = ''; }
+
+/* ================= Render the certificate ================= */
+function holderLine(name, relation, relativeName) {
+  var s = esc(name);
+  if (relation && relativeName) s += ' ' + esc(relation) + ' ' + esc(relativeName);
+  return s;
+}
+function renderPreview() {
+  var companyName = fieldVal('companyName'), cin = fieldVal('cin'), regOffice = fieldVal('regOffice'), authCapital = fieldVal('authCapital');
+  var certNo = fieldVal('certNo'), folioNo = fieldVal('folioNo'), distFrom = fieldVal('distFrom'), distTo = fieldVal('distTo');
+  var issueDate = fieldVal('issueDate'), issuePlace = fieldVal('issuePlace');
+  var holderName = fieldVal('holderName'), holderRelation = fieldVal('holderRelation'), holderRelativeName = fieldVal('holderRelativeName');
+  var holderOccupation = fieldVal('holderOccupation'), holderAddress = fieldVal('holderAddress');
+  var joint = collectJointHolders();
+  var shareClassSel = fieldVal('shareClass'), shareClassOther = fieldVal('shareClassOther');
+  var shareClass = shareClassSel === '__other' ? (shareClassOther || 'Shares') : shareClassSel;
+  var numShares = fieldVal('numShares'), nominalValue = fieldVal('nominalValue');
+  var paidStatus = fieldVal('paidStatus'), paidUpValue = fieldVal('paidUpValue'), unpaidValue = fieldVal('unpaidValue');
+  var dir1Name = fieldVal('dir1Name'), dir1Din = fieldVal('dir1Din'), dir2Name = fieldVal('dir2Name'), dir2Din = fieldVal('dir2Din');
+  var thirdSigRole = fieldVal('thirdSigRole'), thirdSigName = fieldVal('thirdSigName');
+  var includeSeal = document.getElementById('includeSeal').checked;
+  var includeReverse = document.getElementById('includeReverse').checked;
+
+  var holderCount = 1 + joint.length;
+  var isAre = holderCount > 1 ? 'are' : 'is';
+  var holderWord = holderCount > 1 ? 'Holders' : 'Holder';
+
+  var names = [holderLine(holderName || 'the Registered Holder', holderRelation, holderRelativeName)];
+  joint.forEach(function (j) { names.push(holderLine(j.name, j.relation, j.relativeName)); });
+  var nameJoined = names.length === 1 ? names[0] : (names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]);
+
+  var hasDist = (distFrom || distTo);
+  var numSharesWords = numShares ? numberToWordsIndian(numShares) + (Number(numShares) === 1 ? '' : '') : '';
+
+  var html = '';
+  html += '<div class="co-name">' + v(companyName, 'Company Name Private Limited') + '</div>';
+  html += '<div class="co-meta">CIN: ' + v(cin, 'U00000XX0000PTC000000') + (regOffice ? ' &middot; Regd. Office: ' + esc(regOffice).replace(/\n/g, ', ') : ' &middot; Regd. Office: <span class="ph">registered office address</span>') + '</div>';
+  html += '<hr class="rule">';
+  html += '<div class="cert-title">FORM No. SH-1</div>';
+  html += '<div class="cert-title big">CERTIFICATE OF SHARES</div>';
+  html += '<div class="cert-title" style="font-size:10.8px;">[Pursuant to sub-section (3) of Section 46 of the Companies Act, 2013 and Rule 5(2) of the Companies (Share Capital and Debentures) Rules, 2014]</div>';
+  if (authCapital) html += '<div class="authcap">Authorised Share Capital: ' + esc(authCapital) + '</div>';
+
+  html += '<div class="placement-row"><span>Certificate No.: <b>' + v(certNo, '—') + '</b></span><span>Folio No.: <b>' + v(folioNo, '—') + '</b></span></div>';
+  html += '<div class="placement-row"><span>' + (hasDist ? ('Distinctive Nos.: <b>' + v(distFrom, '—') + '</b> to <b>' + v(distTo, '—') + '</b> (both inclusive)') : '<span class="ph">distinctive numbers — not applicable for dematerialised shares</span>') + '</span><span>No. of Shares: <b>' + v(numShares, '—') + '</b></span></div>';
+
+  html += '<div class="res-body"><p>This is to certify that <strong>' + nameJoined + '</strong>' +
+    (holderOccupation ? ', ' + esc(holderOccupation) + ',' : '') +
+    (holderAddress ? ' residing at ' + esc(holderAddress).replace(/\n/g, ', ') + ',' : '') +
+    ' ' + isAre + ' the Registered ' + holderWord + ' of <strong>' + v(numShares, '[number]') + (numSharesWords ? ' (' + numSharesWords + ')' : '') + ' ' + esc(shareClass) + '</strong> of Rs. ' + v(nominalValue, '[nominal value]') + '/&ndash; each' +
+    (hasDist ? ', bearing Distinctive Numbers ' + v(distFrom, '—') + ' to ' + v(distTo, '—') + ' (both inclusive),' : ',') +
+    ' in <strong>' + v(companyName, 'the Company') + '</strong>, subject to the Memorandum and Articles of Association of the Company, and that the sum of Rs. ' + v(paidUpValue, '[amount]') + '/&ndash; per Share has been paid-up thereon' +
+    (paidStatus === 'partly' && unpaidValue ? ', Rs. ' + esc(unpaidValue) + '/&ndash; per Share remaining in arrears' : '') +
+    '.</p></div>';
+
+  var dateInfo = fmtDate(issueDate);
+  html += '<p class="meeting-line">' + (includeSeal ? 'Given under the Common Seal of the Company' : 'Signed on behalf of the Company') +
+    (dateInfo ? ' this <strong>' + dateInfo.day + dateInfo.ord.replace(dateInfo.day, '') + '</strong> day of <strong>' + dateInfo.month + ', ' + dateInfo.year + '</strong>' : ' this <span class="ph">___</span> day of <span class="ph">_______, 20__</span>') +
+    (issuePlace ? ' at <strong>' + esc(issuePlace) + '</strong>' : '') + '.</p>';
+
+  html += '<div class="sign-block">';
+  html += '<div class="for-co">For ' + v(companyName, 'the Company') + '</div>';
+  html += '<div class="sign-row">';
+  if (includeSeal) html += '<div class="seal-box">Common<br>Seal</div>';
+  html += '<div><div class="sign-line"></div><div class="sign-meta"><b>' + v(dir1Name, 'Director 1 Name') + '</b>Director' + (dir1Din ? ' &middot; DIN: ' + esc(dir1Din) : '') + '</div></div>';
+  if (dir2Name) html += '<div><div class="sign-line"></div><div class="sign-meta"><b>' + esc(dir2Name) + '</b>Director' + (dir2Din ? ' &middot; DIN: ' + esc(dir2Din) : '') + '</div></div>';
+  if (thirdSigName) html += '<div><div class="sign-line"></div><div class="sign-meta"><b>' + esc(thirdSigName) + '</b>' + esc(thirdSigRole) + '</div></div>';
+  html += '</div></div>';
+
+  html += '<div class="cert-foot">Note: This certificate is prima facie evidence of the title of the person(s) named herein to the shares specified above. No transfer of the shares comprised in this certificate will be registered unless it is accompanied by this certificate, or the transfer is otherwise supported as required by the Articles of the Company.</div>';
+
+  if (includeReverse) {
+    html += '<div class="annex-divider">' +
+      '<span class="annex-tag">REVERSE OF CERTIFICATE</span>' +
+      '<div class="annex-heading">Particulars of Transfer</div>' +
+      '<div class="annex-sub">To be completed by the Company on each subsequent transfer of the shares comprised in this certificate</div>' +
+      '<table class="fintable"><thead><tr><th>Date of Transfer</th><th>Name &amp; Address of Transferee</th><th>No. of Shares</th><th>New Distinctive Nos.</th><th>Signature of Officer</th></tr></thead><tbody>' +
+      '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>'.repeat(5) +
+      '</tbody></table></div>';
+  }
+
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+/* ================= Render the transfer form (SH-4) ================= */
+function renderTransferPreview() {
+  var companyName = fieldVal('tfCompanyName'), cin = fieldVal('tfCin'), stockExchange = fieldVal('tfStockExchange');
+  var execDate = fieldVal('tfExecDate'), folioNo = fieldVal('tfFolioNo');
+  var kindSel = fieldVal('tfKind'), kindOther = fieldVal('tfKindOther');
+  var kind = kindSel === '__other' ? (kindOther || 'Securities') : kindSel;
+  var nominalValue = fieldVal('tfNominalValue'), calledUp = fieldVal('tfCalledUp'), paidUp = fieldVal('tfPaidUp');
+  var numSecurities = fieldVal('tfNumSecurities'), consideration = fieldVal('tfConsideration');
+  var distFrom = fieldVal('tfDistFrom'), distTo = fieldVal('tfDistTo'), certNos = fieldVal('tfCertNos');
+  var stampInput = fieldVal('tfStampValue');
+  var transferor1 = fieldVal('tfTransferor1'), transferor2 = fieldVal('tfTransferor2');
+  var witnessName = fieldVal('tfWitnessName'), witnessAddress = fieldVal('tfWitnessAddress');
+  var tfeName = fieldVal('tfeName'), tfeRelation = fieldVal('tfeRelation'), tfeRelativeName = fieldVal('tfeRelativeName');
+  var tfeOccupation = fieldVal('tfeOccupation'), tfeExistingFolio = fieldVal('tfeExistingFolio');
+  var tfeAddress = fieldVal('tfeAddress'), tfeEmail = fieldVal('tfeEmail');
+  var fema = fieldVal('tfFema'), enclosures = fieldVal('tfEnclosures');
+
+  var stampComputed = stampInput;
+  if (!stampComputed && consideration) stampComputed = (Number(consideration) * 0.00015).toFixed(2);
+
+  var numWords = numSecurities ? numberToWordsIndian(numSecurities) : '';
+  var considerationWords = consideration ? numberToWordsIndian(consideration) : '';
+  var hasDist = (distFrom || distTo);
+
+  var html = '';
+  html += '<div class="co-name">' + v(companyName, 'Company Name Private Limited') + '</div>';
+  html += '<div class="co-meta">CIN: ' + v(cin, 'U00000XX0000PTC000000') + (stockExchange ? ' &middot; Listed on: ' + esc(stockExchange) : '') + '</div>';
+  html += '<hr class="rule">';
+  html += '<div class="cert-title">FORM No. SH-4</div>';
+  html += '<div class="cert-title big">SECURITIES TRANSFER FORM</div>';
+  html += '<div class="cert-title" style="font-size:10.8px;">[Pursuant to Section 56(1) of the Companies Act, 2013 and Rule 11(1) of the Companies (Share Capital and Debentures) Rules, 2014]</div>';
+
+  var dateInfo = fmtDate(execDate);
+  html += '<div class="placement-row"><span>Date of Execution: <b>' + (dateInfo ? dateInfo.day + dateInfo.ord.replace(dateInfo.day, '') + ' ' + dateInfo.month + ', ' + dateInfo.year : v('', '—')) + '</b></span><span>Registered Folio No.: <b>' + v(folioNo, '—') + '</b></span></div>';
+
+  html += '<div class="res-body"><p>FOR THE CONSIDERATION stated below, the Transferor(s) named do hereby transfer to the Transferee(s) named the securities specified below, subject to the conditions on which the said securities are now held by the Transferor(s), and the Transferee(s) do hereby agree to accept and hold the said securities subject to the conditions aforesaid.</p></div>';
+
+  html += '<div class="sub-heading">Description of Securities</div>';
+  html += '<table class="fintable"><thead><tr><th>Kind / Class</th><th>Nominal Value / unit (Rs.)</th><th>Called-up / unit (Rs.)</th><th>Paid-up / unit (Rs.)</th></tr></thead><tbody><tr>' +
+    '<td>' + v(kind, 'Equity Shares') + '</td><td>' + v(nominalValue, '—') + '</td><td>' + v(calledUp, '—') + '</td><td>' + v(paidUp, '—') + '</td>' +
+    '</tr></tbody></table>';
+
+  html += '<div class="sub-heading">Particulars of Transfer</div>';
+  html += '<table class="fintable"><thead><tr><th>No. of Securities</th><th>Distinctive Nos.</th><th>Certificate No(s).</th><th>Consideration (Rs.)</th><th>Stamp Duty (Rs.)</th></tr></thead><tbody><tr>' +
+    '<td>' + v(numSecurities, '—') + (numWords ? ' <span style="font-size:10.5px;color:#4a5158;">(' + numWords + ')</span>' : '') + '</td>' +
+    '<td>' + (hasDist ? (v(distFrom, '—') + '&ndash;' + v(distTo, '—')) : '<span class="ph">n/a &mdash; demat</span>') + '</td>' +
+    '<td>' + v(certNos, '—') + '</td>' +
+    '<td>' + v(consideration, '—') + (considerationWords ? ' <span style="font-size:10.5px;color:#4a5158;">(Rupees ' + considerationWords + ' Only)</span>' : '') + '</td>' +
+    '<td>' + (stampComputed ? esc(stampComputed) : '<span class="ph">—</span>') + '</td>' +
+    '</tr></tbody></table>';
+
+  html += '<div class="sign-block">';
+  html += '<div class="sub-heading">Transferor(s)</div>';
+  html += '<div class="sign-row">';
+  html += '<div><div class="sign-line"></div><div class="sign-meta"><b>' + v(transferor1, 'Transferor 1 Name') + '</b>Transferor 1' + (folioNo ? ' &middot; Folio: ' + esc(folioNo) : '') + '</div></div>';
+  if (transferor2) html += '<div><div class="sign-line"></div><div class="sign-meta"><b>' + esc(transferor2) + '</b>Transferor 2</div></div>';
+  html += '<div class="stamp-box">Affix Share<br>Transfer Stamp<br>' + (stampComputed ? 'Rs. ' + esc(stampComputed) : '&mdash;') + '</div>';
+  html += '</div>';
+  html += '<div class="sign-row" style="margin-top:26px;"><div><div class="sign-line"></div><div class="sign-meta"><b>' + v(witnessName, 'Witness Name') + '</b>Witness' + (witnessAddress ? ' &middot; ' + esc(witnessAddress).replace(/\n/g, ', ') : '') + '</div></div></div>';
+
+  html += '<div class="sub-heading">Transferee</div>';
+  var tfeLine = v(tfeName, 'Transferee Name');
+  if (tfeRelation && tfeRelativeName) tfeLine += ' ' + esc(tfeRelation) + ' ' + esc(tfeRelativeName);
+  html += '<div class="sign-row"><div><div class="sign-line"></div><div class="sign-meta"><b>' + tfeLine + '</b>' + (tfeOccupation ? esc(tfeOccupation) : 'Transferee') + (tfeExistingFolio ? ' &middot; Existing Folio: ' + esc(tfeExistingFolio) : '') + '</div></div></div>';
+  if (tfeAddress || tfeEmail) html += '<div class="sign-meta" style="margin-top:10px;">' + (tfeAddress ? esc(tfeAddress).replace(/\n/g, ', ') : '') + (tfeAddress && tfeEmail ? ' &middot; ' : '') + (tfeEmail ? esc(tfeEmail) : '') + '</div>';
+  html += '</div>';
+
+  var femaText = fema === 'required'
+    ? 'approval under the Foreign Exchange Management (Non-Debt Instruments) Rules, 2019 is required for this transfer, has been obtained, and a copy is enclosed'
+    : 'approval under the Foreign Exchange Management (Non-Debt Instruments) Rules, 2019 is not required for this transfer';
+  html += '<div class="cert-foot">Declaration: The Transferee confirms that ' + femaText + '.</div>';
+  html += '<div class="cert-foot">Enclosures: ' + v(enclosures, 'Original Share Certificate; Board Resolution, if any') + '</div>';
+  html += '<div class="cert-foot">Note: This form must be duly stamped, dated and executed by or on behalf of the Transferor(s) and the Transferee, attested by a witness, and delivered to the Company along with the certificate (or the letter of allotment) within sixty (60) days from the date of execution, under sub-section (4) of Section 56.</div>';
+
+  document.getElementById('transferPreviewContent').innerHTML = html;
+}
+
+/* ================= Render the SH-5 partly-paid transfer notice ================= */
+function renderFivePreview() {
+  var companyName = fieldVal('fvCompanyName'), cin = fieldVal('fvCin'), regOffice = fieldVal('fvRegOffice');
+  var noticeDate = fieldVal('fvNoticeDate');
+  var transferorName = fieldVal('fvTransferorName'), transferorAddress = fieldVal('fvTransferorAddress');
+  var transfereeName = fieldVal('fvTransfereeName'), transfereeAddress = fieldVal('fvTransfereeAddress');
+  var kind = fieldVal('fvKind'), quantity = fieldVal('fvQuantity');
+  var distFrom = fieldVal('fvDistFrom'), distTo = fieldVal('fvDistTo'), certNo = fieldVal('fvCertNo');
+  var nominalValue = fieldVal('fvNominalValue'), issuePrice = fieldVal('fvIssuePrice');
+  var calledPaid = fieldVal('fvCalledPaid'), calledUnpaid = fieldVal('fvCalledUnpaid'), uncalled = fieldVal('fvUncalled');
+  var signatoryName = fieldVal('fvSignatoryName'), signatoryDesignation = fieldVal('fvSignatoryDesignation');
+
+  var qtyNum = Number(quantity) || 0;
+  var totalCalledDue = (Number(calledPaid) || 0) + (Number(calledUnpaid) || 0);
+  var totalCalledDueAll = qtyNum && totalCalledDue ? (qtyNum * totalCalledDue) : '';
+  var totalUncalledAll = qtyNum && uncalled ? (qtyNum * (Number(uncalled) || 0)) : '';
+  var hasDist = (distFrom || distTo);
+
+  var noticeInfo = fmtDate(noticeDate);
+  var deadlineStr = '';
+  if (noticeDate) {
+    var d = new Date(noticeDate + 'T00:00:00');
+    if (!isNaN(d.getTime())) {
+      d.setDate(d.getDate() + 14);
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      deadlineStr = d.getDate() + ordinal(d.getDate()).replace(d.getDate(), '') + ' ' + months[d.getMonth()] + ', ' + d.getFullYear();
+    }
+  }
+
+  var html = '';
+  html += '<div class="co-name">' + v(companyName, 'Company Name Private Limited') + '</div>';
+  html += '<div class="co-meta">CIN: ' + v(cin, 'U00000XX0000PTC000000') + (regOffice ? ' &middot; Regd. Office: ' + esc(regOffice).replace(/\n/g, ', ') : '') + '</div>';
+  html += '<hr class="rule">';
+  html += '<div class="cert-title">FORM No. SH-5</div>';
+  html += '<div class="cert-title big">NOTICE FOR TRANSFER OF PARTLY PAID SECURITIES</div>';
+  html += '<div class="cert-title" style="font-size:10.8px;">[Pursuant to sub-section (3) of Section 56 of the Companies Act, 2013 and sub-rule (3) of Rule 11 of the Companies (Share Capital and Debentures) Rules, 2014]</div>';
+
+  html += '<div class="placement-row"><span>Date of Notice: <b>' + (noticeInfo ? noticeInfo.day + noticeInfo.ord.replace(noticeInfo.day, '') + ' ' + noticeInfo.month + ', ' + noticeInfo.year : v('', '—')) + '</b></span><span>Certificate No.: <b>' + v(certNo, '—') + '</b></span></div>';
+
+  html += '<div class="res-body">';
+  html += '<p style="margin-bottom:6px;">To,<br><strong>' + v(transfereeName, 'Transferee Name') + '</strong><br>' + (transfereeAddress ? esc(transfereeAddress).replace(/\n/g, '<br>') : '<span class="ph">transferee address</span>') + '</p>';
+  html += '<p>Notice is hereby given that <strong>' + v(transferorName, 'Transferor Name') + '</strong>' + (transferorAddress ? ' of ' + esc(transferorAddress).replace(/\n/g, ', ') : '') + ', the registered holder of the securities described below, has applied to the Company for registration of the transfer of the said securities to you. The said securities are <strong>partly paid</strong>, and if the transfer is registered, you, as the transferee, shall become liable to pay the balance amount remaining unpaid on the securities specified below.</p>';
+  html += '</div>';
+
+  html += '<div class="sub-heading">Particulars of Securities</div>';
+  html += '<table class="fintable"><thead><tr><th>Kind / Class</th><th>Quantity</th><th>Distinctive Nos.</th><th>Certificate No.</th><th>Nominal Value (Rs.)</th><th>Issue Price (Rs.)</th></tr></thead><tbody><tr>' +
+    '<td>' + v(kind, 'Equity Shares') + '</td><td>' + v(quantity, '—') + '</td>' +
+    '<td>' + (hasDist ? (v(distFrom, '—') + '&ndash;' + v(distTo, '—')) : '<span class="ph">&mdash;</span>') + '</td>' +
+    '<td>' + v(certNo, '—') + '</td><td>' + v(nominalValue, '—') + '</td><td>' + v(issuePrice, '—') + '</td>' +
+    '</tr></tbody></table>';
+
+  html += '<div class="sub-heading">Amount Called &amp; Unpaid (per security)</div>';
+  html += '<table class="fintable"><thead><tr><th>Called &amp; Paid (Rs.)</th><th>Called but Unpaid (Rs.)</th><th>Not yet Called (Rs.)</th><th>Total Called &amp; Due, all securities (Rs.)</th><th>Total Uncalled, all securities (Rs.)</th></tr></thead><tbody><tr>' +
+    '<td>' + v(calledPaid, '—') + '</td><td>' + v(calledUnpaid, '—') + '</td><td>' + v(uncalled, '—') + '</td>' +
+    '<td>' + (totalCalledDueAll !== '' ? fmtNum(totalCalledDueAll) : '<span class="ph">&mdash;</span>') + '</td>' +
+    '<td>' + (totalUncalledAll !== '' ? fmtNum(totalUncalledAll) : '<span class="ph">&mdash;</span>') + '</td>' +
+    '</tr></tbody></table>';
+
+  html += '<div class="cert-foot">If you have <strong>no objection</strong> to this transfer, no reply is necessary and the transfer will be registered by the Company in the ordinary course. If you <strong>object</strong> to the transfer, you must communicate your objection to the Company in writing within <strong>two weeks</strong> from the date of receipt of this notice' + (deadlineStr ? ', i.e. on or before <strong>' + deadlineStr + '</strong>,' : '') + ' failing which the Company shall proceed to register the transfer, and you shall be bound to pay the amount remaining unpaid on the securities as shown above.</div>';
+
+  html += '<div class="sign-block">';
+  html += '<div class="for-co">For ' + v(companyName, 'the Company') + '</div>';
+  html += '<div class="sign-row"><div><div class="sign-line"></div><div class="sign-meta"><b>' + v(signatoryName, 'Signatory Name') + '</b>' + v(signatoryDesignation, 'Company Secretary / Authorised Signatory') + '</div></div></div>';
+  html += '</div>';
+
+  document.getElementById('fivePreviewContent').innerHTML = html;
+}
+
+/* ================= Print / PDF ================= */
+function safePrint() {
+  try { window.print(); }
+  catch (e) {
+    try {
+      var win = window.open('', '_blank');
+      win.document.open();
+      win.document.write('<html><head><title>Share Certificate</title></head><body>' + document.getElementById('previewContent').innerHTML + '</body></html>');
+      win.document.close(); win.focus(); win.print();
+    } catch (e2) { alert('Printing is blocked in this view. Please open the saved HTML file directly in a browser tab and try again.'); }
+  }
+}
+
+/* ================= Copy as text ================= */
+function copyCertText() {
+  var text = document.getElementById('previewContent').innerText;
+  var done = function (ok) { flashDownloadStatus(ok ? 'Certificate text copied to clipboard.' : 'Could not copy — please select and copy the text manually.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallbackCopy(text, done); });
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, cb) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    cb(ok);
+  } catch (e) { cb(false); }
+}
+function flashDownloadStatus(msg) {
+  var status = document.getElementById('autosaveStatus');
+  if (!status) return;
+  var prev = status.textContent;
+  status.textContent = msg;
+  setTimeout(function () { status.textContent = prev; }, 3500);
+}
+function copyTransferText() {
+  var text = document.getElementById('transferPreviewContent').innerText;
+  var done = function (ok) { flashTransferStatus(ok ? 'Form text copied to clipboard.' : 'Could not copy — please select and copy the text manually.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallbackCopy(text, done); });
+  } else { fallbackCopy(text, done); }
+}
+function flashTransferStatus(msg) {
+  var status = document.getElementById('autosaveStatusTF');
+  if (!status) return;
+  var prev = status.textContent;
+  status.textContent = msg;
+  setTimeout(function () { status.textContent = prev; }, 3500);
+}
+function copyFiveText() {
+  var text = document.getElementById('fivePreviewContent').innerText;
+  var done = function (ok) { flashFiveStatus(ok ? 'Notice text copied to clipboard.' : 'Could not copy — please select and copy the text manually.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallbackCopy(text, done); });
+  } else { fallbackCopy(text, done); }
+}
+function flashFiveStatus(msg) {
+  var status = document.getElementById('autosaveStatusFV');
+  if (!status) return;
+  var prev = status.textContent;
+  status.textContent = msg;
+  setTimeout(function () { status.textContent = prev; }, 3500);
+}
+
+/* ================= Universal file offer: works standalone AND inside a published Claude Artifact ================= */
+function offerDownload(filename, blob, statusMsg, flashFn) {
+  flashFn = flashFn || flashDownloadStatus;
+  function classic() {
+    var url = URL.createObjectURL(blob);
+    triggerDownload(url, filename, false);
+    flashFn(statusMsg || (filename + ' downloading…'));
+  }
+  if (!window.claude || typeof window.claude.use !== 'function') { classic(); return; }
+  window.claude.use('downloads').then(function (downloads) {
+    if (!downloads) { classic(); return; }
+    downloads.save({ filename: filename, data: blob }).then(function () {
+      flashFn(statusMsg || (filename + ' saved.'));
+    }).catch(function (err) {
+      if (err && err.code === 'declined') return;
+      classic();
+    });
+  }).catch(classic);
+}
+function triggerDownload(blobOrUrl, filename, isDataUrl) {
+  var a = document.createElement('a');
+  a.href = blobOrUrl; a.download = filename; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  if (!isDataUrl) { setTimeout(function () { URL.revokeObjectURL(blobOrUrl); }, 4000); }
+}
+
+/* ================= Word export (.doc, MHTML-style — opens natively in Word) ================= */
+function buildWordHtml() {
+  var content = document.getElementById('previewContent').innerHTML;
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>Share Certificate</title>' +
+    '<style>body{font-family:Georgia,\'Times New Roman\',serif;font-size:12pt;color:#20272c;} .co-name{font-size:15pt;font-weight:bold;text-align:center;} .co-meta{text-align:center;font-size:10.5pt;} .cert-title{text-align:center;font-size:10.5pt;} .cert-title.big{font-size:13pt;font-weight:bold;letter-spacing:1px;} .authcap{text-align:center;font-style:italic;font-size:10.5pt;} .placement-row{display:flex;justify-content:space-between;font-size:11pt;margin-top:6px;} .res-body p{text-align:justify;margin:16px 0;} .meeting-line{text-align:center;margin:16px 0 4px;} .sign-block{margin-top:30px;} .sign-row{display:flex;gap:30px;} .sign-line{border-top:1px solid #444;width:180px;margin-bottom:4px;} .cert-foot{font-size:9.5pt;color:#555;margin-top:20px;border-top:1px solid #ccc;padding-top:8px;} table.fintable{border-collapse:collapse;width:100%;font-size:9.5pt;} table.fintable td,table.fintable th{border:1px solid #ccc;padding:5px 7px;} .annex-divider{margin-top:30px;border-top:3px double #9c7a34;padding-top:14px;} .annex-heading{text-align:center;font-weight:bold;font-size:13pt;} .annex-tag{text-align:center;font-size:9pt;letter-spacing:1px;color:#9c7a34;} .annex-sub{text-align:center;font-style:italic;font-size:9.5pt;} .ph{color:#999;font-style:italic;} hr{border:none;border-top:2px solid #9c7a34;}</style>' +
+    '</head><body>' + content + '</body></html>';
+}
+function downloadWord() {
+  var docHtml = buildWordHtml();
+  var companyName = (fieldVal('companyName') || 'Share_Certificate').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+  var certNo = (fieldVal('certNo') || '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+  var filename = (companyName || 'Share_Certificate') + (certNo ? '_Cert_' + certNo : '') + '.doc';
+  try {
+    if (window.Blob && window.URL && window.URL.createObjectURL) {
+      var blob = new Blob(['﻿', docHtml], { type: 'application/msword' });
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) { window.navigator.msSaveOrOpenBlob(blob, filename); return; }
+      offerDownload(filename, blob, 'Word file downloading…');
+      return;
+    }
+  } catch (e) {}
+  try {
+    var win = window.open('', '_blank');
+    if (win) { win.document.open(); win.document.write(docHtml); win.document.close(); flashDownloadStatus('Opened in a new tab — use your browser’s Save/Print to keep it.'); return; }
+  } catch (e) {}
+  alert('This file appears to be inside an embedded preview that blocks downloads. Please open the saved HTML file directly in a browser tab and try again, or use the "Copy Text" button instead.');
+}
+
+/* ================= Transfer form Word export (.doc) ================= */
+function buildTransferWordHtml() {
+  var content = document.getElementById('transferPreviewContent').innerHTML;
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>Securities Transfer Form</title>' +
+    '<style>body{font-family:Georgia,\'Times New Roman\',serif;font-size:11.5pt;color:#20272c;} .co-name{font-size:15pt;font-weight:bold;text-align:center;} .co-meta{text-align:center;font-size:10.5pt;} .cert-title{text-align:center;font-size:10.5pt;} .cert-title.big{font-size:13pt;font-weight:bold;letter-spacing:1px;} .placement-row{display:flex;justify-content:space-between;font-size:11pt;margin-top:6px;} .res-body p{text-align:justify;margin:16px 0;} .sub-heading{font-weight:bold;font-size:11pt;margin:20px 0 8px;} table.fintable{border-collapse:collapse;width:100%;font-size:9.5pt;} table.fintable td,table.fintable th{border:1px solid #ccc;padding:5px 7px;} .sign-block{margin-top:20px;} .sign-row{display:flex;gap:30px;} .sign-line{border-top:1px solid #444;width:180px;margin-bottom:4px;} .stamp-box{border:1px dashed #9c7a34;padding:10px;font-size:8.5pt;color:#9c7a34;text-align:center;width:120px;} .cert-foot{font-size:9.5pt;color:#555;margin-top:14px;} .ph{color:#999;font-style:italic;} hr{border:none;border-top:2px solid #9c7a34;}</style>' +
+    '</head><body>' + content + '</body></html>';
+}
+function downloadTransferWord() {
+  var docHtml = buildTransferWordHtml();
+  var companyName = (fieldVal('tfCompanyName') || 'Share_Transfer_Form').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+  var filename = (companyName || 'Share_Transfer_Form') + '_SH4.doc';
+  try {
+    if (window.Blob && window.URL && window.URL.createObjectURL) {
+      var blob = new Blob(['﻿', docHtml], { type: 'application/msword' });
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) { window.navigator.msSaveOrOpenBlob(blob, filename); return; }
+      offerDownload(filename, blob, 'Word file downloading…', flashTransferStatus);
+      return;
+    }
+  } catch (e) {}
+  try {
+    var win = window.open('', '_blank');
+    if (win) { win.document.open(); win.document.write(docHtml); win.document.close(); flashTransferStatus('Opened in a new tab — use your browser’s Save/Print to keep it.'); return; }
+  } catch (e) {}
+  alert('This file appears to be inside an embedded preview that blocks downloads. Please open the saved HTML file directly in a browser tab and try again, or use the "Copy Text" button instead.');
+}
+
+/* ================= SH-5 notice Word export (.doc) ================= */
+function buildFiveWordHtml() {
+  var content = document.getElementById('fivePreviewContent').innerHTML;
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>Notice for Transfer of Partly Paid Securities</title>' +
+    '<style>body{font-family:Georgia,\'Times New Roman\',serif;font-size:11.5pt;color:#20272c;} .co-name{font-size:15pt;font-weight:bold;text-align:center;} .co-meta{text-align:center;font-size:10.5pt;} .cert-title{text-align:center;font-size:10.5pt;} .cert-title.big{font-size:13pt;font-weight:bold;letter-spacing:1px;} .placement-row{display:flex;justify-content:space-between;font-size:11pt;margin-top:6px;} .res-body p{text-align:justify;margin:16px 0;} .sub-heading{font-weight:bold;font-size:11pt;margin:20px 0 8px;} table.fintable{border-collapse:collapse;width:100%;font-size:9.5pt;} table.fintable td,table.fintable th{border:1px solid #ccc;padding:5px 7px;} .sign-block{margin-top:20px;} .sign-row{display:flex;gap:30px;} .sign-line{border-top:1px solid #444;width:180px;margin-bottom:4px;} .cert-foot{font-size:9.5pt;color:#555;margin-top:14px;} .ph{color:#999;font-style:italic;} hr{border:none;border-top:2px solid #9c7a34;}</style>' +
+    '</head><body>' + content + '</body></html>';
+}
+function downloadFiveWord() {
+  var docHtml = buildFiveWordHtml();
+  var companyName = (fieldVal('fvCompanyName') || 'Partly_Paid_Notice').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+  var filename = (companyName || 'Partly_Paid_Notice') + '_SH5.doc';
+  try {
+    if (window.Blob && window.URL && window.URL.createObjectURL) {
+      var blob = new Blob(['﻿', docHtml], { type: 'application/msword' });
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) { window.navigator.msSaveOrOpenBlob(blob, filename); return; }
+      offerDownload(filename, blob, 'Word file downloading…', flashFiveStatus);
+      return;
+    }
+  } catch (e) {}
+  try {
+    var win = window.open('', '_blank');
+    if (win) { win.document.open(); win.document.write(docHtml); win.document.close(); flashFiveStatus('Opened in a new tab — use your browser’s Save/Print to keep it.'); return; }
+  } catch (e) {}
+  alert('This file appears to be inside an embedded preview that blocks downloads. Please open the saved HTML file directly in a browser tab and try again, or use the "Copy Text" button instead.');
+}
+
+/* ================= 3D tilt on the preview document(s) ================= */
+function initTiltFor(scroller, doc, isEditingFn) {
+  if (!scroller || !doc) return;
+  var raf = null;
+  scroller.addEventListener('mousemove', function (e) {
+    if (isEditingFn()) return;
+    var rect = doc.getBoundingClientRect();
+    var px = (e.clientX - rect.left) / rect.width;
+    var py = (e.clientY - rect.top) / rect.height;
+    var rx = (0.5 - py) * 4;
+    var ry = (px - 0.5) * 6;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function () { doc.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-2px)'; });
+  });
+  scroller.addEventListener('mouseleave', function () { if (!isEditingFn()) doc.style.transform = ''; });
+}
+function initTilt() {
+  initTiltFor(document.querySelector('#appGenerator .preview-scroll'), document.getElementById('previewContent'), function () { return EDIT_MODE; });
+  initTiltFor(document.querySelector('#appTransfer .preview-scroll'), document.getElementById('transferPreviewContent'), function () { return EDIT_MODE_TF; });
+  initTiltFor(document.querySelector('#appFive .preview-scroll'), document.getElementById('fivePreviewContent'), function () { return EDIT_MODE_FV; });
+}
+
+/* ================= Edit directly + Autosave ================= */
+var EDIT_MODE = false;
+var EDIT_MODE_TF = false;
+var EDIT_MODE_FV = false;
+var STORAGE_KEY = 'share_certificate_generator_draft_v1';
+var saveTimer = null;
+var FIELD_IDS = ['companyName','cin','regOffice','authCapital','certNo','folioNo','distFrom','distTo','issueDate','issuePlace',
+  'holderName','holderRelation','holderRelativeName','holderOccupation','holderAddress','shareClass','shareClassOther',
+  'numShares','nominalValue','paidStatus','paidUpValue','unpaidValue','dir1Name','dir1Din','dir2Name','dir2Din','thirdSigRole','thirdSigName'];
+var TF_FIELD_IDS = ['tfCompanyName','tfCin','tfStockExchange','tfExecDate','tfFolioNo','tfKind','tfKindOther',
+  'tfNominalValue','tfCalledUp','tfPaidUp','tfNumSecurities','tfConsideration','tfDistFrom','tfDistTo','tfCertNos','tfStampValue',
+  'tfTransferor1','tfTransferor2','tfWitnessName','tfWitnessAddress',
+  'tfeName','tfeRelation','tfeRelativeName','tfeOccupation','tfeExistingFolio','tfeAddress','tfeEmail','tfFema','tfEnclosures'];
+var FV_FIELD_IDS = ['fvCompanyName','fvCin','fvRegOffice','fvNoticeDate',
+  'fvTransferorName','fvTransferorAddress','fvTransfereeName','fvTransfereeAddress',
+  'fvKind','fvQuantity','fvDistFrom','fvDistTo','fvCertNo','fvNominalValue','fvIssuePrice',
+  'fvCalledPaid','fvCalledUnpaid','fvUncalled','fvSignatoryName','fvSignatoryDesignation'];
+
+function toggleEditModeFive() {
+  if (EDIT_MODE_FV) { exitEditModeFive(); return; }
+  EDIT_MODE_FV = true;
+  var doc = document.getElementById('fivePreviewContent');
+  doc.style.transform = '';
+  doc.setAttribute('contenteditable', 'true');
+  doc.focus();
+  document.getElementById('editToggleBtnFV').textContent = 'Editing…';
+  document.getElementById('editToggleBtnFV').classList.add('active');
+  document.getElementById('editBannerFV').classList.add('show');
+  scheduleSave();
+}
+function exitEditModeFive() {
+  EDIT_MODE_FV = false;
+  var doc = document.getElementById('fivePreviewContent');
+  doc.removeAttribute('contenteditable');
+  doc.style.transform = '';
+  document.getElementById('editToggleBtnFV').textContent = 'Edit directly';
+  document.getElementById('editToggleBtnFV').classList.remove('active');
+  document.getElementById('editBannerFV').classList.remove('show');
+  scheduleSave();
+}
+function regenerateFromFormFive() {
+  if (EDIT_MODE_FV) {
+    var ok = window.confirm('This will discard your manual edits and rebuild the notice from the form fields. Continue?');
+    if (!ok) return;
+  }
+  exitEditModeFive();
+  renderFivePreview();
+  scheduleSave();
+}
+
+function toggleEditModeTransfer() {
+  if (EDIT_MODE_TF) { exitEditModeTransfer(); return; }
+  EDIT_MODE_TF = true;
+  var doc = document.getElementById('transferPreviewContent');
+  doc.style.transform = '';
+  doc.setAttribute('contenteditable', 'true');
+  doc.focus();
+  document.getElementById('editToggleBtnTF').textContent = 'Editing…';
+  document.getElementById('editToggleBtnTF').classList.add('active');
+  document.getElementById('editBannerTF').classList.add('show');
+  scheduleSave();
+}
+function exitEditModeTransfer() {
+  EDIT_MODE_TF = false;
+  var doc = document.getElementById('transferPreviewContent');
+  doc.removeAttribute('contenteditable');
+  doc.style.transform = '';
+  document.getElementById('editToggleBtnTF').textContent = 'Edit directly';
+  document.getElementById('editToggleBtnTF').classList.remove('active');
+  document.getElementById('editBannerTF').classList.remove('show');
+  scheduleSave();
+}
+function regenerateFromFormTransfer() {
+  if (EDIT_MODE_TF) {
+    var ok = window.confirm('This will discard your manual edits and rebuild the form from the form fields. Continue?');
+    if (!ok) return;
+  }
+  exitEditModeTransfer();
+  renderTransferPreview();
+  scheduleSave();
+}
+
+function toggleEditMode() {
+  if (EDIT_MODE) { exitEditMode(); return; }
+  EDIT_MODE = true;
+  var doc = document.getElementById('previewContent');
+  doc.style.transform = '';
+  doc.setAttribute('contenteditable', 'true');
+  doc.focus();
+  document.getElementById('editToggleBtn').textContent = 'Editing…';
+  document.getElementById('editToggleBtn').classList.add('active');
+  document.getElementById('editBanner').classList.add('show');
+  scheduleSave();
+}
+function exitEditMode() {
+  EDIT_MODE = false;
+  var doc = document.getElementById('previewContent');
+  doc.removeAttribute('contenteditable');
+  doc.style.transform = '';
+  document.getElementById('editToggleBtn').textContent = 'Edit directly';
+  document.getElementById('editToggleBtn').classList.remove('active');
+  document.getElementById('editBanner').classList.remove('show');
+  scheduleSave();
+}
+function regenerateFromForm() {
+  if (EDIT_MODE) {
+    var ok = window.confirm('This will discard your manual edits and rebuild the certificate from the form fields. Continue?');
+    if (!ok) return;
+  }
+  exitEditMode();
+  renderPreview();
+  scheduleSave();
+}
+function scheduleSave() {
+  var status = document.getElementById('autosaveStatus');
+  if (status) { status.textContent = 'Saving…'; status.classList.add('saving'); }
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 500);
+}
+function collectFields() {
+  var out = {};
+  FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) out[id] = el.value; });
+  return out;
+}
+function collectTransferFields() {
+  var out = {};
+  TF_FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) out[id] = el.value; });
+  return out;
+}
+function collectFiveFields() {
+  var out = {};
+  FV_FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) out[id] = el.value; });
+  return out;
+}
+function saveState() {
+  try {
+    var state = {
+      fields: collectFields(),
+      includeSeal: document.getElementById('includeSeal').checked,
+      includeReverse: document.getElementById('includeReverse').checked,
+      jointHolders: collectJointHolders(),
+      editMode: EDIT_MODE,
+      manualHtml: EDIT_MODE ? document.getElementById('previewContent').innerHTML : null,
+      tfFields: collectTransferFields(),
+      editModeTF: EDIT_MODE_TF,
+      manualHtmlTF: EDIT_MODE_TF ? document.getElementById('transferPreviewContent').innerHTML : null,
+      fvFields: collectFiveFields(),
+      editModeFV: EDIT_MODE_FV,
+      manualHtmlFV: EDIT_MODE_FV ? document.getElementById('fivePreviewContent').innerHTML : null,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    [document.getElementById('autosaveStatus'), document.getElementById('autosaveStatusTF'), document.getElementById('autosaveStatusFV')].forEach(function (status) {
+      if (!status) return;
+      status.classList.remove('saving');
+      var t = new Date();
+      status.textContent = 'Saved ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+    });
+  } catch (e) {
+    [document.getElementById('autosaveStatus'), document.getElementById('autosaveStatusTF'), document.getElementById('autosaveStatusFV')].forEach(function (status) {
+      if (status) { status.classList.remove('saving'); status.textContent = 'Autosave unavailable'; }
+    });
+  }
+}
+function restoreState() {
+  var raw;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return { sh1: false, tf: false, fv: false }; }
+  if (!raw) return { sh1: false, tf: false, fv: false };
+  var state;
+  try { state = JSON.parse(raw); } catch (e) { return { sh1: false, tf: false, fv: false }; }
+  if (!state || !state.fields) return { sh1: false, tf: false, fv: false };
+
+  Object.keys(state.fields).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = state.fields[id]; });
+  document.getElementById('includeSeal').checked = state.includeSeal !== false;
+  document.getElementById('includeReverse').checked = !!state.includeReverse;
+  clearJointHolders();
+  (state.jointHolders || []).forEach(function (j) { addJointHolder(j); });
+  applyConditionals();
+
+  if (state.editMode && state.manualHtml) {
+    EDIT_MODE = true;
+    var doc = document.getElementById('previewContent');
+    doc.innerHTML = state.manualHtml;
+    doc.setAttribute('contenteditable', 'true');
+    document.getElementById('editToggleBtn').textContent = 'Editing…';
+    document.getElementById('editToggleBtn').classList.add('active');
+    document.getElementById('editBanner').classList.add('show');
+  } else {
+    renderPreview();
+  }
+
+  if (state.tfFields) {
+    Object.keys(state.tfFields).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = state.tfFields[id]; });
+    applyTransferConditionals();
+    if (state.editModeTF && state.manualHtmlTF) {
+      EDIT_MODE_TF = true;
+      var docTF = document.getElementById('transferPreviewContent');
+      docTF.innerHTML = state.manualHtmlTF;
+      docTF.setAttribute('contenteditable', 'true');
+      document.getElementById('editToggleBtnTF').textContent = 'Editing…';
+      document.getElementById('editToggleBtnTF').classList.add('active');
+      document.getElementById('editBannerTF').classList.add('show');
+    } else {
+      renderTransferPreview();
+    }
+  }
+
+  if (state.fvFields) {
+    Object.keys(state.fvFields).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = state.fvFields[id]; });
+    if (state.editModeFV && state.manualHtmlFV) {
+      EDIT_MODE_FV = true;
+      var docFV = document.getElementById('fivePreviewContent');
+      docFV.innerHTML = state.manualHtmlFV;
+      docFV.setAttribute('contenteditable', 'true');
+      document.getElementById('editToggleBtnFV').textContent = 'Editing…';
+      document.getElementById('editToggleBtnFV').classList.add('active');
+      document.getElementById('editBannerFV').classList.add('show');
+    } else {
+      renderFivePreview();
+    }
+  }
+
+  var status = document.getElementById('autosaveStatus');
+  if (status && state.savedAt) {
+    var d = new Date(state.savedAt);
+    status.textContent = 'Restored draft · saved ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  var statusTF = document.getElementById('autosaveStatusTF');
+  if (statusTF && state.savedAt) {
+    var d2 = new Date(state.savedAt);
+    statusTF.textContent = 'Restored draft · saved ' + String(d2.getHours()).padStart(2, '0') + ':' + String(d2.getMinutes()).padStart(2, '0');
+  }
+  var statusFV = document.getElementById('autosaveStatusFV');
+  if (statusFV && state.savedAt) {
+    var d3 = new Date(state.savedAt);
+    statusFV.textContent = 'Restored draft · saved ' + String(d3.getHours()).padStart(2, '0') + ':' + String(d3.getMinutes()).padStart(2, '0');
+  }
+  return { sh1: true, tf: !!state.tfFields, fv: !!state.fvFields };
+}
+function clearSavedDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+/* ================= Sample data ================= */
+function loadSample() {
+  var samples = {
+    companyName: 'Sample Ventures Private Limited', cin: 'U74999DL2015PTC280001',
+    regOffice: '301, Tech Park, Baner Road, Pune, Maharashtra – 411045',
+    authCapital: 'Rs. 1,00,00,000 divided into 10,00,000 Equity Shares of Rs. 10 each',
+    certNo: '0007', folioNo: '0005', distFrom: '60001', distTo: '65000',
+    issueDate: '2026-06-15', issuePlace: 'Pune',
+    holderName: 'Mr. Rohan Arvind Deshmukh', holderRelation: 'S/o', holderRelativeName: 'Arvind M. Deshmukh',
+    holderOccupation: 'Service', holderAddress: 'B-204, Riverdale Residency, Kothrud, Pune, Maharashtra – 411038',
+    shareClass: 'Equity Shares', numShares: '5000', nominalValue: '10', paidStatus: 'full', paidUpValue: '10', unpaidValue: '',
+    dir1Name: 'Anjali R. Deshmukh', dir1Din: '01234567', dir2Name: 'Karan S. Mehta', dir2Din: '07654321',
+    thirdSigRole: 'Company Secretary', thirdSigName: ''
+  };
+  Object.keys(samples).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = samples[id]; });
+  document.getElementById('includeSeal').checked = true;
+  document.getElementById('includeReverse').checked = false;
+  clearJointHolders();
+  addJointHolder({ name: 'Mrs. Priya Rohan Deshmukh', relation: 'W/o', relativeName: 'Rohan A. Deshmukh' });
+  applyConditionals();
+  exitEditMode();
+  scheduleSave();
+}
+function clearForm() {
+  var ok = window.confirm('Clear all fields and the saved draft? This cannot be undone.');
+  if (!ok) return;
+  FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('includeSeal').checked = true;
+  document.getElementById('includeReverse').checked = false;
+  clearJointHolders();
+  applyConditionals();
+  exitEditMode();
+  clearSavedDraft();
+  scheduleSave();
+}
+
+/* ================= Transfer form sample data / clear ================= */
+function loadTransferSample() {
+  var samples = {
+    tfCompanyName: 'Sample Ventures Private Limited', tfCin: 'U74999DL2015PTC280001', tfStockExchange: '',
+    tfExecDate: '2026-08-10', tfFolioNo: '0005',
+    tfKind: 'Equity Shares', tfKindOther: '',
+    tfNominalValue: '10', tfCalledUp: '10', tfPaidUp: '10',
+    tfNumSecurities: '1000', tfConsideration: '150000',
+    tfDistFrom: '60001', tfDistTo: '61000', tfCertNos: '0007', tfStampValue: '',
+    tfTransferor1: 'Mr. Rohan Arvind Deshmukh', tfTransferor2: '',
+    tfWitnessName: 'Mr. Suresh N. Patil', tfWitnessAddress: '14, Anand Society, Kothrud, Pune, Maharashtra – 411038',
+    tfeName: 'Ms. Priya Anil Kulkarni', tfeRelation: 'D/o', tfeRelativeName: 'Anil V. Kulkarni',
+    tfeOccupation: 'Business', tfeExistingFolio: '',
+    tfeAddress: 'C-12, Lakeview Apartments, Aundh, Pune, Maharashtra – 411007', tfeEmail: 'priya.kulkarni@example.com',
+    tfFema: 'not_required', tfEnclosures: 'Original Share Certificate No. 0007'
+  };
+  Object.keys(samples).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = samples[id]; });
+  applyTransferConditionals();
+  exitEditModeTransfer();
+  scheduleSave();
+}
+function clearTransferForm() {
+  var ok = window.confirm('Clear all transfer form fields and the saved draft? This cannot be undone.');
+  if (!ok) return;
+  TF_FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  applyTransferConditionals();
+  exitEditModeTransfer();
+  scheduleSave();
+}
+
+/* ================= SH-5 notice sample data / clear ================= */
+function loadFiveSample() {
+  var samples = {
+    fvCompanyName: 'Sample Ventures Private Limited', fvCin: 'U74999DL2015PTC280001',
+    fvRegOffice: '301, Tech Park, Baner Road, Pune, Maharashtra – 411045',
+    fvNoticeDate: '2026-08-12',
+    fvTransferorName: 'Mr. Rohan Arvind Deshmukh', fvTransferorAddress: 'B-204, Riverdale Residency, Kothrud, Pune, Maharashtra – 411038',
+    fvTransfereeName: 'Ms. Priya Anil Kulkarni', fvTransfereeAddress: 'C-12, Lakeview Apartments, Aundh, Pune, Maharashtra – 411007',
+    fvKind: 'Equity Shares', fvQuantity: '1000', fvDistFrom: '60001', fvDistTo: '61000', fvCertNo: '0007',
+    fvNominalValue: '10', fvIssuePrice: '10', fvCalledPaid: '5', fvCalledUnpaid: '0', fvUncalled: '5',
+    fvSignatoryName: 'Anjali R. Deshmukh', fvSignatoryDesignation: 'Company Secretary'
+  };
+  Object.keys(samples).forEach(function (id) { var el = document.getElementById(id); if (el) el.value = samples[id]; });
+  exitEditModeFive();
+  renderFivePreview();
+  scheduleSave();
+}
+function clearFiveForm() {
+  var ok = window.confirm('Clear all notice fields and the saved draft? This cannot be undone.');
+  if (!ok) return;
+  FV_FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  exitEditModeFive();
+  renderFivePreview();
+  scheduleSave();
+}
+
+/* ================= Top-level tab switching ================= */
+function showTopTab(which) {
+  var gen = document.getElementById('appGenerator');
+  var transfer = document.getElementById('appTransfer');
+  var five = document.getElementById('appFive');
+  var compliances = document.getElementById('appCompliances');
+  var guide = document.getElementById('appGuide');
+  var btnGen = document.getElementById('tabBtnGenerator');
+  var btnTransfer = document.getElementById('tabBtnTransfer');
+  var btnFive = document.getElementById('tabBtnFive');
+  var btnCompliances = document.getElementById('tabBtnCompliances');
+  var btnGuide = document.getElementById('tabBtnGuide');
+  gen.classList.toggle('hide', which !== 'generator');
+  transfer.classList.toggle('hide', which !== 'transfer');
+  five.classList.toggle('hide', which !== 'five');
+  compliances.classList.toggle('show', which === 'compliances');
+  guide.classList.toggle('show', which === 'guide');
+  btnGen.classList.toggle('active', which === 'generator');
+  btnTransfer.classList.toggle('active', which === 'transfer');
+  btnFive.classList.toggle('active', which === 'five');
+  btnCompliances.classList.toggle('active', which === 'compliances');
+  btnGuide.classList.toggle('active', which === 'guide');
+}
+
+/* ================= Init ================= */
+function init() {
+  var fy = document.getElementById('footYear');
+  if (fy) fy.textContent = new Date().getFullYear();
+  document.getElementById('formPanel').addEventListener('input', function () { renderPreview(); scheduleSave(); });
+  document.getElementById('formPanel').addEventListener('change', function () { applyConditionals(); scheduleSave(); });
+  document.getElementById('previewContent').addEventListener('input', function () { if (EDIT_MODE) scheduleSave(); });
+
+  document.getElementById('transferFormPanel').addEventListener('input', function () { renderTransferPreview(); scheduleSave(); });
+  document.getElementById('transferFormPanel').addEventListener('change', function () { applyTransferConditionals(); scheduleSave(); });
+  document.getElementById('transferPreviewContent').addEventListener('input', function () { if (EDIT_MODE_TF) scheduleSave(); });
+
+  document.getElementById('fiveFormPanel').addEventListener('input', function () { renderFivePreview(); scheduleSave(); });
+  document.getElementById('fiveFormPanel').addEventListener('change', function () { renderFivePreview(); scheduleSave(); });
+  document.getElementById('fivePreviewContent').addEventListener('input', function () { if (EDIT_MODE_FV) scheduleSave(); });
+
+  applyConditionals();
+  applyTransferConditionals();
+  var restored = restoreState();
+  if (!restored.sh1) loadSample();
+  if (!restored.tf) loadTransferSample();
+  if (!restored.fv) loadFiveSample();
+  initTilt();
+
+  window.addEventListener('beforeunload', function () { if (saveTimer) { clearTimeout(saveTimer); saveState(); } });
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GSTR-9 &amp; GSTR-9C Annual Return Reckoner · FY 2025-26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FA;--card:#FFFFFF;--ink:#0F1E36;--muted:#5C6283;--line:#E2E5F0;--soft:#F8F9FD;
+  --indigo:#1D4ED8;--violet:#2563EB;--pink:#0E7490;--teal:#0F766E;--coral:#B91C1C;--amber:#B45309;--sky:#0284C7;--green:#15803D;--red:#B91C1C;
+  --r:16px;--sh:0 1px 2px rgba(26,29,58,.05),0 8px 24px -12px rgba(26,29,58,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:Manrope,Inter,system-ui,sans-serif;margin:0;line-height:1.25;letter-spacing:-.01em}
+.mono,code{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:.86em}
+a{color:var(--indigo)}
+abbr{text-decoration:none;border-bottom:1px dotted #9aa0c3;cursor:help}
+.ff{color:var(--muted);font-size:.9em}
+.hero .ff{color:rgba(255,255,255,.72)}.hero abbr{border-bottom-color:rgba(255,255,255,.6)}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;background:linear-gradient(125deg,#0B1F44 0%,#123B7A 55%,#1E5BB8 100%);color:#fff;padding:28px 18px 26px}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;filter:blur(2px);opacity:.22}
+.hero:before{width:340px;height:340px;right:-80px;top:-120px;background:radial-gradient(circle,#38BDF8 0%,transparent 70%)}
+.hero:after{width:260px;height:260px;left:-90px;bottom:-140px;background:radial-gradient(circle,#60A5FA 0%,transparent 70%)}
+.wrap{max-width:1180px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{display:inline-flex;gap:8px;align-items:center;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.16);padding:6px 12px;border-radius:999px}
+.hero h1{font-size:clamp(26px,4.6vw,42px);font-weight:800;margin:14px 0 8px}
+.hero p{margin:0;max-width:720px;color:rgba(255,255,255,.88)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:20px}
+.kpi{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px 14px;backdrop-filter:blur(6px)}
+.kpi b{display:block;font-family:Manrope,sans-serif;font-size:22px;font-weight:800}
+.kpi span{font-size:12px;color:rgba(255,255,255,.85)}
+
+/* STICKY BAR */
+.bar{position:sticky;top:0;z-index:20;background:rgba(244,245,251,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wrap{padding:10px 14px 0}
+.searchrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search{flex:1 1 260px;position:relative}
+.search input{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 14px 0 40px;font:inherit;background:#fff;outline:none}
+.search input:focus{border-color:var(--indigo);box-shadow:0 0 0 4px rgba(29,78,216,.12)}
+.search svg{position:absolute;left:13px;top:14px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font:600 14px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:#c7cbe0}
+.btn.pri{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border-color:transparent}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:44px;padding:0 12px;font-size:13px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 0 10px;scrollbar-width:thin}
+.tab{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font:600 13.5px Inter,sans-serif;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.tab i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.tab.on{color:#fff;border-color:transparent;background:#123B7A}
+.tab .cnt{font-style:normal;font-size:11px;background:#FDE68A;color:#78350F;border-radius:999px;padding:1px 7px;display:none}
+.tab.hit .cnt{display:inline-block}
+
+/* LAYOUT */
+main .wrap{padding:22px 14px 60px}
+.panel{display:none}
+.panel.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sechead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 0 16px;flex-wrap:wrap}
+.sechead h2{font-size:26px;font-weight:800}
+.sechead .chip{font-size:12px}
+.lead{color:var(--muted);margin:0 0 18px;max-width:860px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;border:1px solid rgba(226,229,240,.7);position:relative}
+.card h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.card.accent{border-top:5px solid var(--c,var(--indigo))}
+.card.click{cursor:pointer;transition:transform .15s, box-shadow .15s}
+.card.click:hover{transform:translateY(-2px);box-shadow:0 12px 30px -14px rgba(29,78,216,.45)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#E8F0FE;color:var(--indigo)}
+.chip.teal{background:#E0F7F5;color:#0B7F7B}.chip.coral{background:#FFE9E7;color:#C2413B}.chip.amber{background:#FFF4DB;color:#A16207}.chip.green{background:#E3F8EA;color:#15803D}.chip.sky{background:#E0F2FE;color:#0369A1}.chip.violet{background:#E0ECFF;color:#1E40AF}.chip.grey{background:#EEF0F5;color:#4B5070}
+.mt{margin-top:16px}.mt2{margin-top:26px}
+.callout{border-radius:14px;padding:14px 16px;background:#FFFBEB;border:1px solid #FDE68A;margin:16px 0}
+.callout b.t{display:block;font-family:Manrope,sans-serif;margin-bottom:4px;color:#9A3412}
+.callout.blue{background:#EFF6FF;border-color:#BFDBFE}
+.callout.blue b.t{color:#1E3A8A}
+.callout.green{background:#F0FDF4;border-color:#A7F3D0}
+.callout.green b.t{color:#166534}
+
+/* TABLES */
+.tw{overflow-x:auto;border-radius:14px;border:1px solid var(--line);background:#fff}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--soft);text-align:left;font:700 12px Inter,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #EEF0F6;vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#FAFAFE}
+td.amt,th.amt{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.tb{font-family:"JetBrains Mono",monospace;font-weight:600;color:var(--indigo);white-space:nowrap}
+tr.tot td{font-weight:700;background:#EEF4FF}
+tr.mark td{background:#FFF8E6}
+.yes{color:var(--green);font-weight:700}.no{color:var(--red);font-weight:700}.opt{color:#A16207;font-weight:700}
+.diff{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:#B45309;border-radius:6px;padding:1px 6px;margin-left:6px}
+
+/* SLABS */
+.slab{border-radius:18px;padding:18px;color:#fff;position:relative;overflow:hidden}
+.slab .big{font-family:Manrope,sans-serif;font-size:28px;font-weight:800}
+.slab .row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid rgba(255,255,255,.25);font-size:14px}
+.slab .row:first-of-type{margin-top:10px}
+.s1{background:linear-gradient(135deg,#0E7490,#0F766E)}.s2{background:linear-gradient(135deg,#1D4ED8,#2563EB)}.s3{background:linear-gradient(135deg,#0B1F44,#1E40AF)}
+
+/* TIMELINE */
+.tl{position:relative;margin:0;padding:0 0 0 26px;list-style:none}
+.tl:before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:3px;border-radius:3px;background:linear-gradient(#1D4ED8,#0E7490)}
+.tl li{position:relative;background:#fff;border-radius:14px;box-shadow:var(--sh);padding:12px 14px;margin-bottom:10px}
+.tl li:before{content:"";position:absolute;left:-23px;top:16px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--indigo)}
+.tl li.past{opacity:.72}.tl li.past:before{border-color:#9AA0C3;background:#9AA0C3}
+.tl li.next:before{border-color:var(--coral);box-shadow:0 0 0 5px rgba(15,118,110,.2)}
+.tl .d{font-family:"JetBrains Mono",monospace;font-weight:600;color:var(--indigo);font-size:13px}
+.tl .st{float:right;margin-left:8px}
+
+/* CALCULATORS */
+.calc{border-top:5px solid var(--c,var(--indigo))}
+.calc .hd{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.calc .no{font-family:Manrope,sans-serif;font-weight:800;color:#fff;background:var(--c,var(--indigo));border-radius:10px;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px}
+.calc .ti{display:flex;gap:10px;align-items:flex-start}
+.calc .ti p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.calc .acts{display:flex;gap:8px;flex-wrap:wrap}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.fsec{grid-column:1/-1;font:700 12px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--c,var(--indigo));border-bottom:1px dashed var(--line);padding:8px 0 4px;margin-top:4px}
+.f label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.f label .tg{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--c,var(--indigo));background:var(--soft);border-radius:5px;padding:1px 5px;margin-right:5px}
+.f input,.f select{width:100%;min-height:44px;border:1.5px solid var(--line);border-radius:10px;padding:0 12px;font:15px Inter,sans-serif;background:#fff;color:var(--ink);outline:none}
+.f input.amt{text-align:right;font-variant-numeric:tabular-nums}
+.f input:focus,.f select:focus{border-color:var(--c,var(--indigo));box-shadow:0 0 0 4px rgba(29,78,216,.10)}
+.f small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.res{margin-top:16px;border-radius:14px;background:var(--soft);border:1px solid var(--line);padding:14px}
+.res:empty{display:none}
+.verdict{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.vbox{flex:1 1 180px;border-radius:12px;padding:12px 14px;background:#fff;border:1px solid var(--line)}
+.vbox .k{font-size:12px;color:var(--muted);font-weight:600}
+.vbox .v{font-family:Manrope,sans-serif;font-size:20px;font-weight:800}
+.vbox.ok{border-left:5px solid var(--green)}.vbox.warn{border-left:5px solid var(--amber)}.vbox.bad{border-left:5px solid var(--red)}.vbox.info{border-left:5px solid var(--indigo)}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.cases{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+
+/* CHECKLIST */
+.prog{height:12px;border-radius:999px;background:#E6E8F2;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0F766E,#1D4ED8);transition:width .3s}
+.ck{list-style:none;margin:0;padding:0}
+.ck li{display:flex;gap:12px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid #EEF0F6;cursor:pointer;min-height:44px}
+.ck li:last-child{border-bottom:0}
+.ck .bx{flex:0 0 24px;width:24px;height:24px;border-radius:8px;border:2px solid #C3C8DE;display:inline-flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s}
+.ck li.done .bx{background:var(--teal);border-color:var(--teal)}
+.ck li.done .bx:after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.ck li.done span.t{color:var(--muted);text-decoration:line-through}
+
+/* STEPS / ERRORS */
+.steps{counter-reset:s;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.step{background:#fff;border-radius:16px;box-shadow:var(--sh);padding:16px 16px 16px 64px;position:relative;min-height:84px}
+.step:before{counter-increment:s;content:counter(s);position:absolute;left:14px;top:16px;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--indigo),var(--pink));color:#fff;font:800 16px Manrope,sans-serif;display:flex;align-items:center;justify-content:center}
+.step b{display:block;font-family:Manrope,sans-serif;margin-bottom:3px}
+.err{display:flex;gap:12px;background:#fff;border-radius:14px;box-shadow:var(--sh);padding:14px}
+.err .n{flex:0 0 34px;height:34px;border-radius:10px;background:#FFE9E7;color:#C2413B;font:800 15px Manrope,sans-serif;display:flex;align-items:center;justify-content:center}
+
+/* FAQ */
+.faq{background:#fff;border-radius:14px;box-shadow:var(--sh);margin-bottom:10px;overflow:hidden}
+.faq button{width:100%;text-align:left;background:none;border:0;padding:15px 16px;min-height:52px;font:600 15px Inter,sans-serif;color:var(--ink);cursor:pointer;display:flex;gap:12px;align-items:center}
+.faq button .q{flex:0 0 auto;font:800 13px Manrope,sans-serif;color:#fff;background:var(--violet);border-radius:8px;padding:3px 8px}
+.faq button:after{content:"+";margin-left:auto;font-size:22px;color:var(--violet)}
+.faq.open button:after{content:"–"}
+.faq .a{display:none;padding:0 16px 16px 16px;color:#3a3f63}
+.faq.open .a{display:block}
+
+/* MODAL (sized to content) */
+.ov{position:fixed;inset:0;background:rgba(17,19,45,.45);z-index:50;display:none;align-items:center;justify-content:center;padding:16px}
+.ov.on{display:flex}
+.md{background:#fff;border-radius:20px;width:auto;max-width:min(560px,94vw);min-width:min(320px,94vw);max-height:84vh;overflow:auto;padding:22px;box-shadow:0 30px 80px -20px rgba(17,19,45,.5);animation:pop .2s ease}
+.md.wide{max-width:min(820px,94vw)}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+.md .x{float:right;min-width:44px;min-height:44px;border-radius:12px;border:0;background:var(--soft);font-size:20px;cursor:pointer}
+.md h3{font-size:20px;margin:6px 0 10px}
+@media (max-width:640px){
+  .ov{align-items:flex-end;padding:0}
+  .md{max-width:100vw;width:100%;border-radius:20px 20px 0 0;max-height:80vh}
+  .sechead h2{font-size:22px}
+}
+.hidden-s{display:none!important}
+.empty{display:none;text-align:center;color:var(--muted);padding:30px}
+/* clickable rows & links */
+tr.click{cursor:pointer}tr.click:hover td{background:#EEF4FF}
+.go{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--indigo);background:#E8F0FE;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.lnk{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;text-decoration:none;font-weight:600;font-size:14px;margin:6px 8px 0 0}
+.lnk.alt{background:#fff;color:var(--indigo);border:1.5px solid #BFDBFE}
+.res-card{display:block;text-decoration:none;color:var(--ink)}
+.res-card .u{font-size:12px;color:var(--muted);word-break:break-all;margin-top:6px}
+/* status badges */
+.st-m{display:inline-block;font-size:12px;font-weight:700;color:#15803D;background:#E3F8EA;border-radius:999px;padding:2px 10px}
+.st-o{display:inline-block;font-size:12px;font-weight:700;color:#A16207;background:#FFF4DB;border-radius:999px;padding:2px 10px}
+.st-a{display:inline-block;font-size:12px;font-weight:700;color:#0369A1;background:#E0F2FE;border-radius:999px;padding:2px 10px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.seg button{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font:600 13px Inter,sans-serif;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff;border-color:transparent}
+/* flow */
+.flowwrap{overflow-x:auto;background:#fff;border-radius:18px;box-shadow:var(--sh);border:1px solid var(--line);padding:8px}
+.flowwrap svg{display:block;min-width:900px;width:100%;height:auto}
+.fl{fill:none;stroke:#CBD0E3;stroke-width:2;stroke-dasharray:6 8;animation:dash 1.1s linear infinite;transition:stroke .3s,stroke-width .3s,opacity .3s}
+.fl.on{stroke:var(--fc,#1D4ED8);stroke-width:4;opacity:1}
+.dim .fl:not(.on){opacity:.28}
+@keyframes dash{to{stroke-dashoffset:-28}}
+.bx rect{transition:all .3s}
+.bx text{font-family:Inter,sans-serif}
+.bx.on rect{stroke-width:3.5;filter:drop-shadow(0 6px 14px rgba(29,78,216,.35))}
+.dim .bx:not(.on){opacity:.55}
+.bx{cursor:pointer}
+.colh{font:800 15px Manrope,sans-serif;fill:#1A1D3A}
+.flowctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.cap{background:#F5F9FF;border:1px solid #BFDBFE;border-radius:16px;padding:14px 16px;min-height:96px}
+.cap .n{font:800 12px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--violet)}
+.cap h4{font-size:18px;margin:4px 0 6px}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dots i{width:11px;height:11px;border-radius:50%;background:#D9DCEB;cursor:pointer;display:inline-block}
+.dots i.on{background:var(--violet);transform:scale(1.25)}
+.steplist{counter-reset:fs;list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.steplist li{background:#fff;border-radius:12px;border:1px solid var(--line);padding:10px 12px 10px 46px;position:relative;cursor:pointer;min-height:44px;font-size:14px}
+.steplist li:before{counter-increment:fs;content:counter(fs);position:absolute;left:10px;top:10px;width:26px;height:26px;border-radius:8px;background:var(--fc,#1D4ED8);color:#fff;font:800 12px Manrope,sans-serif;display:flex;align-items:center;justify-content:center}
+.steplist li.on{border-color:var(--violet);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+footer{color:var(--muted);font-size:12.5px;text-align:center;padding:10px 14px 40px}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow noabbr">GST Annual Return · FY 2025-26</span>
+    <h1>GSTR-9 &amp; GSTR-9C Reckoner</h1>
+    <p>Law, FY 2025-26 changes, table-wise reporting, cross-year ITC, reconciliation, late fee, timelines, CBIC notifications and GSTN advisories — with eight working calculators.</p>
+    <div class="kpis">
+      <div class="kpi"><b id="kCut">—</b><span>days to 30.11.2026 · ITC / credit note / rectification cut-off</span></div>
+      <div class="kpi"><b id="kDue">—</b><span>days to 31.12.2026 · due date of GSTR-9 &amp; GSTR-9C</span></div>
+      <div class="kpi"><b>₹5 crore</b><span>PAN aggregate turnover above which GSTR-9C applies</span></div>
+      <div class="kpi"><b>30.06.2030</b><span>outer date for section 74A notice for FY 2025-26</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="searchrow">
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C6283" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search tables, rules, circulars, FAQs… e.g. 6A1, Rule 37, late fee">
+      </div>
+      <button class="btn pri" id="sampleAll" type="button">Load sample (all calculators)</button>
+      <button class="btn" id="clearAll" type="button">Clear all</button>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
+</div>
+
+<main><div class="wrap" id="panels"></div></main>
+
+<footer>Section references are to the CGST Act, 2017; rules to the CGST Rules, 2017; State GST provisions apply mutatis mutandis. All examples and samples use one illustrative company, M/s Sample Industries. Read notifications, form instructions and GSTN advisories in original before filing.</footer>
+
+<div class="ov" id="ov"><div class="md" id="md"></div></div>
+
+<script>
+/* ===================== HELPERS (ES5) ===================== */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function inr(n,dec){
+  if(n===null||n===undefined||isNaN(n))return '—';
+  var neg=n<0;var a=Math.abs(n);var r=dec?a.toFixed(2):String(Math.round(a));
+  var p=r.split('.');var s=p[0];var l3=s.slice(-3);var rest=s.slice(0,-3);
+  if(rest){l3=','+l3;rest=rest.replace(/\B(?=(\d{2})+(?!\d))/g,',');}
+  return (neg?'(–) ':'')+'₹'+rest+l3+(p[1]?'.'+p[1]:'');
+}
+function fmtIn(n){if(isNaN(n)||n==='')return '';var neg=n<0;var s=String(Math.abs(n));var p=s.split('.');var i=p[0];var l3=i.slice(-3);var rest=i.slice(0,-3);if(rest){l3=','+l3;rest=rest.replace(/\B(?=(\d{2})+(?!\d))/g,',');}return (neg?'-':'')+rest+l3+(p.length>1?'.'+p[1]:'');}
+function num(id){var el=$(id);if(!el)return 0;var v=String(el.value).replace(/[,₹\s]/g,'');var n=parseFloat(v);return isNaN(n)?0:n;}
+function has(id){var el=$(id);return el&&String(el.value).replace(/\s/g,'')!=='';}
+function val(id){var el=$(id);return el?el.value:'';}
+function pd(id){var v=val(id);if(!v)return null;var p=v.split('-');return Date.UTC(+p[0],+p[1]-1,+p[2]);}
+function pds(s){var p=s.split('-');return Date.UTC(+p[0],+p[1]-1,+p[2]);}
+function fd(ms){if(ms===null)return '—';var d=new Date(ms);function z(x){return x<10?'0'+x:''+x;}return z(d.getUTCDate())+'.'+z(d.getUTCMonth()+1)+'.'+d.getUTCFullYear();}
+function days(a,b){return Math.round((a-b)/86400000);}
+function todayUTC(){var t=new Date();return Date.UTC(t.getFullYear(),t.getMonth(),t.getDate());}
+var CR=10000000;
+function tbl(h,rows,cls){
+  var s='<div class="tw"><table'+(cls?' class="'+cls+'"':'')+'><thead><tr>';
+  for(var i=0;i<h.length;i++){var hc=h[i];var c='';if(hc.charAt(0)==='>'){c=' class="amt"';hc=hc.slice(1);}s+='<th'+c+'>'+hc+'</th>';}
+  s+='</tr></thead><tbody>';
+  for(var r=0;r<rows.length;r++){
+    var row=rows[r];var rc='';if(row._c){rc=' class="'+row._c+'"';}
+    s+='<tr class="srch'+(row._c?' '+row._c:'')+'">';
+    for(var j=0;j<row.length;j++){var cc='';var hh=h[j]||'';if(hh.charAt(0)==='>')cc=' class="amt"';else if(j===0&&row._tb!==false&&cls==='tbcol')cc=' class="tb"';s+='<td'+cc+'>'+row[j]+'</td>';}
+    s+='</tr>';
+  }
+  return s+'</tbody></table></div>';
+}
+function R(arr,c){arr._c=c;return arr;}
+function vb(k,v,t){return '<div class="vbox '+(t||'info')+'"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
+
+/* ===================== TABS ===================== */
+var TABS=[
+ ['overview','Overview & Law','#1D4ED8'],
+ ['dates','Dates & Work-plan','#0F766E'],
+ ['calc','Calculators','#0F766E'],
+ ['g9','GSTR-9 Tables','#2563EB'],
+ ['g9c','GSTR-9C Tables','#0E7490'],
+ ['mo','Mandatory / Optional','#B45309'],
+ ['dflow','9 → 9C Data Flow','#0284C7'],
+ ['new','What is New','#B45309'],
+ ['xitc','Cross-year ITC','#0284C7'],
+ ['check','Checklist','#15803D'],
+ ['scr','Errors & Scrutiny','#B91C1C'],
+ ['notif','Notifications & Advisories','#2563EB'],
+ ['faq','FAQs','#1E40AF'],
+ ['flow','Filing Workflow','#0D9488'],
+ ['gloss','Abbreviations','#475569']
+];
+var H={};
+
+/* ===================== COMPANY ===================== */
+function COMPANY(){
+  var s='<div class="card accent srch" style="--c:#0F766E"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><span class="chip teal">Illustrative company used in every example and sample</span><h3 style="margin-top:8px;font-size:20px">M/s Sample Industries</h3><div class="note" style="margin:0">Manufacturer · principal place of business in Tamil Nadu · branch in Karnataka · FY 2025-26</div></div></div>';
+  s+='<div class="mt">'+tbl(['Item','>Tamil Nadu GSTIN','>Karnataka GSTIN','>PAN (all-India)'],[
+   ['Turnover FY 2025-26 (GSTR-9 Table 5N)','₹50,68,00,000','₹1,32,00,000','₹52,00,00,000'],
+   ['Aggregate turnover FY 2024-25','—','—','₹46,00,00,000'],
+   ['GSTR-9 / GSTR-9C','Both mandatory','Both mandatory','PAN &gt; ₹5 crore'],
+   ['Table 17 HSN','6 digits','6 digits','Preceding year &gt; ₹5 crore'],
+   ['Late fee per day (CGST + SGST)','₹200','₹200','Slab: PAN &gt; ₹20 crore'],
+   ['Late fee cap (CGST + SGST, 0.5% of State turnover)','₹25,34,000','₹66,000','Cap follows each GSTIN'],
+   ['Total ITC availed (Table 6A)','₹52,00,000','—','—'],
+   ['Stock transfer TN → KA (Schedule I)','₹1,80,00,000','—','—']
+  ])+'</div></div>';
+  return s;
+}
+/* ===================== OVERVIEW ===================== */
+var LAW=[
+ ['Section 44(1)','Annual return for every FY','Every registered person (other than ISD, persons under sections 51/52, casual and non-resident taxable persons) shall furnish an annual return for every financial year, which may include a self-certified reconciliation statement with the audited annual financial statement, on or before 31 December following the financial year. The Commissioner may exempt any class of persons on the Council\'s recommendation.','#1D4ED8'],
+ ['Section 44(2) proviso','Three-year bar','No annual return can be furnished after three years from its due date (Finance Act, 2023; in force from 01.10.2023). For FY 2025-26 the last date is 31.12.2029; 31.12.2026 is the last date for pending FY 2022-23 GSTR-9.','#B91C1C'],
+ ['Section 35(5)','Audit omitted','Mandatory audit by CA / CMA omitted by the Finance Act, 2021 (w.e.f. 01.08.2021). GSTR-9C is now self-certified (Rule 80(3) amended by Notification 30/2021-CT).','#0F766E'],
+ ['Section 47(2)','Late fee','₹100 per day under each Act, maximum 0.25% of turnover in the State/UT under each Act — reduced by Notification 07/2023-CT (see Calculators → Late fee).','#B45309'],
+ ['Section 16(4)','ITC time limit','ITC on FY 2025-26 documents cannot be availed after 30.11.2026 or the date of furnishing the annual return, whichever is earlier.','#0284C7'],
+ ['Section 34(2)','Credit notes','Credit notes for FY 2025-26 supplies to be declared by 30.11.2026 or the date of the annual return, whichever is earlier. Section 34(1), as amended (w.e.f. 01.11.2026), expressly covers post-supply discounts under section 15(3)(b).','#0E7490'],
+ ['Sections 37(3) & 39(9)','Rectification window','Rectification of GSTR-1/1A and GSTR-3B not permitted after 30.11.2026 or the date of the annual return, whichever is earlier.','#2563EB'],
+ ['Rule 80(1) & (3)','Forms','Annual return in GSTR-9 (GSTR-9B for TCS operators, GSTR-4 for composition). Self-certified GSTR-9C where aggregate turnover exceeds ₹5 crore.','#15803D']
+];
+H.overview=function(){
+  var s='<div class="sechead"><h2>Legal framework &amp; applicability</h2></div>';
+  s+='<p class="lead">Tap any provision for the full text. References are to the CGST Act, 2017 and CGST Rules, 2017; State GST provisions apply mutatis mutandis.</p>';
+  s+=COMPANY();
+  s+='<div class="grid g3 mt">';
+  for(var i=0;i<LAW.length;i++){s+='<div class="card accent click srch" style="--c:'+LAW[i][3]+'" data-law="'+i+'"><span class="chip grey mono">'+LAW[i][0]+'</span><h3 class="mt" style="margin-top:10px">'+LAW[i][1]+'</h3><div class="note" style="margin:0">'+LAW[i][2].slice(0,92)+'…</div></div>';}
+  s+='</div>';
+  s+='<div class="callout"><b class="t">Why “whichever is earlier” matters</b>Filing GSTR-9 before 30 November 2026 closes the window for availing pending ITC, declaring credit notes and rectifying GSTR-1/GSTR-3B. Unless all corrections are complete, file the annual return only after 30 November 2026.</div>';
+  s+='<h3 class="mt2" style="font-size:20px;margin-bottom:12px">Who must file — PAN-level aggregate turnover FY 2025-26</h3>';
+  s+='<div class="grid g3">';
+  s+='<div class="slab s1 srch"><div class="big">≤ ₹2 crore</div><div class="row"><span>GSTR-9</span><b>Exempt (optional)</b></div><div class="row"><span>GSTR-9C</span><b>Not required</b></div><div class="row"><span>Basis</span><b>Notfn 15/2025-CT</b></div></div>';
+  s+='<div class="slab s2 srch"><div class="big">₹2 – 5 crore</div><div class="row"><span>GSTR-9</span><b>Mandatory</b></div><div class="row"><span>GSTR-9C</span><b>Not required</b></div><div class="row"><span>Basis</span><b>Sec 44 r/w Rule 80(1)</b></div></div>';
+  s+='<div class="slab s3 srch"><div class="big">&gt; ₹5 crore</div><div class="row"><span>GSTR-9</span><b>Mandatory</b></div><div class="row"><span>GSTR-9C</span><b>Mandatory – self-certified</b></div><div class="row"><span>Basis</span><b>Rule 80(3)</b></div></div>';
+  s+='</div>';
+  s+='<div class="grid g2 mt">';
+  var pts=[
+   ['PAN-level test','Aggregate turnover under section 2(6) includes exempt supplies, exports and inter-State supplies between distinct persons, and excludes inward RCM supplies and taxes. Each GSTIN under the PAN files its own GSTR-9 (and GSTR-9C) once the PAN crosses the threshold, however small that GSTIN\'s own turnover.'],
+   ['Not required to file GSTR-9','Input Service Distributors, TDS deductors, casual and non-resident taxable persons, OIDAR suppliers. E-commerce operators file GSTR-9B; composition taxpayers file GSTR-4.'],
+   ['Composition opted in / out','GSTR-9 covers the regular period; GSTR-4 the composition period.'],
+   ['Cancelled registrations','Cancellation does not by itself remove the obligation for the period of registration if the threshold is crossed.'],
+   ['Voluntary filing below ₹2 crore','Permitted; sometimes preferred where lenders or departmental verification rely on it.'],
+   ['Prerequisite','The GSTR-9/9C tile opens only after every GSTR-1 and GSTR-3B for FY 2025-26 is filed (GSTN advisory dated 13.10.2026).']
+  ];
+  for(var j=0;j<pts.length;j++){s+='<div class="card srch"><h3>'+pts[j][0]+'</h3><div>'+pts[j][1]+'</div></div>';}
+  s+='</div>';
+  s+='<h3 class="mt2" style="font-size:20px;margin-bottom:12px">Nature of the annual return &amp; limitation</h3>';
+  s+='<div class="card srch">The annual return consolidates what has already been declared in GSTR-1/GSTR-1A/IFF and GSTR-3B for the year, together with adjustments made in the following year within the statutory window. <b>Additional liability</b> discovered during preparation cannot be paid through GSTR-9; it is discharged through Form GST DRC-03 with interest under section 50. Excess tax paid or ITC not availed cannot be claimed through the annual return. A filed return <b>cannot be revised</b>.</div>';
+  s+='<div class="mt">'+tbl(['Event','Outer date'],[
+    ['Due date of GSTR-9 / GSTR-9C','<b>31.12.2026</b>'],
+    ['Show cause notice under section 74A (42 months from due date)','<b>30.06.2030</b>'],
+    ['Order under section 74A','Within 12 months of the notice (extendable by up to 6 months)'],
+    ['Last date on which GSTR-9 for FY 2025-26 can be filed (three-year bar)','<b>31.12.2029</b>']
+  ])+'</div>';
+  s+='<div class="callout blue"><b class="t">Reference point for scrutiny</b>The annual return is the principal document examined in scrutiny under section 61, audit under section 65 and adjudication. Every edit to an auto-populated figure should be backed by a working paper that can be produced later.</div>';
+  return s;
+};
+
+/* ===================== DATES ===================== */
+var TL=[
+ ['2025-09-22','21/22.09.2025','Last day of earlier rates (21.09.2025); rationalised rates take effect (22.09.2025).'],
+ ['2026-03-31','31.03.2026','Close of FY 2025-26.'],
+ ['2026-10-31','Apr – Oct 2026','Late-uploaded FY 2025-26 documents appear in GSTR-2B and form part of Table 8A.'],
+ ['2026-10-08','08.10.2026','GSTR-9 / GSTR-9C enabled on the portal (GSTN advisory dated 13.10.2026).'],
+ ['2026-11-01','01.11.2026','Notification 05/2026-CT and Finance Act, 2026 (sections 153–155) in force.'],
+ ['2026-11-20','20.11.2026','GSTR-3B for October 2026 — the practical last return to avail FY 2025-26 ITC.'],
+ ['2026-11-30','30.11.2026','Outer limit for ITC (s.16(4)), credit notes (s.34(2)), GSTR-1/1A and GSTR-3B rectification — or the annual return date, if earlier.'],
+ ['2026-12-31','31.12.2026','Due date for GSTR-9 and GSTR-9C. Last date for pending FY 2022-23 GSTR-9. No extension notified as on 12.11.2026.'],
+ ['2027-01-01','01.01.2027 →','Late fee accrues daily until the complete annual return is filed.'],
+ ['2029-12-31','31.12.2029','Last date to file GSTR-9 for FY 2025-26 (three-year bar).'],
+ ['2030-06-30','30.06.2030','Last date for show cause notice under section 74A for FY 2025-26.']
+];
+H.dates=function(){
+  var t=todayUTC();var nextFound=false;
+  var s='<div class="sechead"><h2>Timeline &amp; critical dates</h2><span class="chip coral">Live status from today\'s date</span></div>';
+  s+='<div class="grid g2"><div><ol class="tl">';
+  for(var i=0;i<TL.length;i++){
+    var d=pds(TL[i][0]);var dd=days(d,t);var cls='';var st='';
+    if(dd<0){cls='past';st='<span class="chip grey st">passed</span>';}
+    else{ if(!nextFound){cls='next';nextFound=true;} st='<span class="chip '+(dd<=30?'coral':'green')+' st">'+(dd===0?'today':dd+' days left')+'</span>';}
+    s+='<li class="srch '+cls+'">'+st+'<div class="d">'+TL[i][1]+'</div><div>'+TL[i][2]+'</div></li>';
+  }
+  s+='</ol></div><div>';
+  s+='<div class="card"><h3>Suggested internal work-plan</h3>'+tbl(['Period','Activity'],[
+   ['Up to 31.10.2026','Close books; finalise audited financial statements; download GSTR-1, GSTR-3B, GSTR-2B, Table 8A Excel, e-invoice and e-way bill data; complete first-cut reconciliation.'],
+   ['01.11 – 20.11.2026','Follow up suppliers on missing documents; complete IMS actions; avail eligible pending ITC in GSTR-3B of October 2026; issue credit notes.'],
+   ['21.11 – 30.11.2026','Final GSTR-1A / GSTR-1 amendments; pay short-paid tax with interest through DRC-03; freeze FY 2025-26 data.'],
+   ['01.12 – 20.12.2026','Prepare GSTR-9 (online / offline), compute Tables 10–14, prepare GSTR-9C reconciliation; management review.'],
+   ['Before 31.12.2026','File GSTR-9 and GSTR-9C together (DSC / EVC); retain working papers and ARNs.']
+  ])+'</div>';
+  s+='<div class="callout"><b class="t">Practice point</b>Where a client is also facing scrutiny or audit for FY 2025-26, settle the positions to be taken in those proceedings before finalising the annual return, so that the return and the replies speak the same language.</div>';
+  s+='<div class="callout green"><b class="t">Rule of thumb</b>Freeze the data on 30 November. Reconcile in December. File both forms together.</div>';
+  s+='</div></div>';
+  s+='<div class="sechead mt2"><h2>Late fee</h2><span class="chip amber">Section 47(2) · Notification 07/2023-CT · Circular 246/03/2025-GST</span></div>';
+  s+=tbl(['Aggregate turnover in the FY','>Per day (CGST + SGST)','Maximum (CGST + SGST)'],[
+   ['Up to ₹5 crore','₹50 (₹25 + ₹25)','0.04% (0.02% + 0.02%) of turnover in State/UT'],
+   ['Above ₹5 crore up to ₹20 crore','₹100 (₹50 + ₹50)','0.04% (0.02% + 0.02%) of turnover in State/UT'],
+   R(['Above ₹20 crore ← Sample Industries (₹52 crore)','₹200 (₹100 + ₹100)','0.5% (0.25% + 0.25%) of turnover in State/UT'],'mark')
+  ]);
+  s+='<h3 class="mt2">Sample Industries, Tamil Nadu GSTIN — due date 31.12.2026</h3><div class="mt">'+tbl(['Filing pattern','>Days','>Paid with GSTR-9','>Paid with GSTR-9C','>Total'],[
+   ['GSTR-9 on 24.12.2026; GSTR-9C on 07.01.2027','7','—','₹1,400','₹1,400'],
+   ['GSTR-9 on 05.01.2027; GSTR-9C on 07.01.2027','5 + 2','₹1,000','₹400','₹1,400'],
+   ['Both filed together on 10.01.2027','10','₹2,000','—','₹2,000'],
+   R(['GSTR-9 on 05.01.2027; GSTR-9C on 12.01.2027 (calculator sample)','5 + 7','₹1,000','₹1,400','₹2,400'],'tot')
+  ])+'</div>';
+  s+='<div class="callout"><b class="t">How the fee runs</b>Late fee is for delay in furnishing the <b>complete</b> annual return – GSTR-9 and GSTR-9C wherever GSTR-9C is required. It is not levied separately for each form; it runs from the day after the due date until the complete return is filed, so filing GSTR-9 alone does not stop the clock. The slab follows PAN turnover; the cap follows the GSTIN\'s State turnover. Paid in cash only, GSTIN-wise. The waiver under Notification 08/2025-CT (up to FY 2022-23) does not apply to FY 2025-26.</div>';
+  return s;
+};
+
+/* ===================== GSTR-9 ===================== */
+H.g9=function(){
+  var s='<div class="sechead"><h2>GSTR-9 — table-wise guide</h2><span class="chip violet">Status per Notification 05/2026-CT</span></div>';
+  s+='<p class="lead">Most values are auto-populated from GSTR-1/1A and GSTR-3B. They may be edited, but every edit needs a working paper.</p>';
+  s+='<h3 class="mt">Part II — Outward supplies (Tables 4 &amp; 5)</h3><div class="mt">'+tbl(['Table','Particulars','Source','Status / note'],[
+   ['4A / 4B','Supplies to unregistered (B2C) / registered (B2B) persons','GSTR-1/1A','<span class="yes">Mandatory</span>'],
+   ['4C / 4D','Exports / SEZ supplies on payment of tax','GSTR-1/1A','<span class="yes">Mandatory</span>'],
+   ['4E','Deemed exports','GSTR-1/1A','<span class="yes">Mandatory</span>'],
+   ['4F','Advances on which tax paid, invoice not issued','GSTR-1 Table 11','Net of adjustments'],
+   ['4G','Inward supplies liable to reverse charge','GSTR-3B 3.1(d)','<span class="yes">Mandatory</span>'],
+   ['4I – 4L','Credit / debit notes, amendments to 4B – 4E supplies','GSTR-1/1A','<span class="yes">Mandatory</span>'],
+   ['5A / 5B','Exports / SEZ supplies without payment (LUT)','GSTR-1/1A','<span class="yes">Mandatory</span>'],
+   ['5C','Supplies on which recipient pays tax on RCM','GSTR-1/1A','<span class="yes">Mandatory</span>'],
+   ['5C1','Supplies on which ECO pays tax u/s 9(5)','GSTR-1/1A','Where applicable'],
+   ['5D / 5E','Exempted / nil-rated','GSTR-1/1A','<span class="opt">May be combined in 5D</span>'],
+   ['5F','Non-GST supply','Books','Report separately'],
+   ['5H – 5K','Credit / debit notes, amendments to 5A – 5F supplies','GSTR-1/1A','<span class="opt">Optional</span> – may be clubbed in 5A – 5F'],
+   ['5N','Total turnover including advances','Computed','Should agree with books']
+  ],'tbcol')+'</div>';
+  s+='<h3 class="mt2">Part III — Input tax credit (Tables 6 &amp; 7)</h3><div class="mt">'+tbl(['Table','Particulars','Status / note'],[
+   ['6A','Total ITC availed through GSTR-3B (Table 4A)','Auto; non-editable'],
+   ['6A1','ITC of FY 2024-25 availed in GSTR-3B of FY 2025-26','<span class="yes">Mandatory</span>; to match Table 13 of FY 2024-25'],
+   ['6A2','Net ITC of current FY (6A – 6A1)','Computed'],
+   ['6B','Inward supplies other than imports and RCM','Inputs + input services may be combined; capital goods separate'],
+   ['6C / 6D','RCM inward supplies – unregistered / registered','<span class="yes">Mandatory</span>'],
+   ['6E / 6F','Import of goods (incl. SEZ) / import of services','<span class="yes">Mandatory</span>; 6E consolidation withdrawn'],
+   ['6G','ITC received from ISD','<span class="yes">Mandatory</span>'],
+   ['6H','ITC reclaimed (incl. Rule 37/37A reclaims of earlier reversals)','<span class="yes">Mandatory</span>'],
+   ['6J','Difference (6A2 – 6I)','Should ideally be nil'],
+   ['6K – 6M','TRAN-1, TRAN-2, other ITC (ITC-01/02/02A)','Where applicable'],
+   ['7A / 7A1','Reversal – Rule 37 (180 days) / Rule 37A (supplier not filing GSTR-3B)','Rule-wise; <span class="yes">mandatory</span>'],
+   ['7A2','Reversal – Rule 38','<span class="yes">Mandatory</span>; separately'],
+   ['7B','Reversal – Rule 39 (ISD)','<span class="yes">Mandatory</span>'],
+   ['7C / 7D','Reversal – Rule 42 / Rule 43','<span class="yes">Mandatory</span>'],
+   ['7E','Reversal – Section 17(5)','<span class="yes">Mandatory</span>'],
+   ['7F / 7G','Reversal of TRAN-1 / TRAN-2 credit','Where applicable'],
+   ['7H','Other reversals (specify, e.g., temporary reversals)','<span class="yes">Mandatory</span>'],
+   ['7J','Net ITC available for utilisation','Compare with GSTR-3B 4C']
+  ],'tbcol')+'</div>';
+  s+='<h3 class="mt2">Part III — ITC reconciliation (Table 8)</h3><div class="mt">'+tbl(['Table','Particulars','Status / note'],[
+   ['8A','ITC as per GSTR-2B on FY 2025-26 documents (incl. those appearing up to October 2026)','Auto; analyse through 8A Excel'],
+   ['8B','ITC as per 6B','Auto'],
+   ['8C','FY 2025-26 ITC availed first time in FY 2026-27 (within time limit)','Reclaims not here; negative values allowed'],
+   ['8D','Difference 8A – (8B + 8C)','<span class="no">Main scrutiny trigger</span> – explain'],
+   ['8E / 8F','ITC available but not availed / ineligible','Explains 8D'],
+   ['8G','IGST paid on import of goods (incl. SEZ)','From ICEGATE'],
+   ['8H / 8H1','Import IGST availed (as per 6E) / availed in FY 2026-27','Where applicable'],
+   ['8I – 8K','Difference; import ITC not availed; total ITC lapsed','ITC in 8K lapses']
+  ],'tbcol')+'</div>';
+  s+='<div class="card mt srch"><h3>Part IV — Tax paid (Table 9)</h3>Tax payable and paid (cash / ITC) head-wise and rate-wise, with interest, late fee, penalty and others, auto-populated from GSTR-3B. Any shortfall is to be discharged through DRC-03 with interest.</div>';
+  s+='<h3 class="mt2">Parts V &amp; VI — Next-year adjustments and other information</h3><div class="mt">'+tbl(['Table','Particulars','Status / note'],[
+   ['10 / 11','Supplies / tax increased (+) or reduced (–) through amendments, DNs, CNs in Apr–Nov 2026','<span class="yes">Mandatory</span>'],
+   ['12','Reversal of FY 2025-26 ITC made in FY 2026-27','<span class="yes">Mandatory</span> – do not net off with 13'],
+   ['13','FY 2025-26 ITC availed in FY 2026-27','<span class="yes">Mandatory</span> – do not net off with 12; feeds 6A1 next year'],
+   ['14','Differential tax paid on account of 10 &amp; 11','Where applicable'],
+   ['15 / 16','Demands &amp; refunds; composition / deemed / approval supplies','<span class="opt">Optional</span>'],
+   ['17','HSN summary of outward supplies','<span class="yes">Mandatory</span> at prescribed digit level'],
+   ['18','HSN summary of inward supplies','<span class="opt">Optional</span>'],
+   ['19','Late fee payable and paid','System computed']
+  ],'tbcol')+'</div>';
+  s+='<h3 class="mt2">M/s Sample Industries — next-year amendments and credit notes (Tables 4, 10, 11, 14)</h3>';
+  s+='<div class="mt">'+tbl(['Ref','Transaction'],[
+   ['A','Invoice dt. 25.03.2026 – ₹5,00,000 + IGST ₹90,000 – omitted from GSTR-1; reported in GSTR-1 of May 2026 and tax paid in GSTR-3B of May 2026 with interest'],
+   ['B','Invoice dt. 12.12.2025 reported at ₹8,00,000 instead of ₹6,00,000 (18%); amended in GSTR-1 of June 2026; excess tax ₹36,000 adjusted in GSTR-3B of June 2026'],
+   ['C','Credit note dt. 18.11.2026 for post-supply discount on FY 2025-26 supplies – ₹2,50,000 + GST ₹45,000 – recipient reverses ITC (amended s.15(3)(b)/34)'],
+   ['D','Credit note dt. 20.02.2026 for sales return – ₹4,00,000 + GST ₹72,000 – reported in GSTR-1 of February 2026'],
+   ['E','Credit note dt. 10.12.2026 for FY 2025-26 supply – ₹1,00,000 + GST ₹18,000']
+  ],'tbcol')+'</div>';
+  s+='<div class="mt">'+tbl(['Ref','Table','>Value','>Tax','Reason'],[
+   ['D','4I','₹4,00,000','₹72,000','Declared within the year – Table 4I is mandatory for credit notes on 4B–4E supplies'],
+   ['A','10','₹5,00,000','₹90,000','Addition declared in GSTR-1 of Apr–Nov 2026; not in Table 4'],
+   ['A','14','—','IGST ₹90,000','Differential tax paid on Table 10 items'],
+   ['B','11','₹2,00,000','₹36,000','Reduction through amendment within the window'],
+   ['C','11','₹2,50,000','₹45,000','Credit note issued by 30.11.2026 – reported in Table 11'],
+   R(['E','Not reportable','—','—','Beyond 30.11.2026 – s.34(2) bars reduction of output tax; may only be a financial credit note without GST'],'mark')
+  ],'tbcol')+'</div>';
+  s+='<div class="callout"><b class="t">Points to watch</b>Table 4 is auto-populated only from GSTR-1 of the year\'s own tax periods; items declared in April–November 2026 belong in Tables 10/11, not Table 4. Interest paid with the May 2026 GSTR-3B (item A) belongs to FY 2026-27 and is not shown in Table 9 of FY 2025-26. In GSTR-9C, any of items A to E accounted in the FY 2025-26 books but declared differently in the annual return is explained as a reconciling item.</div>';
+  return s;
+};
+
+/* ===================== GSTR-9C ===================== */
+H.g9c=function(){
+  var s='<div class="sechead"><h2>GSTR-9C — table-wise guide</h2></div>';
+  s+='<p class="lead">A self-certified reconciliation of turnover, tax paid and ITC as per the annual return with the audited financial statements, furnished by every GSTIN under a PAN whose aggregate turnover exceeds ₹5 crore. In multi-State entities the audited accounts are broken down GSTIN-wise.</p>';
+  s+='<h3>Part II — Reconciliation of turnover (Table 5)</h3><div class="mt">'+tbl(['Table','Particulars','+ / –'],[
+   ['5A','Turnover (incl. exports) as per audited financial statements for the State/UT','Start'],
+   ['5B / 5H','Unbilled revenue at beginning / at end of the FY','+ / –'],
+   ['5C / 5I','Unadjusted advances at end / at beginning of the FY','+ / –'],
+   ['5D','Deemed supply under Schedule I','+'],
+   ['5E','Credit notes issued after year-end but reflected in the annual return','+'],
+   ['5F / 5J','Trade discounts / credit notes in AFS not permissible under GST','+ / –'],
+   ['5K','Supplies of goods by SEZ units to DTA','–'],
+   ['5L','Turnover for the period under composition','–'],
+   ['5M / 5N','Adjustments under section 15 and rules / foreign-exchange fluctuation','+ / –'],
+   ['5O','Adjustments for other reasons (5B–5N may be reported here for FY 2025-26)','+ / –'],
+   ['5P – 5R','Annual turnover after adjustments; turnover per GSTR-9; un-reconciled amount','Reasons in Table 6']
+  ],'tbcol')+'</div>';
+  s+='<div class="callout blue"><b class="t">Typical reconciling items</b>Inter-GSTIN stock transfers and cross-charges · sale of capital goods and scrap booked as other income · discounts and incentives · forex gain on export receivables · interest, rent and commission income · Schedule III items · year-end provisions and unbilled revenue · credit notes around the 22.09.2025 rate change.</div>';
+  s+='<h3 class="mt2">Taxable turnover and tax paid (Tables 7 to 11)</h3><div class="grid g3 mt">';
+  s+='<div class="card srch"><span class="chip">Table 7 → 8</span><p>Annual turnover after adjustments, less exempt / nil / non-GST / no-supply, less zero-rated without payment, less RCM supplies = taxable turnover; compare with GSTR-9; reasons in Table 8.</p></div>';
+  s+='<div class="card srch"><span class="chip coral">Table 9 → 10</span><p>Rate-wise reconciliation of tax payable (<b>both rate regimes</b> for FY 2025-26), with interest, late fee, penalty and others; reasons in Table 10.</p></div>';
+  s+='<div class="card srch"><span class="chip amber">Table 11</span><p>Additional amount payable but not paid, rate-wise — to be discharged through DRC-03 with interest.</p></div></div>';
+  s+='<h3 class="mt2">Part IV — Reconciliation of ITC (Tables 12 to 16)</h3><div class="mt">'+tbl(['Table','Particulars','Note'],[
+   ['12A','ITC availed as per audited financial statements for the State/UT','GST input ledgers'],
+   ['12B','ITC booked in earlier FYs claimed in current FY (+)','Links with 6A1'],
+   ['12C','ITC booked in current FY to be claimed in subsequent FYs (–)','Links with 8C / 13'],
+   ['12D – 12F','ITC per AFS after adjustment; ITC per GSTR-9; un-reconciled ITC','Reasons in Table 13'],
+   ['14','Expense-head-wise reconciliation of ITC','<span class="opt">Optional</span> for FY 2025-26'],
+   ['16','Tax payable on un-reconciled difference in ITC','Pay through DRC-03']
+  ],'tbcol')+'</div>';
+  s+='<div class="grid g2 mt"><div class="card srch"><h3>Part V — Additional liability and late fee</h3>Additional liability arising from non-reconciliation is reported rate-wise with interest and penalty and the manner of discharge. The revised format also carries a table for late fee under section 47(2), computed from the due date (or GSTR-9 filing date, if later) to the date of filing GSTR-9C, reflecting the portion already paid with GSTR-9.</div>';
+  s+='<div class="card srch"><h3>Verification</h3>Verified by the authorised signatory through DSC / EVC. No CA / CMA certification is required, though professional review is advisable.</div></div>';
+  s+='<h3 class="mt2">M/s Sample Industries — turnover reconciliation (Tamil Nadu GSTIN)</h3><div class="mt">'+tbl(['Table','Particulars','+ / –','>₹'],[
+   ['5A','Revenue from operations – Tamil Nadu GSTIN (audited)','+','48,60,00,000'],
+   ['5B','Unbilled revenue at the beginning of the year','+','40,00,000'],
+   ['5C','Unadjusted advances (services) at the end of the year','+','20,00,000'],
+   ['5D','Stock transfers to Karnataka branch – deemed supply (Schedule I)','+','1,80,00,000'],
+   ['5F','Trade discounts given by financial credit notes – not permissible under s.15(3)','+','30,00,000'],
+   ['5O','Sale of scrap booked under “Other income”','+','25,00,000'],
+   ['5H','Unbilled revenue at the end of the year','–','(–) 55,00,000'],
+   ['5I','Unadjusted advances at the beginning of the year','–','(–) 15,00,000'],
+   ['5N','Foreign exchange gain on export receivables included in revenue','–','(–) 12,00,000'],
+   R(['5P','Annual turnover after adjustments','=','50,73,00,000'],'tot'),
+   ['5Q','Turnover as declared in GSTR-9 (Table 5N)','','50,68,00,000'],
+   R(['5R','Un-reconciled turnover','','5,00,000'],'mark')
+  ],'tbcol')+'</div>';
+  s+='<p class="note">Reason (Table 6): invoice dated 31.03.2026 booked in the accounts but omitted from GSTR-1 and not declared up to November 2026. Tax at 18% – ₹90,000 – shown as additional liability (Table 11 / Part V) and paid through DRC-03 with interest before filing. For FY 2025-26 items 5B to 5N may be reported together in 5O; item-wise working should still be kept on file.</p>';
+  s+='<h3 class="mt2">M/s Sample Industries — ITC reconciliation (Tables 12 and 13)</h3><div class="mt">'+tbl(['Table','Particulars','>₹'],[
+   ['12A','ITC availed as per audited accounts (GST input ledgers, FY 2025-26)','48,90,000'],
+   ['12B','ITC booked in FY 2024-25, availed in FY 2025-26 (= Table 6A1)','2,30,000'],
+   ['12C','ITC booked in FY 2025-26, to be availed in FY 2026-27 (= Table 13)','(–) 1,45,000'],
+   R(['12D','ITC as per books after adjustment','49,75,000'],'tot'),
+   ['12E','ITC as per GSTR-9 (Table 7J ₹47,70,000 + Table 6A1 ₹2,30,000)','50,00,000'],
+   R(['12F','Un-reconciled ITC (12D – 12E)','(–) 25,000'],'mark')
+  ],'tbcol')+'</div>';
+  s+='<p class="note">Reason (Table 13): ITC of ₹25,000 reversed in the books in FY 2025-26 but in GSTR-3B only in FY 2026-27 (disclosed in Table 12 of GSTR-9). Check the auto-populated 12E on the portal: if it reflects only Table 7J (which excludes 6A1), the ₹2,30,000 in 12B will appear as a further difference, to be explained as prior-year ITC reported in Table 6A1.</p>';
+  s+='<h3 class="mt2">Linkage map — one set of figures, four tables</h3><div class="mt">'+tbl(['Figure','>₹','GSTR-9 FY 2025-26','GSTR-9C FY 2025-26','GSTR-9 FY 2026-27'],[
+   ['Prior-year ITC availed this year','2,30,000','6A1','12B','—'],
+   ['This-year ITC availed next year','1,45,000','13 (and 8C ₹60,000)','12C','6A1'],
+   ['This-year ITC reversed next year','25,000','12','12F reason','—'],
+   ['Rule 37 reversal reclaimed next year','60,000','7A','—','6H']
+  ])+'</div>';
+  return s;
+};
+
+/* ===================== WHAT IS NEW ===================== */
+H['new']=function(){
+  var s='<div class="sechead"><h2>What is new for FY 2025-26</h2></div>';
+  s+='<p class="lead">First year with a mid-year rate change (22.09.2025); second year of the revised GSTR-9 / 9C formats (Notification 13/2025-CT); first annual return after the CGST (Amendment) Rules, 2026 (Notification 05/2026-CT dated 26.10.2026) and the Finance Act, 2026 amendments (in force 01.11.2026).</p>';
+  s+='<h3>Reporting relaxations — year-wise comparison</h3><p class="note" style="margin-bottom:10px">Same item set across all three years; <span class="diff">CHANGED</span> marks where the position differs from FY 2023-24.</p>';
+  var Y='<span class="yes">✓ Available</span>',N='<span class="no">✗ Withdrawn</span>';
+  s+=tbl(['Form · Table','Relaxation','FY 2023-24','FY 2024-25','FY 2025-26'],[
+   ['GSTR-9 · 5D, 5E, 5F','Exempted and nil-rated reported together in 5D; non-GST separately in 5F',Y,Y,Y],
+   ['GSTR-9 · 5H – 5K','Credit notes, debit notes and amendments to Table 5 supplies optional – may be clubbed in 5A – 5F',Y,Y,Y],
+   ['GSTR-9 · 6B, 6C, 6D','Inputs and input services combined under “Inputs”; capital goods separately',Y,Y,Y],
+   ['GSTR-9 · 15, 16, 18','Tables optional',Y,Y,Y],
+   ['GSTR-9 · 17','HSN – six digits where preceding-year turnover &gt; ₹5 crore; four digits for all B2B supplies otherwise',Y,Y,Y],
+   ['GSTR-9C · 5B – 5N','Reconciling items reported in 5O (other reasons)',Y,Y,Y],
+   ['GSTR-9C · 14','Expense-head-wise ITC reconciliation optional',Y,Y,Y],
+   R(['GSTR-9 · 7A – 7E','Rule-wise reversals consolidated in 7H',Y,N+'<span class="diff">CHANGED</span>',N+'<span class="diff">CHANGED</span>'],'mark'),
+   R(['GSTR-9 · 12, 13','Tables 12 and 13 left blank',Y,N+'<span class="diff">CHANGED</span>',N+'<span class="diff">CHANGED</span>'],'mark'),
+   R(['GSTR-9 · 6E','Consolidation in 6E',Y,N+'<span class="diff">CHANGED</span>',N+'<span class="diff">CHANGED</span>'],'mark')
+  ],'tbcol');
+  s+='<div class="callout"><b class="t">Relaxations not available</b>Reversals must be shown rule-wise and cross-year ITC (Tables 6A1, 12, 13) must be reported wherever applicable.</div>';
+  s+='<h3 class="mt2">Revised formats — Notification 13/2025-CT (second year)</h3><div class="grid g2 mt">';
+  var rf=[
+   ['Table 6A1 / 6A2','ITC of FY 2024-25 availed in GSTR-3B of FY 2025-26 is segregated in 6A1; 6A2 is the net ITC of the current year.'],
+   ['Table 8A on GSTR-2B basis','FY 2025-26 documents appearing in GSTR-2B, including those appearing in April–October 2026. A Table 8A Excel shows, document-wise, whether credit was counted and why not.'],
+   ['Tables 8B / 8C','8B flows from 6B only; 8C captures FY 2025-26 ITC first availed in FY 2026-27 within the time limit and accepts negative values.'],
+   ['Table 8H1','Import IGST of FY 2025-26 availed in FY 2026-27.'],
+   ['Tables 12 & 13','Mandatory where applicable; Table 13 should tally with 6A1 of the next year.'],
+   ['Table 5C1','Supplies on which the e-commerce operator pays tax under section 9(5).'],
+   ['GSTR-9C','Enhanced reporting of additional liability and a table for late fee payable and paid under section 47(2).'],
+   ['Table 17 & rate change','Same HSN on two lines where the rate changed; time of supply (section 14) decides the rate for transactions straddling 22.09.2025. Credit notes issued after 22.09.2025 for earlier supplies carry the original rate; GSTR-9C Table 9 must reflect both rate sets.']
+  ];
+  for(var i=0;i<rf.length;i++)s+='<div class="card srch"><h3>'+rf[i][0]+'</h3>'+rf[i][1]+'</div>';
+  s+='</div>';
+  s+='<h3 class="mt2">Rate rationalisation w.e.f. 22.09.2025 — two regimes in one year</h3><div class="mt">'+tbl(['Point','01.04.2025 – 21.09.2025','22.09.2025 – 31.03.2026'],[
+   ['Rate structure','Earlier rates, including 12% and 28% slabs','Rationalised rates – principal slabs of 5% and 18%, special rate for specified goods<span class="diff">CHANGED</span>'],
+   ['Compensation cess','On specified goods','Discontinued for most goods<span class="diff">CHANGED</span>'],
+   ['Basis','Earlier rate notifications','Notification 09/2025-CT (Rate) and connected notifications dated 17.09.2025<span class="diff">CHANGED</span>']
+  ])+'</div>';
+  s+='<h3 class="mt2">Finance Act, 2026 — post-supply discounts (sections 15(3)(b) and 34)</h3><div class="mt">'+tbl(['Point','Credit note issued before 01.11.2026','Credit note issued 01.11.2026 – 30.11.2026'],[
+   ['Governing law','Unamended section 15(3)(b) read with Circular 251/08/2025-GST dated 12.09.2025','Amended sections 15(3)(b) and 34(1) (Sections 153–155, Finance Act, 2026; Notification 03/2026-CT)<span class="diff">CHANGED</span>'],
+   ['Prior agreement and link to specific invoices','Required','Not required — discount excludible where a section 34 credit note is issued and the recipient reverses attributable ITC<span class="diff">CHANGED</span>'],
+   ['Reporting in GSTR-9 of FY 2025-26','Within the year: Table 4/5; Apr–Oct 2026: Table 11','Table 11']
+  ])+'</div>';
+  s+='<h3 class="mt2">Other developments bearing on FY 2025-26</h3><div class="grid g2 mt">';
+  var od=[['Invoice Management System','GSTR-2B is generated on the basis of IMS action (accept / reject / pending). Pending and rejected documents do not flow into GSTR-2B or Table 8A in the normal course; track pending credit notes and declared reversals.'],['GSTR-1A','Amendments made through GSTR-1A during the year flow into the auto-populated values of Tables 4 and 5.'],['Table 17 auto-population','HSN data is pre-filled from Table 12 of GSTR-1/1A; use the offline utility for large HSN data. Edited pre-filled values are highlighted – document the reasons.'],['Three-year bar','31.12.2026 is also the last date for any pending GSTR-9 of FY 2022-23.']];
+  for(var k=0;k<od.length;k++)s+='<div class="card srch"><h3>'+od[k][0]+'</h3>'+od[k][1]+'</div>';
+  s+='</div>';
+  s+='<h3 class="mt2">M/s Sample Industries — rate change on 22.09.2025 (12% → 5%)</h3><p class="note" style="margin-bottom:10px">“Date of receipt of payment” is the earlier of the date of entry in the books and the date of credit to the bank account. Try any case in Calculators → Section 14.</p>';
+  s+=tbl(['#','Supply','Invoice','Payment','Supply vs change','Section 14 test','Rate'],[
+   ['1','15.09.2025','15.09.2025','10.10.2025','Before','14(a)(ii) – invoice before, payment after → date of invoice','<b>12%</b>'],
+   ['2','18.09.2025','25.09.2025','05.09.2025 (advance)','Before','14(a)(iii) – payment before, invoice after → date of payment','<b>12%</b>'],
+   ['3','30.09.2025','19.09.2025','05.10.2025','After','14(b)(i) – invoice before, payment after → date of payment','<b>5%</b>'],
+   ['4','10.10.2025','10.10.2025','15.09.2025 (advance)','After','14(b)(iii) – payment before, invoice after → date of invoice','<b>5%</b>'],
+   ['5','23.09.2025','20.09.2025','20.09.2025','After','14(b)(ii) – both before → earlier of the two','<b>12%</b>'],
+   ['6','02.10.2025','01.10.2025','15.10.2025','After','Entirely after the change','<b>5%</b>']
+  ]);
+  s+='<div class="callout blue"><b class="t">How it flows into the annual return</b><b>Table 17:</b> same HSN on two lines — 12% (cases 1, 2, 5) and 5% (cases 3, 4, 6). <b>Credit note:</b> goods of case 1 returned in November 2025 carry 12%. <b>GSTR-9C Table 9:</b> values at 12% and 5% separately; a blended rate will not reconcile. <b>Case 4:</b> no GST on advance for goods (Notification 66/2017-CT); invoice date governs. <b>Scrutiny risk:</b> invoices dated on or after 22.09.2025 at 12% (other than cases like 5) will be flagged — keep the section 14 working on file.</div>';
+  return s;
+};
+
+/* ===================== MANDATORY / OPTIONAL ===================== */
+var M='<span class="st-m">Mandatory</span>',O='<span class="st-o">Optional</span>',AU='<span class="st-a">Auto</span>';
+var MO9=[
+ ['4A – 4G','Taxable outward supply, tax on advances &amp; RCM',M,'','m'],
+ ['4I – 4L','CN, DN and amendments with respect to 4B – 4E supplies',M,'','m'],
+ ['5A – 5C1','Zero-rated supply without payment of tax; supplies on which tax is discharged by the recipient',M,'','m'],
+ ['5D – 5F','Exempted, nil-rated &amp; non-GST supply',M,'Exempted and nil-rated may be clubbed in 5D; non-GST shown separately in 5F','m'],
+ ['5H – 5K','CN, DN and amendments with respect to 5A – 5F supplies',O,'May be clubbed in 5A – 5F','o'],
+ ['6A','ITC auto-populated from GSTR-3B',AU,'','a'],
+ ['6A1','ITC of preceding FY claimed in GSTR-3B of current FY',M,'','m'],
+ ['6A2','Net ITC of the FY (6A – 6A1)',AU,'','a'],
+ ['6B – 6D','ITC on inward supplies – forward charge &amp; reverse charge',M,'Inputs and input services may be clubbed under “Inputs”; capital goods separately','m'],
+ ['6E','Import of goods',M,'','m'],
+ ['6F – 6M','Other ITC – import of services, ISD, reclaim under Rule 37/37A, TRAN-1/2, ITC-01/02/02A',M,'','m'],
+ ['7A, 7A1, 7A2 – 7E','ITC reversal – Rules 37, 37A, 38, 39, 42, 43 and section 17(5)',M,'To be reported separately, rule-wise','m'],
+ ['7F &amp; 7G','ITC reversal – TRAN-1 &amp; TRAN-2',M,'','m'],
+ ['8A – 8K','ITC-related information',M,'','m'],
+ ['9','Tax payable &amp; tax paid',M,'','m'],
+ ['10, 11','Outward liability of FY 2025-26 added / reduced in FY 2026-27 up to 30.11.2026',M,'','m'],
+ ['12, 13','ITC of FY 2025-26 reversed / availed in FY 2026-27 up to 30.11.2026',M,'Do not net off Tables 12 and 13','m'],
+ ['15 &amp; 16','Demands &amp; refunds; information on inward supplies',O,'','o'],
+ ['17','HSN summary of outward supply',M,'Turnover &gt; ₹5 crore: 6 digits for all supplies; up to ₹5 crore: 4 digits for B2B supplies only','m'],
+ ['18','HSN summary of inward supply',O,'','o']
+];
+var MO9C=[
+ ['5A','Turnover as per audited books',M,'','m'],
+ ['5B – 5O','Adjustments related to turnover',M,'May be clubbed in 5O','m'],
+ ['7A – 7E','Reconciliation from total turnover to taxable turnover',M,'','m'],
+ ['9A – 9Q','Reconciliation of tax paid',M,'','m'],
+ ['12A – 12D','Reconciliation of ITC – books vs GSTR-9',M,'','m'],
+ ['14','Expense-head-wise ITC reconciliation',O,'','o']
+];
+function moRows(a,f){var r=[];for(var i=0;i<a.length;i++){if(f&&f!=='all'&&a[i][4]!==f)continue;r.push([a[i][0],a[i][1],a[i][2],a[i][3]||'—']);}return r;}
+H.mo=function(){
+  var s='<div class="sechead"><h2>Mandatory vs optional tables — FY 2025-26 onwards</h2><span class="chip amber">Relaxations per Notification 05/2026-CT dated 26.10.2026</span></div>';
+  s+='<div class="seg" id="moSeg"><button type="button" class="on" data-mo="all">All tables</button><button type="button" data-mo="m">Mandatory</button><button type="button" data-mo="o">Optional</button><button type="button" data-mo="a">Auto-populated</button></div>';
+  s+='<h3>GSTR-9</h3><div class="mt" id="mo9">'+tbl(['Table','Nature of reporting','Status','Relaxation / note'],moRows(MO9),'tbcol')+'</div>';
+  s+='<h3 class="mt2">GSTR-9C</h3><div class="mt" id="mo9c">'+tbl(['Table','Nature of reporting','Status','Relaxation / note'],moRows(MO9C),'tbcol')+'</div>';
+  s+='<h3 class="mt2">Exemption from filing</h3><div class="mt">'+tbl(['Form','Turnover limit for exemption','Source'],[
+   ['GSTR-9','Up to ₹2 crore','Notification 15/2025-CT dated 17.09.2025 (every year from FY 2024-25)'],
+   ['GSTR-9C','Up to ₹5 crore','Rule 80(3)']
+  ],'tbcol')+'</div>';
+  s+='<div class="callout"><b class="t">Not relaxed</b>Rule-wise reversals cannot be consolidated in 7H; Tables 12 and 13 cannot be left blank or netted; cross-year ITC (6A1, 12, 13) must be reported wherever applicable.</div>';
+  return s;
+};
+
+/* ===================== 9 → 9C DATA FLOW ===================== */
+var FB={
+ g1:[20,60,175,64,'GSTR-1 / 1A / IFF','Outward supplies','src'],
+ g3:[20,165,175,64,'GSTR-3B','ITC, tax paid','src'],
+ g2:[20,270,175,64,'GSTR-2B','Table 8A Excel','src'],
+ ice:[20,375,175,64,'ICEGATE','Bills of Entry','src'],
+ nx:[20,480,175,64,'Apr – Nov 2026','GSTR-1 / 3B next year','src'],
+ t45:[395,40,245,62,'Tables 4 – 5','5N ₹50,68,00,000','g9'],
+ t67:[395,120,245,62,'Tables 6 – 7','7J ₹47,70,000 · 6A1 ₹2,30,000','g9'],
+ t8:[395,200,245,62,'Table 8','8A ₹44,10,000 · 8D ₹70,000','g9'],
+ t9:[395,280,245,62,'Table 9','Tax payable &amp; paid','g9'],
+ t1014:[395,360,245,62,'Tables 10 – 14','12 ₹25,000 · 13 ₹1,45,000','g9'],
+ t17:[395,440,245,62,'Table 17','HSN – two lines at rate change','g9'],
+ c5:[835,40,255,72,'Table 5 – turnover','5P ₹50,73,00,000 · 5R ₹5,00,000','g9c'],
+ c7:[835,135,255,62,'Tables 7 – 8','Taxable turnover','g9c'],
+ c9:[835,220,255,62,'Tables 9 – 10','Rate-wise tax · both regimes','g9c'],
+ c12:[835,305,255,72,'Tables 12 – 13','12D ₹49,75,000 · 12F (–) ₹25,000','g9c'],
+ c11:[835,400,255,62,'Table 11 / Part V','DRC-03 ₹90,000 + interest','g9c'],
+ afs:[835,500,255,64,'Audited accounts (AFS)','Revenue ₹48,60,00,000 · ITC ₹48,90,000','afs']
+};
+var BC={src:['#EFF6FF','#93C5FD','#1E3A8A'],g9:['#EFF6FF','#60A5FA','#1E40AF'],g9c:['#F0F9FF','#38BDF8','#0C4A6E'],afs:['#ECFDF5','#34D399','#065F46']};
+function bxR(k){var b=FB[k];return [b[0]+b[2],b[1]+b[3]/2];}
+function bxL(k){var b=FB[k];return [b[0],b[1]+b[3]/2];}
+function cv(a,b,dy1,dy2){var x1=a[0],y1=a[1]+(dy1||0),x2=b[0],y2=b[1]+(dy2||0),mx=(x1+x2)/2;return 'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2;}
+var FS=[
+ ['g1','t45',cv(bxR('g1'),bxL('t45')),'#1D4ED8','GSTR-1 / 1A / IFF → GSTR-9 Tables 4 – 5','Outward supplies auto-populate Tables 4 and 5 for the year\'s own tax periods. Sample Industries (Tamil Nadu): 5N = ₹50,68,00,000, including the ₹1,80,00,000 stock transfer to Karnataka. 4I – 4L mandatory; 5H – 5K optional.'],
+ ['g1','t17',cv(bxR('g1'),bxL('t17'),8,0),'#2563EB','GSTR-1 Table 12 → GSTR-9 Table 17','HSN summary is pre-filled from Table 12 of GSTR-1/1A. 6 digits (preceding-year turnover ₹46 crore). An HSN whose rate changed on 22.09.2025 is shown on two lines – 12% and 5%.'],
+ ['g3','t67',cv(bxR('g3'),bxL('t67')),'#2563EB','GSTR-3B → GSTR-9 Tables 6 – 7','6A ₹52,00,000 auto from GSTR-3B 4A; 6A1 ₹2,30,000 prior-year ITC; 6A2 ₹49,70,000; reversals rule-wise 7A ₹60,000, 7C ₹80,000, 7E ₹25,000, 7H ₹35,000; 7J = ₹47,70,000.'],
+ ['g3','t9',cv(bxR('g3'),bxL('t9'),10,0),'#3B82F6','GSTR-3B → GSTR-9 Table 9','Tax payable and paid (cash / ITC), head-wise and rate-wise, with interest and late fee. A shortfall is paid through DRC-03, not through GSTR-9.'],
+ ['g2','t8',cv(bxR('g2'),bxL('t8')),'#0284C7','GSTR-2B → GSTR-9 Table 8','8A ₹44,10,000 (FY 2025-26 documents appearing in 2B up to October 2026); 8B = 6B ₹42,80,000; 8C ₹60,000; 8D ₹70,000 fully explained by 8E ₹25,000 + 8F ₹45,000.'],
+ ['ice','t8',cv(bxR('ice'),bxL('t8'),0,14),'#0D9488','ICEGATE → GSTR-9 Table 8 (imports)','8G ₹5,40,000 = 8H ₹5,00,000 (as 6E) + 8H1 ₹40,000 (Bill of Entry of 28.03.2026 availed in April 2026); 8I nil.'],
+ ['nx','t1014',cv(bxR('nx'),bxL('t1014')),'#B45309','Apr – Nov 2026 returns → GSTR-9 Tables 10 – 14','Additions / reductions declared up to 30.11.2026 go to Tables 10 / 11 (Table 14 for differential tax). ITC: Table 12 ₹25,000 reversed next year; Table 13 ₹1,45,000 availed next year – not netted.'],
+ ['afs','c5','M1090,520 C1135,520 1135,76 1090,76','#059669','Audited accounts → GSTR-9C Table 5A','5A ₹48,60,00,000 revenue from operations (Tamil Nadu). Adjustments: + unbilled opening ₹40,00,000, advances ₹20,00,000, stock transfer ₹1,80,00,000, discounts ₹30,00,000, scrap ₹25,00,000; – unbilled closing ₹55,00,000, advances ₹15,00,000, forex ₹12,00,000 → 5P ₹50,73,00,000.'],
+ ['t45','c5',cv(bxR('t45'),bxL('c5'),0,-6),'#0E7490','GSTR-9 Table 5N → GSTR-9C Table 5Q','5Q ₹50,68,00,000 against 5P ₹50,73,00,000 → 5R un-reconciled ₹5,00,000 (invoice of 31.03.2026 omitted from GSTR-1); reason in Table 6.'],
+ ['t45','c7',cv(bxR('t45'),bxL('c7'),12,0),'#0369A1','GSTR-9 Tables 4 – 5 → GSTR-9C Tables 7 – 8','Annual turnover after adjustments less exempt / nil / non-GST, zero-rated without payment and RCM supplies = taxable turnover, compared with GSTR-9; reasons in Table 8.'],
+ ['t9','c9',cv(bxR('t9'),bxL('c9')),'#075985','GSTR-9 Table 9 → GSTR-9C Tables 9 – 10','Rate-wise reconciliation of tax payable for both rate regimes (12% up to 21.09.2025 and 5% from 22.09.2025 for the same HSN); reasons in Table 10.'],
+ ['afs','c12','M1090,545 C1150,545 1150,341 1090,341','#059669','Audited accounts → GSTR-9C Table 12A','12A ₹48,90,000 ITC as per GST input ledgers of FY 2025-26.'],
+ ['t67','c12',cv(bxR('t67'),bxL('c12'),0,-14),'#1E40AF','GSTR-9 7J + 6A1 → GSTR-9C 12B / 12E','12B ₹2,30,000 (= 6A1); 12E ₹50,00,000 (= 7J ₹47,70,000 + 6A1 ₹2,30,000). If the portal 12E shows 7J only, explain the 6A1 difference.'],
+ ['t1014','c12',cv(bxR('t1014'),bxL('c12'),0,14),'#D97706','GSTR-9 Table 13 → GSTR-9C 12C','12C ₹1,45,000 (= Table 13) → 12D ₹49,75,000; 12F (–) ₹25,000, explained in Table 13 by the Table 12 reversal of ₹25,000 – no further liability.'],
+ ['c5','c11','M835,100 C790,100 790,431 835,431','#B91C1C','GSTR-9C 5R → Table 11 / Part V','₹5,00,000 × 18% = ₹90,000 additional liability, paid through DRC-03 with interest under section 50 before filing GSTR-9C.']
+];
+var FI=0,FT=null,FPLAY=true;
+function flowSVG(){
+  var s='<svg viewBox="0 0 1160 590" xmlns="http://www.w3.org/2000/svg" id="fsvg" role="img" aria-label="Data flow from returns into GSTR-9 and GSTR-9C">';
+  s+='<text class="colh" x="20" y="34">Source returns</text><text class="colh" x="395" y="26">GSTR-9 · FY 2025-26</text><text class="colh" x="835" y="26">GSTR-9C · FY 2025-26</text>';
+  for(var i=0;i<FS.length;i++)s+='<path id="fp'+i+'" class="fl" d="'+FS[i][2]+'" style="--fc:'+FS[i][3]+'"/>';
+  for(var k in FB){if(!FB.hasOwnProperty(k))continue;var b=FB[k],c=BC[b[6]];
+    s+='<g class="bx" id="fb_'+k+'" data-fb="'+k+'"><rect x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" rx="14" fill="'+c[0]+'" stroke="'+c[1]+'" stroke-width="1.5"/>';
+    s+='<text x="'+(b[0]+14)+'" y="'+(b[1]+26)+'" font-size="14.5" font-weight="700" fill="'+c[2]+'">'+b[4]+'</text><text x="'+(b[0]+14)+'" y="'+(b[1]+47)+'" font-size="12" fill="#5C6283">'+b[5]+'</text></g>';}
+  s+='<g id="fdot"></g></svg>';
+  return s;
+}
+H.dflow=function(){
+  var s='<div class="sechead"><h2>How data flows from GSTR-9 to GSTR-9C</h2><span class="chip sky">M/s Sample Industries · Tamil Nadu GSTIN</span></div>';
+  s+='<p class="lead">Each line shows where a figure comes from and where it lands. Play the sequence, step through it, or tap a box to see every flow into and out of it.</p>';
+  s+='<div class="flowwrap noabbr">'+flowSVG()+'</div>';
+  s+='<div class="flowctl"><button class="btn pri" type="button" id="fPlay">❚❚ Pause</button><button class="btn" type="button" id="fPrev">‹ Previous</button><button class="btn" type="button" id="fNext">Next ›</button><button class="btn ghost" type="button" id="fAll">Show all flows</button><div class="dots" id="fDots"></div></div>';
+  s+='<div class="cap noabbr" id="fCap"></div>';
+  s+='<h3 class="mt2">All flows</h3><ol class="steplist mt">';
+  for(var i=0;i<FS.length;i++)s+='<li class="srch" data-fs="'+i+'" style="--fc:'+FS[i][3]+'"><b>'+FS[i][4]+'</b><br><span class="note" style="margin:0">'+FS[i][5]+'</span></li>';
+  return s+'</ol>';
+};
+function flowShow(i,boxKey){
+  var svg=$('fsvg');if(!svg)return;
+  var ps=svg.querySelectorAll('.fl'),bs=svg.querySelectorAll('.bx');
+  for(var a=0;a<ps.length;a++)ps[a].setAttribute('class','fl');
+  for(var b=0;b<bs.length;b++)bs[b].setAttribute('class','bx');
+  var on=[];
+  if(boxKey){for(var c=0;c<FS.length;c++)if(FS[c][0]===boxKey||FS[c][1]===boxKey)on.push(c);}
+  else if(i===-1){for(var d=0;d<FS.length;d++)on.push(d);}
+  else on.push(i);
+  svg.setAttribute('class',on.length===FS.length?'':'dim');
+  var dots='';
+  for(var e=0;e<on.length;e++){var f=FS[on[e]];$('fp'+on[e]).setAttribute('class','fl on');$('fb_'+f[0]).setAttribute('class','bx on');$('fb_'+f[1]).setAttribute('class','bx on');
+    dots+='<circle r="6" fill="'+f[3]+'"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#fp'+on[e]+'" xlink:href="#fp'+on[e]+'" xmlns:xlink="http://www.w3.org/1999/xlink"/></animateMotion></circle>';}
+  $('fdot').innerHTML=dots;
+  var cap=$('fCap');
+  if(boxKey){var nm=FB[boxKey][4];var t='';for(var g=0;g<on.length;g++)t+='<div style="margin-top:6px"><b>'+FS[on[g]][4]+'</b> — '+FS[on[g]][5]+'</div>';cap.innerHTML='<div class="n">Box</div><h4>'+nm+'</h4>'+(t||'<div>No flow mapped.</div>');}
+  else if(i===-1){cap.innerHTML='<div class="n">All '+FS.length+' flows</div><h4>Complete picture</h4><div>Returns feed GSTR-9; GSTR-9 and the audited accounts together feed GSTR-9C; un-reconciled amounts end in Part V / DRC-03.</div>';}
+  else{cap.innerHTML='<div class="n">Flow '+(i+1)+' of '+FS.length+'</div><h4>'+FS[i][4]+'</h4><div>'+FS[i][5]+'</div>';}
+  var dd='';for(var h=0;h<FS.length;h++)dd+='<i class="'+(h===i&&!boxKey?'on':'')+'" data-fs="'+h+'" title="Flow '+(h+1)+'"></i>';$('fDots').innerHTML=dd;
+  var li=document.querySelectorAll('.steplist li');for(var m=0;m<li.length;m++)li[m].className=li[m].className.replace(/\s?on/g,'')+((+li[m].getAttribute('data-fs')===i&&!boxKey)?' on':'');
+}
+function flowTick(){FI=(FI+1)%FS.length;flowShow(FI);}
+function flowPlay(on){FPLAY=on;if(FT){clearInterval(FT);FT=null;}if(on)FT=setInterval(flowTick,3800);var b=$('fPlay');if(b)b.innerHTML=on?'❚❚ Pause':'▶ Play';}
+
+/* ===================== CROSS-YEAR ITC ===================== */
+var XS=[
+ ['FY 2024-25 ITC availed first time in GSTR-3B of FY 2025-26 (up to 30.11.2025)','In 6A (auto) and shown in 6A1; excluded from 6B–6H','—'],
+ ['FY 2025-26 ITC not availed in the year; availed first time in GSTR-3B of Apr–Nov 2026','8C and 13','6A1'],
+ ['FY 2025-26 ITC availed and reversed in the year (other than Rule 37/37A), reclaimed in FY 2026-27','Claim in 6B; reversal in 7H; reclaim in 13 (not 8C)','6A1'],
+ ['FY 2025-26 ITC reversed under Rule 37/37A, reclaimed in FY 2026-27','Claim in 6B; reversal in 7A / 7A1','6H (not 6A1)'],
+ ['Earlier-year Rule 37/37A reversal reclaimed during FY 2025-26','6H','—'],
+ ['FY 2025-26 ITC availed in the year, reversed in FY 2026-27 (up to 30.11.2026)','12','As per that year\'s form'],
+ ['FY 2025-26 credit note uploaded by supplier in FY 2026-27 (appears in 8A)','Negative value in 8C; reversal in 12 where ITC was availed','—'],
+ ['Import IGST of FY 2025-26 availed in FY 2026-27','8H1','As per that year\'s form'],
+ ['RCM of FY 2024-25 paid in GSTR-3B of FY 2025-26, with ITC','Liability and ITC in GSTR-9 of FY 2025-26 (FAQ of 04.12.2025); difference explained in GSTR-9C','—'],
+ ['Rule 42 annual re-computation – short reversal paid in FY 2026-27','7C at monthly figure; further reversal in Table 12','—'],
+ ['Rule 42 annual re-computation – excess reversal reclaimed in FY 2026-27','7C at monthly figure; reclaim in Table 13','6A1']
+];
+H.xitc=function(){
+  var s='<div class="sechead"><h2>Cross-year ITC reporting</h2><span class="chip sky">GSTN FAQs of 16.10.2025, 04.12.2025, 17.12.2025 applied</span></div>';
+  s+='<div class="card accent" style="--c:#0284C7"><h3>Where does it go? — placement finder</h3><div class="f"><label for="xsel">Select the situation</label><select id="xsel"><option value="">— choose a situation —</option>';
+  for(var i=0;i<XS.length;i++)s+='<option value="'+i+'">'+XS[i][0]+'</option>';
+  s+='</select></div><div id="xout" class="res"></div></div>';
+  s+='<div class="callout blue"><b class="t">Test before you report</b>For every item ask: (1) To which financial year does the document belong? (2) In which year\'s GSTR-3B was the ITC availed or reversed? (3) Was a reversal made under Rule 37/37A or for any other reason? The answers decide the table.</div>';
+  s+='<h3 class="mt2">Situation map</h3><div class="mt">'+tbl(['Situation','GSTR-9 of FY 2025-26','GSTR-9 of FY 2026-27'],XS.slice(0,9))+'</div>';
+  s+='<div class="callout"><b class="t">Control check</b>Table 13 of the FY 2024-25 GSTR-9 (as filed) should agree with Table 6A1 of FY 2025-26; Table 13 of FY 2025-26 should agree with what will be reported in 6A1 of FY 2026-27. Inconsistencies are readily visible to departmental analytics.</div>';
+  s+='<h3 class="mt2">M/s Sample Industries — complete ITC year (Tamil Nadu GSTIN)</h3><p class="note" style="margin-bottom:10px">All amounts are IGST + CGST + SGST. Load these into Calculators → GSTR-9 ITC Tables 6–8 with “Load sample”.</p>';
+  s+=tbl(['Ref','Facts','>₹'],[
+   ['a','Total ITC availed in GSTR-3B Table 4A, April 2025 – March 2026','52,00,000'],
+   ['b','Included in (a): FY 2024-25 invoices claimed for the first time in GSTR-3B of April–November 2025','2,00,000'],
+   ['c','Included in (a): FY 2024-25 ITC temporarily reversed on 31.03.2025 (goods in transit), reclaimed in May 2025','30,000'],
+   ['d','Included in (a): FY 2023-24 ITC reversed under Rule 37, reclaimed in July 2025 after paying the supplier','40,000'],
+   ['e','Included in (a): IGST on imports ₹5,00,000; RCM – unregistered ₹50,000; RCM – registered ₹1,00,000','6,50,000'],
+   ['f','Reversals – Rule 37 ₹60,000; Rule 42 ₹80,000; s.17(5) ₹25,000; temporary reversal of a disputed invoice on 31.03.2026 ₹35,000','2,00,000'],
+   ['g','GSTR-2B value of FY 2025-26 documents (incl. those appearing up to October 2026) – Table 8A','44,10,000'],
+   ['h','Invoice dt. Feb 2026 uploaded by supplier in May 2026; ITC availed in GSTR-3B of May 2026','70,000'],
+   ['i','Credit note dt. 20.03.2026 uploaded by supplier in June 2026; ITC reversed in June 2026','10,000'],
+   ['j','Disputed invoice in (f) settled – ITC reclaimed in August 2026','35,000'],
+   ['k','ITC on goods destroyed by fire in March 2026, detected and reversed in September 2026','15,000'],
+   ['l','In GSTR-2B but not availed – lapsed (time-barred) ₹25,000; blocked credit on motor vehicle ₹45,000','70,000'],
+   ['m','IGST paid on Bills of Entry of FY 2025-26 ₹5,40,000; BoE dt. 28.03.2026 (₹40,000) availed in April 2026','5,40,000'],
+   ['n','Rule 37 reversal of ₹60,000 in (f) – supplier paid and ITC reclaimed in January 2027','60,000']
+  ],'tbcol');
+  s+='<h3 class="mt2">Solution — GSTR-9 of FY 2025-26</h3><div class="mt">'+tbl(['Table','>₹','Working / reason'],[
+   ['6A','52,00,000','Auto from GSTR-3B Table 4A (a)'],
+   ['6A1','2,30,000','(b) ₹2,00,000 + (c) ₹30,000 – prior-year ITC, including a non-Rule 37 reclaim'],
+   ['6A2','49,70,000','6A – 6A1'],
+   ['6B','42,80,000','Balance: 49,70,000 – 5,00,000 – 50,000 – 1,00,000 – 40,000'],
+   ['6C / 6D','1,50,000','RCM ₹50,000 / ₹1,00,000'],
+   ['6E','5,00,000','Import of goods'],
+   ['6H','40,000','(d) Rule 37 reclaim of earlier-year reversal – not 6A1'],
+   ['6J','Nil','6A2 – 6I = nil'],
+   ['7A / 7C / 7E','1,65,000','Rule 37 ₹60,000; Rule 42 ₹80,000; s.17(5) ₹25,000 – rule-wise'],
+   ['7H','35,000','Temporary reversal – disputed invoice (specify)'],
+   R(['7J','47,70,000','6O ₹49,70,000 – 7I ₹2,00,000. 7J excludes 6A1, so it will not equal GSTR-3B 4C (₹50,00,000) – a difference GSTN has acknowledged'],'tot'),
+   ['8A','44,10,000','Auto (g)'],
+   ['8B','42,80,000','= 6B'],
+   ['8C','60,000','(h) ₹70,000 less (i) ₹10,000 credit note – reclaim (j) NOT here'],
+   ['8D','70,000','8A – (8B + 8C)'],
+   ['8E / 8F','70,000','(l) lapsed ₹25,000 / ineligible ₹45,000 – explains 8D fully'],
+   ['8G / 8H / 8H1','5,40,000','₹5,40,000 = ₹5,00,000 + ₹40,000 (m); 8I nil'],
+   ['12','25,000','(i) ₹10,000 + (k) ₹15,000 – FY 2025-26 ITC reversed in FY 2026-27'],
+   ['13','1,45,000','(h) ₹70,000 + (j) ₹35,000 + import IGST ₹40,000 – FY 2025-26 ITC availed in FY 2026-27']
+  ],'tbcol')+'</div>';
+  s+='<div class="grid g2 mt"><div class="card srch"><h3>Carried to GSTR-9 of FY 2026-27</h3>Table 6A1 = ₹1,45,000 (equal to Table 13 above). The Rule 37 reclaim of ₹60,000 in January 2027 (n) goes to Table 6H of FY 2026-27 – not to Table 13 or 6A1.</div><div class="card srch"><h3>Why 8C ≠ 13</h3>8C captures only first-time claims of documents in 8A (net of the credit note): ₹60,000. Table 13 also carries the reclaim (j) and import IGST availed late, which are not first-time 8A claims: ₹1,45,000.</div></div>';
+  s+='<h3 class="mt2">M/s Sample Industries — Rule 42 annual re-computation</h3><p class="note" style="margin-bottom:10px">Monthly reversal under Rule 42(1): ₹80,000 (Table 7C). Final Rule 42(2) computation done before the due date of the September 2026 return.</p>'+tbl(['Scenario','>Final reversal due','Adjustment in GSTR-3B (Sept 2026)','Suggested reporting'],[
+   ['(i) Short reversal','₹95,000','Further reversal ₹15,000 with interest u/s 50','7C ₹80,000 for FY 2025-26; ₹15,000 in Table 12'],
+   ['(ii) Excess reversal','₹70,000','Reclaim ₹10,000','7C ₹80,000; ₹10,000 in Table 13 and 6A1 of FY 2026-27']
+  ])+'<p class="note">GSTN has not issued a specific clarification on the Rule 42(2) annual adjustment; the treatment follows the scheme of Tables 12 and 13. Some practitioners instead show the final figure in 7C with a note.</p>';
+  s+='<h3 class="mt2">M/s Sample Industries — reverse charge paid in a later year</h3><p class="note" style="margin-bottom:10px">Legal fees of the Tamil Nadu unit ₹1,00,000 (RCM GST ₹18,000) for February 2026 paid in GSTR-3B of June 2026 with interest. Converse: RCM of FY 2024-25 (₹12,000) paid in GSTR-3B of July 2025.</p>'+tbl(['Return','Reporting'],[
+   ['GSTR-9 FY 2025-26','RCM of FY 2024-25 paid in July 2025 (₹12,000) – in Table 4G (liability) and the RCM ITC table (6C/6D) of this year\'s return'],
+   ['GSTR-9 FY 2026-27','RCM of FY 2025-26 paid in June 2026 (₹18,000) – reported in the year of payment'],
+   ['GSTR-9C FY 2025-26','Books show ₹18,000 RCM liability in FY 2025-26 not reflected in GSTR-9 – shown as a reconciling reason (Tables 8/10), with payment details']
+  ])+'<p class="note">Based on the GSTN FAQ of 04.12.2025.</p>';
+  return s;
+};
+
+/* ===================== CHECKLIST ===================== */
+var CK=[
+ ['A · Pre-requisites',['All GSTR-1/IFF and GSTR-3B of April 2025 – March 2026 filed (tile is not enabled otherwise).','PAN-level aggregate turnover computed; GSTR-9 / GSTR-9C applicability decided for each GSTIN.','Audited / finalised financial statements and trial balance available GSTIN-wise.','DSC of authorised signatory valid, or EVC mobile / e-mail updated.','GSTR-9 of FY 2024-25 (especially Tables 12 and 13) available for linkage.']],
+ ['B · Outward supplies',['Sales register vs GSTR-1/1A vs GSTR-3B Table 3.1 – month-wise, head-wise and rate-wise.','Rate split at 21/22.09.2025 verified; no post-21.09.2025 invoice at old rate; time-of-supply cases examined.','E-invoice (IRN) and e-way bill data reconciled with GSTR-1.','Exports: shipping bills, LUT, FIRC/BRC; IGST-paid vs LUT exports bifurcated (4C vs 5A).','SEZ supplies with / without payment and deemed exports classified correctly.','Advances received and adjusted (4F); rate on advances straddling 22.09.2025.','Schedule I supplies – stock transfers / cross-charges to distinct persons, related-party supplies.','Sale of capital goods, scrap, assets written off; section 18(6) payments.','Other income ledgers (rent, commission, interest, recoveries, notice pay, canteen) examined.','Exempt, nil-rated, non-GST and Schedule III items identified for Table 5; ECO supplies for 5C1.','Credit / debit notes (incl. post-supply discounts) verified under sections 15(3)(b) and 34; declared by 30.11.2026.','April–November 2026 amendments compiled for Tables 10, 11 and 14.','Table 17 HSN data reconciled with GSTR-1 Table 12, with quantity / UQC; two lines where rate changed.']],
+ ['C · Input tax credit',['Purchase register vs GSTR-2B vs GSTR-3B Table 4A – supplier-wise and month-wise.','Table 8A Excel downloaded; excluded documents (wrong POS, RCM, late filing, changed GSTIN, amendments) examined.','IMS actions (accepted / rejected / pending) and declared reversals on credit notes reviewed.','FY 2024-25 ITC availed in FY 2025-26 quantified for Table 6A1.','ITC split into inputs, input services and capital goods (6B).','RCM liability and ITC (6C/6D vs 4G vs 3.1(d)) reconciled – rent, GTA, legal, director, security services, etc.','Imports: ICEGATE Bill of Entry data vs 6E / 8G / 8H / 8H1.','ISD credits (6G) vs GSTR-6.','Reversals rule-wise – Rule 37, 37A, 42/43 (annual recomputation), section 17(5), others.','Reclaims of earlier Rule 37/37A reversals (6H) and of other temporary reversals (13 / 6A1 logic).','Section 16(2)(aa), (b), (c) conditions reviewed; doubtful credits identified.','Pending FY 2025-26 ITC availed in GSTR-3B up to 30.11.2026 (8C / 13).','8D difference fully explained through 8E / 8F, timing and supplier-error items.','Electronic credit ledger balance as on 31.03.2026 vs books; compensation cess balance reviewed.']],
+ ['D · Tax payment and other items',['Tax payable vs paid (Table 9) head-wise; utilisation order under sections 49 / 49A and Rule 88A.','Short payments paid through DRC-03 with interest under section 50 before filing.','Interest on delayed GSTR-3B / delayed payment computed and paid.','TDS / TCS credits (GSTR-7 / 8) accepted and reconciled.','Notices received (ASMT-10, DRC-01A, DRC-01, ADT) for FY 2025-26 considered.']],
+ ['E · GSTR-9C specific',['AFS turnover split GSTIN-wise (5A); branch / inter-unit accounts reconciled.','Unbilled revenue, unadjusted advances, forex, discounts, Schedule I items listed (5B – 5O).','Rate-wise tax reconciliation (Table 9) for both rate regimes.','ITC per books (12A) reconciled with GSTR-9; cross-year items (12B / 12C).','Un-reconciled differences quantified; additional liability paid through DRC-03 before filing.','GSTR-9 and GSTR-9C filed together to avoid late fee for GSTR-9C.']]
+];
+var CKS={};
+try{CKS=JSON.parse(localStorage.getItem('gstr9ck2526')||'{}')||{};}catch(e){CKS={};}
+H.check=function(){
+  var s='<div class="sechead"><h2>Reconciliation checklist</h2></div>';
+  s+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><b id="ckTxt">0 of 0 done</b><button class="btn sm" type="button" id="ckReset">Reset checklist</button></div><div class="prog"><i id="ckBar"></i></div></div>';
+  s+='<div class="grid g2 mt">';
+  for(var g=0;g<CK.length;g++){
+    s+='<div class="card"><h3>'+CK[g][0]+'</h3><ul class="ck">';
+    for(var i=0;i<CK[g][1].length;i++){var k=g+'-'+i;s+='<li class="srch'+(CKS[k]?' done':'')+'" data-k="'+k+'"><span class="bx"></span><span class="t">'+CK[g][1][i]+'</span></li>';}
+    s+='</ul></div>';
+  }
+  s+='</div>';
+  s+='<h3 class="mt2">Documents and data to keep ready</h3><div class="mt">'+tbl(['Category','Documents / data'],[
+   ['Portal returns','GSTR-1, 1A, IFF, GSTR-3B (Apr 2025 – Nov 2026), GSTR-2B (Apr 2025 – Oct 2026), Table 8A Excel, HSN download, cash / credit / liability ledgers, GSTR-9 &amp; 9C of FY 2024-25'],
+   ['Books of account','Audited financials, trial balance, sales and purchase registers, DN/CN registers, fixed asset register, GST ledgers, advances and unbilled revenue schedules'],
+   ['Third-party data','E-invoice and e-way bill reports, ICEGATE Bill of Entry data, shipping bills, FIRC/BRC, GSTR-7/8 credits, GSTR-6'],
+   ['Working papers','Rule 42/43, Rule 37 ageing, section 17(5) analysis, RCM working, interest computation, DRC-03 challans, rate-change bifurcation'],
+   ['Proceedings','Notices, replies and orders for FY 2025-26; refund orders']
+  ])+'</div>';
+  return s;
+};
+
+/* ===================== SCRUTINY ===================== */
+H.scr=function(){
+  var s='<div class="sechead"><h2>Common errors &amp; scrutiny</h2></div><div class="grid g2">';
+  var E=['Filing GSTR-9 before 30.11.2026 and losing the right to avail pending ITC or issue credit notes.','Reporting FY 2024-25 ITC in current-year tables instead of 6A1.','Reporting reclaimed ITC in 8C, inflating 8D.','Showing Rule 37/37A reclaims in 6A1 instead of 6H.','Consolidating reversals in 7H – relaxation withdrawn.','Omitting Tables 12 and 13 – no longer optional.','One line in Table 17 for an HSN whose rate changed on 22.09.2025.','Filing GSTR-9 alone and deferring GSTR-9C.','Treating GSTR-9 as a vehicle to pay tax or claim ITC.','Not reconciling GSTIN-wise turnover with the AFS in multi-State entities.'];
+  for(var i=0;i<E.length;i++)s+='<div class="err srch"><span class="n">'+(i+1)+'</span><div>'+E[i]+'</div></div>';
+  s+='</div><h3 class="mt2">Issues commonly raised in ASMT-10 / DRC-01A / audit</h3><div class="mt">'+tbl(['Mismatch','Typical explanation / defence material'],[
+   ['GSTR-1 liability higher than GSTR-3B','Amendments, credit notes, advances, duplicate reporting; Tables 10/11; DRC-03 for genuine short payment'],
+   ['GSTR-3B ITC exceeds GSTR-2B (8D negative)','Section 16(2)(aa) compliance; supplier confirmations; documents in later 2B; RCM / import credit outside 8A'],
+   ['Turnover lower than ITR / AFS / 26AS','GSTR-9C items – non-supply income, Schedule III, forex, unbilled revenue'],
+   ['E-way bill value exceeds turnover','Cancelled e-way bills, job work, stock transfers, returns'],
+   ['Ineligible ITC / ITC from cancelled suppliers','Table 7E disclosure; supplier status on invoice date; Rule 37A reversals'],
+   ['Rate mismatch around 22.09.2025','Time-of-supply analysis under section 14 – invoice and payment dates'],
+   ['Non-payment of RCM','RCM working, Tables 4G / 6C / 6D, DRC-03 payments']
+  ])+'</div>';
+  return s;
+};
+
+/* ===================== NOTIFICATIONS ===================== */
+var CBN='https://taxinformation.cbic.gov.in/content-page/explore-notification';
+var CBC='https://taxinformation.cbic.gov.in/content-page/explore-circulars';
+var GNU='https://www.gst.gov.in/newsandupdates';
+var NT=[
+ ['Notification 05/2026-Central Tax','26.10.2026','CGST (Amendment) Rules, 2026','GSTR-9 / 9C instructions extend the reporting relaxations to FY 2025-26 onwards; other form changes largely w.e.f. 01.11.2026. Basis of the Mandatory / Optional matrix in this tool.','n','https://taxinformation.cbic.gov.in/view-pdf/1010782/ENG/Notifications'],
+ ['Notification 03/2026-Central Tax','26.10.2026','Finance Act, 2026 – sections 153 to 155 in force','Sections 15(3)(b), 34(1) and 54 amended from 01.11.2026. Post-supply discount credit notes issued 01.11.2026 – 30.11.2026 for FY 2025-26 supplies follow the amended law (Table 11).','n','https://taxinformation.cbic.gov.in/view-pdf/1010780/ENG/Notifications'],
+ ['Notification 15/2025-Central Tax','17.09.2025','Annual return exemption up to ₹2 crore','GSTR-9 exempted for aggregate turnover up to ₹2 crore, every year from FY 2024-25 onwards.','n','https://taxinformation.cbic.gov.in/view-pdf/1010465/ENG/Notifications'],
+ ['Notification 13/2025-Central Tax','17.09.2025','CGST (Third Amendment) Rules, 2025 – revised GSTR-9 / 9C','New 6A1, 6A2, 8H1, 5C1 and the late-fee table in GSTR-9C. FY 2025-26 is the second year of these formats.','n','https://taxinformation.cbic.gov.in/view-pdf/1010462/ENG/Notifications'],
+ ['Notification 09/2025-Central Tax (Rate)','17.09.2025','Rate rationalisation w.e.f. 22.09.2025','Two rate regimes in FY 2025-26: Table 17 shows the same HSN on two lines; GSTR-9C Table 9 shows both rate sets.','n','https://taxinformation.cbic.gov.in/view-pdf/1010436/ENG/Notifications'],
+ ['Circular 251/08/2025-GST','12.09.2025','Secondary / post-sale discounts','Governs FY 2025-26 discount credit notes issued before 01.11.2026.','c','https://taxinformation.cbic.gov.in/view-pdf/1003287/ENG/Circulars'],
+ ['Circular 246/03/2025-GST','30.01.2025','Late fee on the complete annual return','Late fee runs until GSTR-9 and GSTR-9C are both filed; the portion paid with GSTR-9 is adjusted against the total.','c','https://taxinformation.cbic.gov.in/view-pdf/1003263/ENG/Circulars'],
+ ['Notification 08/2025-Central Tax','23.01.2025','Waiver of excess GSTR-9C late fee up to FY 2022-23','Not applicable to FY 2025-26.','n','https://taxinformation.cbic.gov.in/view-pdf/1010288/ENG/Notifications'],
+ ['Notification 28/2023-Central Tax','31.07.2023','Finance Act, 2023 amendments in force from 01.10.2023','Includes the three-year bar under section 44(2): FY 2025-26 GSTR-9 cannot be filed after 31.12.2029.','n','https://taxinformation.cbic.gov.in/view-pdf/1009806/ENG/Notifications'],
+ ['Notification 07/2023-Central Tax','31.03.2023','Rationalised GSTR-9 late fee from FY 2022-23','₹5 crore / ₹20 crore slabs used in the late-fee calculator.','n','https://taxinformation.cbic.gov.in/view-pdf/1009689/ENG/Notifications'],
+ ['Circular 170/02/2022-GST','06.07.2022','ITC reversals and ineligible ITC in GSTR-3B Table 4','Foundation for GSTR-9 Tables 6, 7 and 8.','c','https://taxinformation.cbic.gov.in/view-pdf/1003102/ENG/Circulars'],
+ ['Notification 30/2021-Central Tax','30.07.2021','Rule 80(3) amended','GSTR-9C self-certified; no CA / CMA certification.','n','https://taxinformation.cbic.gov.in/view-pdf/1000503/ENG/Notifications'],
+ ['Notification 78/2020-Central Tax','15.10.2020','HSN digit requirement','Basis for the 4 / 6-digit rule in Table 17.','n','https://taxinformation.cbic.gov.in/view-pdf/1000553/ENG/Notifications']
+];
+var ADV=[
+ ['13.10.2026','Annual Returns in the form of GSTR-9/9C for FY 2025-26','Forms enabled on the portal from 08.10.2026. The GSTR-9/9C tile appears only after all GSTR-1 and GSTR-3B for FY 2025-26 are filed. For assistance, raise a ticket on the GSTN self-service helpdesk (selfservice.gstsystem.in).','https://www.gst.gov.in/newsandupdates/read/677'],
+ ['17.12.2025','Consolidated FAQs on GSTR-9/9C (FY 2024-25)','Consolidates FAQs of 16.10.2025 and 04.12.2025: logic of 6A1, 6H, 7H, 8A, 8C, 12, 13 and the GSTR-9C late fee illustration. Read FY 2024-25 as FY 2025-26 and 30.11.2025 as 30.11.2026.',GNU],
+ ['04.12.2025','Additional FAQs on GSTR-9/9C','Previous-year RCM paid in the current year; previous-year ITC reversals; 7J vs GSTR-3B 4C; non-GST purchases not reported.',GNU],
+ ['16.10.2025','FAQs on GSTR-9/9C (FY 2024-25)','Table 8A on GSTR-2B basis; Table 8A Excel; HSN download for Table 17; 6M label; 8C vs 13.',GNU],
+ ['25.09.2025','Pending returns before expiry of three years','Returns, including GSTR-9, are barred three years after the due date.',GNU]
+];
+function A(url,txt,alt){return '<a class="lnk'+(alt?' alt':'')+'" href="'+url+'" target="_blank" rel="noopener noreferrer">'+txt+' ↗</a>';}
+H.notif=function(){
+  var s='<div class="sechead"><h2>CBIC notifications &amp; circulars</h2><span class="chip">Tap a row for details and the official link</span></div>';
+  s+='<div class="tw"><table><thead><tr><th>Number &amp; date</th><th>Subject</th><th>Relevance to FY 2025-26</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<NT.length;i++)s+='<tr class="srch click" data-nt="'+i+'"><td><b>'+NT[i][0]+'</b><br><span class="note">'+NT[i][1]+'</span></td><td>'+NT[i][2]+'</td><td>'+NT[i][3]+'</td><td><a class="go" href="'+NT[i][5]+'" target="_blank" rel="noopener noreferrer">Open ↗</a></td></tr>';
+  s+='</tbody></table></div><p class="note">Corresponding notifications under the State GST Acts govern the SGST component.</p>';
+  s+='<div class="sechead mt2"><h2>GSTN advisories</h2><span class="chip">Tap a row for details and the official link</span></div>';
+  s+='<div class="tw"><table><thead><tr><th>Date</th><th>Advisory / FAQ</th><th>Key points</th><th></th></tr></thead><tbody>';
+  for(var j=0;j<ADV.length;j++)s+='<tr class="srch click" data-adv="'+j+'"><td><b>'+ADV[j][0]+'</b></td><td>'+ADV[j][1]+'</td><td>'+ADV[j][2]+'</td><td><span class="go">Open ↗</span></td></tr>';
+  s+='</tbody></table></div>';
+  s+='<div class="callout blue"><b class="t">Applying the FY 2024-25 FAQs to FY 2025-26</b>As the form structure is unchanged, the FAQs remain the best available guidance. Read “FY 2024-25” as FY 2025-26, “FY 2025-26” as FY 2026-27, and the time limit of 30.11.2025 as 30.11.2026.</div>';
+  return s;
+};
+
+/* ===================== FAQ ===================== */
+var FQ=[
+ ['Can GSTR-9 be revised after filing?','No. There is no provision for revision. Later errors can only be addressed through DRC-03 (for short payment) or by explanation in proceedings.'],
+ ['Is GSTR-9C to be certified by a Chartered Accountant?','No. Since FY 2020-21 it is self-certified by the taxpayer.'],
+ ['Can additional ITC be claimed through GSTR-9?','No. ITC is availed only through GSTR-3B within section 16(4). ITC shown as available but not availed lapses.'],
+ ['How is additional liability found during reconciliation paid?','Through DRC-03 with interest under section 50, preferably before filing.'],
+ ['The Karnataka branch GSTIN of Sample Industries has ₹1.32 crore turnover, but the PAN\'s all-India turnover is ₹52 crore. What must the Karnataka GSTIN file?','Both GSTR-9 and GSTR-9C – applicability follows PAN turnover. The late fee slab (₹200 per day, CGST + SGST) also follows PAN turnover; the cap follows the Karnataka GSTIN\'s own turnover: 0.5% × ₹1.32 crore = ₹66,000.'],
+ ['GSTR-9 filed in time, GSTR-9C after 31.12.2026 – is late fee payable?','Yes. Under Circular 246/03/2025-GST late fee runs until the complete annual return is filed.'],
+ ['An FY 2025-26 invoice uploaded by the supplier in September 2026 was availed in GSTR-3B of October 2026. Where is it reported?','It appears in 8A. The ITC goes to Tables 8C and 13 of FY 2025-26 and to 6A1 of FY 2026-27.'],
+ ['Is Table 17 optional up to ₹5 crore?','No – four-digit HSN for B2B supplies where preceding-year turnover was up to ₹5 crore, six digits otherwise. Table 18 is optional.'],
+ ['Does the Finance Act, 2026 discount amendment apply to FY 2025-26?','It is effective from 01.11.2026. Credit notes issued from that date up to 30.11.2026 for FY 2025-26 supplies are governed by it; earlier ones by the unamended law and Circular 251/08/2025-GST.'],
+ ['What if the FY 2022-23 annual return is still pending?','It must be filed by 31.12.2026; thereafter it is barred under the proviso to section 44(2).']
+];
+H.faq=function(){
+  var s='<div class="sechead"><h2>Frequently asked questions</h2></div>';
+  for(var i=0;i<FQ.length;i++)s+='<div class="faq srch"><button type="button"><span class="q">Q'+(i+1)+'</span><span>'+FQ[i][0]+'</span></button><div class="a">'+FQ[i][1]+'</div></div>';
+  return s;
+};
+
+/* ===================== WORKFLOW ===================== */
+H.flow=function(){
+  var s='<div class="sechead"><h2>Filing workflow</h2></div><div class="steps">';
+  var W=[['Open the tile','Services → Returns → Annual Return → FY 2025-26 → GSTR-9.'],['Questionnaire','Answer the questions; nil return only if there were no supplies, ITC, liability, refund or demand.'],['Download summaries','System-computed GSTR-9, GSTR-1/1A and GSTR-3B summaries and the Table 8A Excel.'],['Prepare','Online, or through the offline utility (recommended for large HSN data); upload JSON.'],['Edit with support','Change auto-populated values only with working papers; note highlighted cells.'],['Pay','Additional tax through DRC-03 separately; late fee, if any, in cash.'],['Review','Preview draft GSTR-9 (PDF / Excel) and review.'],['GSTR-9C','Prepare online or offline; upload and review.'],['File','File GSTR-9 with DSC / EVC and GSTR-9C immediately after – the same day.'],['Archive','Download filed returns and ARNs; archive with the reconciliation file.']];
+  for(var i=0;i<W.length;i++)s+='<div class="step srch"><b>'+W[i][0]+'</b>'+W[i][1]+'</div>';
+  return s+'</div>';
+};
+
+/* ===================== ABBREVIATIONS ===================== */
+var AB=[['AFS','Audited Financial Statements'],['ARN','Application Reference Number'],['ASMT','Assessment (form series)'],['B2B','Business to Business'],['B2C','Business to Consumer'],['BoE','Bill of Entry'],['BRC','Bank Realisation Certificate'],['CA','Chartered Accountant'],['CBIC','Central Board of Indirect Taxes and Customs'],['CGST','Central Goods and Services Tax'],['CMA','Cost and Management Accountant'],['CN','Credit Note'],['CT','Central Tax'],['DN','Debit Note'],['DRC','Demand and Recovery (form series)'],['DSC','Digital Signature Certificate'],['DTA','Domestic Tariff Area'],['ECO','E-Commerce Operator'],['EVC','Electronic Verification Code'],['FAQ','Frequently Asked Question'],['FIRC','Foreign Inward Remittance Certificate'],['FY','Financial Year'],['GST','Goods and Services Tax'],['GSTIN','Goods and Services Tax Identification Number'],['GSTN','Goods and Services Tax Network'],['GTA','Goods Transport Agency'],['HSN','Harmonised System of Nomenclature'],['ICEGATE','Indian Customs Electronic Gateway'],['IFF','Invoice Furnishing Facility'],['IGST','Integrated Goods and Services Tax'],['IMS','Invoice Management System'],['IRN','Invoice Reference Number'],['ISD','Input Service Distributor'],['ITC','Input Tax Credit'],['ITR','Income Tax Return'],['LUT','Letter of Undertaking'],['NRTP','Non-Resident Taxable Person'],['OIDAR','Online Information Database Access and Retrieval'],['PAN','Permanent Account Number'],['POS','Place of Supply'],['RCM','Reverse Charge Mechanism'],['SCN','Show Cause Notice'],['SEZ','Special Economic Zone'],['SGST','State Goods and Services Tax'],['TCS','Tax Collected at Source'],['TDS','Tax Deducted at Source'],['UQC','Unit Quantity Code'],['UT','Union Territory']];
+var ABM={};for(var ai=0;ai<AB.length;ai++)ABM[AB[ai][0]]=AB[ai][1];
+H.gloss=function(){
+  var s='<div class="sechead"><h2>Abbreviations used</h2><span class="chip grey">Full forms</span></div><div class="grid g3">';
+  for(var i=0;i<AB.length;i++)s+='<div class="card srch noabbr" style="padding:14px"><span class="chip mono">'+AB[i][0]+'</span><div style="margin-top:6px;font-weight:600">'+AB[i][1]+'</div></div>';
+  return s+'</div>';
+};
+
+/* ===================== CALCULATORS ===================== */
+var CALCS=[];
+function F(id,l,t,o){o=o||{};o.id=id;o.l=l;o.t=t;return o;}
+function S(l){return {sec:l};}
+
+CALCS.push({id:'c1',c:'#1D4ED8',ti:'Applicability, HSN digits & late-fee slab',sub:'Section 44 · Rule 80 · Notfn 15/2025-CT · Notfn 78/2020-CT',
+ fields:[F('c1type','Type of registered person','sel',{opts:[['reg','Regular taxpayer'],['comp','Composition taxpayer'],['eco','E-commerce operator collecting TCS'],['isd','Input Service Distributor'],['tds','TDS deductor'],['cas','Casual taxable person'],['nrtp','Non-resident taxable person'],['oidar','OIDAR supplier']]}),
+  F('c1pan','Aggregate turnover of PAN, FY 2025-26 (all-India)','amt',{h:'Section 2(6): includes exempt, exports, inter-State distinct-person supplies; excludes inward RCM and taxes'}),
+  F('c1prev','Aggregate turnover, FY 2024-25 (preceding year)','amt',{h:'Decides HSN digits in Table 17'})],
+ sample:{c1type:'reg',c1pan:'520000000',c1prev:'460000000'},
+ run:function(){
+  var t=val('c1type');if(!has('c1pan')&&t==='reg')return '';
+  var o='<div class="verdict">';
+  if(t!=='reg'){
+   var m={comp:['GSTR-4','Composition taxpayers file GSTR-4 (GSTR-9 covers any regular period in the year).'],eco:['GSTR-9B','E-commerce operators collecting TCS file GSTR-9B.'],isd:['Not required','ISD is outside section 44(1).'],tds:['Not required','Persons under section 51 are outside section 44(1).'],cas:['Not required','Casual taxable persons are outside section 44(1).'],nrtp:['Not required','Non-resident taxable persons are outside section 44(1).'],oidar:['Not required','OIDAR suppliers do not file GSTR-9.']}[t];
+   return o+vb('Annual return',m[0],'info')+'</div><p class="note">'+m[1]+'</p>';
+  }
+  var p=num('c1pan');var g9,g9c,c9='ok',c9c='ok';
+  if(p<=2*CR){g9='Optional (exempt)';g9c='Not required';c9='info';c9c='info';}
+  else if(p<=5*CR){g9='Mandatory';g9c='Not required';c9c='info';}
+  else{g9='Mandatory';g9c='Mandatory – self-certified';c9c='warn';}
+  o+=vb('GSTR-9',g9,c9)+vb('GSTR-9C',g9c,c9c);
+  if(has('c1prev')){var hs=num('c1prev')>5*CR?'6 digits':'4 digits (B2B)';o+=vb('Table 17 HSN',hs,'info');}
+  var rate=p<=5*CR?25:(p<=20*CR?50:100),cap=p<=20*CR?'0.02%':'0.25%';
+  o+=vb('Late fee slab (per Act)','₹'+rate+'/day · cap '+cap,'info')+'</div>';
+  o+='<p class="note">Thresholds tested on PAN aggregate turnover; each GSTIN under the PAN files its own return, however small its own turnover. ₹2 crore exemption: Notification 15/2025-CT (FY 2024-25 onwards). GSTR-9C cap is on turnover <b>exceeding</b> ₹5 crore.</p>';
+  return o;
+ }});
+
+CALCS.push({id:'c2',c:'#0F766E',ti:'Late fee — complete annual return',sub:'Section 47(2) · Notfn 07/2023-CT · Circular 246/03/2025-GST',
+ fields:[F('c2pan','Aggregate turnover of PAN, FY 2025-26','amt',{h:'Decides the per-day slab'}),
+  F('c2st','Turnover of this GSTIN in the State/UT','amt',{h:'Decides the cap'}),
+  F('c2req','GSTR-9C required?','sel',{opts:[['auto','Auto (PAN turnover > ₹5 crore)'],['y','Yes'],['n','No']]}),
+  F('c2due','Due date','date',{def:'2026-12-31'}),
+  F('c2d9','Date of filing GSTR-9','date'),
+  F('c2d9c','Date of filing GSTR-9C','date',{h:'Leave blank if not required'})],
+ sample:{c2pan:'520000000',c2st:'506800000',c2req:'auto',c2due:'2026-12-31',c2d9:'2027-01-05',c2d9c:'2027-01-12'},
+ run:function(){
+  if(!has('c2pan')||!has('c2st')||!pd('c2d9'))return '';
+  var p=num('c2pan'),st=num('c2st'),due=pd('c2due')||pds('2026-12-31'),d9=pd('c2d9'),d9c=pd('c2d9c');
+  var req=val('c2req');var need=req==='y'||(req==='auto'&&p>5*CR);
+  if(need&&!d9c)return '<div class="verdict">'+vb('GSTR-9C date','Enter date of filing GSTR-9C','warn')+'</div><p class="note">Late fee runs until the <b>complete</b> annual return (GSTR-9 + GSTR-9C) is filed.</p>';
+  var comp=need?Math.max(d9,d9c):d9;
+  var tot=Math.max(0,days(comp,due));var dg9=Math.max(0,days(d9,due));if(dg9>tot)dg9=tot;
+  var rate=p<=5*CR?25:(p<=20*CR?50:100);var pc=p<=20*CR?0.0002:0.0025;var cap=st*pc;
+  var feeAct=Math.min(tot*rate,cap);var g9Act=Math.min(dg9*rate,cap);var g9cAct=feeAct-g9Act;
+  var o='<div class="verdict">'+vb('Days of delay (complete return)',tot+' days',tot?'bad':'ok')+vb('Total late fee (CGST + SGST)',inr(feeAct*2),tot?'bad':'ok')+'</div>';
+  o+=tbl(['Component','>Per day per Act','>Days','>CGST','>SGST','>Total'],[
+   ['Paid with GSTR-9','₹'+rate,String(dg9),inr(g9Act),inr(g9Act),inr(g9Act*2)],
+   ['Paid with GSTR-9C (balance)','₹'+rate,String(tot-dg9),inr(g9cAct),inr(g9cAct),inr(g9cAct*2)],
+   R(['Total','','',inr(feeAct),inr(feeAct),inr(feeAct*2)],'tot')
+  ]);
+  o+='<p class="note">Cap per Act = '+(pc*100).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')+'% × '+inr(st)+' = '+inr(cap)+(tot*rate>cap?' — <b>cap applies</b>':'')+'. Slab follows PAN turnover, cap follows the GSTIN\'s State turnover. Paid in cash only, GSTIN-wise. Notification 08/2025-CT waiver does not apply to FY 2025-26.</p>';
+  if(comp>pds('2029-12-31'))o+='<div class="callout"><b class="t">Time-barred</b>Filing after 31.12.2029 is barred under the proviso to section 44(2).</div>';
+  return o;
+ }});
+
+CALCS.push({id:'c3',c:'#B45309',ti:'Section 14 — rate on change (22.09.2025)',sub:'Time of supply where supply, invoice and payment straddle the change',
+ fields:[F('c3kind','Nature','sel',{opts:[['g','Goods'],['s','Services']]}),
+  F('c3chg','Date of rate change','date',{def:'2025-09-22'}),
+  F('c3old','Old rate (%)','pct',{def:'12'}),F('c3new','New rate (%)','pct',{def:'5'}),
+  F('c3sup','Date of supply (goods) / completion (services)','date'),
+  F('c3inv','Date of invoice','date'),
+  F('c3pay','Date of receipt of payment','date',{h:'Earlier of entry in books and credit to bank'})],
+ sample:{c3kind:'g',c3chg:'2025-09-22',c3old:'12',c3new:'5',c3sup:'2025-09-30',c3inv:'2025-09-19',c3pay:'2025-10-05'},
+ extra:'<div class="cases"><span class="note" style="margin:0 6px 0 0;align-self:center">Load case:</span><button class="btn sm" type="button" data-case="1">1</button><button class="btn sm" type="button" data-case="2">2</button><button class="btn sm" type="button" data-case="3">3</button><button class="btn sm" type="button" data-case="4">4</button><button class="btn sm" type="button" data-case="5">5</button><button class="btn sm" type="button" data-case="6">6</button></div>',
+ run:function(){
+  var c=pd('c3chg'),su=pd('c3sup'),iv=pd('c3inv'),py=pd('c3pay');if(!c||!su||!iv||!py)return '';
+  var oR=val('c3old'),nR=val('c3new');var sb=su<c,ib=iv<c,pb=py<c;var cl,tos,rate;
+  if(sb){
+   if(!ib&&!pb){cl='14(a)(i) – supplied before; invoice and payment both after → earlier of the two';tos=Math.min(iv,py);}
+   else if(ib&&!pb){cl='14(a)(ii) – supplied before; invoice before, payment after → date of invoice';tos=iv;}
+   else if(!ib&&pb){cl='14(a)(iii) – supplied before; payment before, invoice after → date of payment';tos=py;}
+   else{cl='Supply, invoice and payment all before the change – section 14 not attracted';tos=Math.min(iv,py);}
+  }else{
+   if(ib&&!pb){cl='14(b)(i) – supplied after; invoice before, payment after → date of payment';tos=py;}
+   else if(ib&&pb){cl='14(b)(ii) – supplied after; invoice and payment both before → earlier of the two';tos=Math.min(iv,py);}
+   else if(!ib&&pb){cl='14(b)(iii) – supplied after; payment before, invoice after → date of invoice';tos=iv;}
+   else{cl='Entirely after the change – section 14 not attracted';tos=Math.min(iv,py);}
+  }
+  rate=tos<c?oR:nR;
+  var o='<div class="verdict">'+vb('Time of supply',fd(tos),'info')+vb('Applicable rate',rate+'%',tos<c?'warn':'ok')+vb('Supply vs change',sb?'Before':'After','info')+'</div><p class="note"><b>'+cl+'</b></p>';
+  o+='<p class="note">Table 17: report this line at '+rate+'% (same HSN on two lines where the rate changed). A later credit note carries this original rate. GSTR-9C Table 9 must show each rate set separately.'+(val('c3kind')==='g'&&pb?' For goods, no GST was payable on the advance (Notification 66/2017-CT); the section 14 date still fixes the rate.':'')+'</p>';
+  return o;
+ }});
+
+CALCS.push({id:'c4',c:'#2563EB',ti:'GSTR-9 ITC builder — Tables 6, 7 & 8',sub:'6A1 / 6A2 split · rule-wise reversals · 8D explanation · import ITC',
+ fields:[S('Table 6 — ITC availed'),F('c4_6A','6A · Total ITC in GSTR-3B Table 4A','amt',{tg:'6A'}),F('c4_6A1','6A1 · FY 2024-25 ITC availed in FY 2025-26','amt',{tg:'6A1'}),
+  F('c4_6B','6B · Inward supplies (other than imports / RCM)','amt',{tg:'6B',h:'Leave blank to take the balancing figure'}),F('c4_6C','6C · RCM – unregistered','amt',{tg:'6C'}),F('c4_6D','6D · RCM – registered','amt',{tg:'6D'}),F('c4_6E','6E · Import of goods (incl. SEZ)','amt',{tg:'6E'}),F('c4_6F','6F · Import of services','amt',{tg:'6F'}),F('c4_6G','6G · ITC from ISD','amt',{tg:'6G'}),F('c4_6H','6H · Reclaims (incl. earlier Rule 37/37A)','amt',{tg:'6H'}),F('c4_6K','6K–6M · TRAN-1 / TRAN-2 / other','amt',{tg:'6K–6M'}),
+  S('Table 7 — Reversals (rule-wise)'),F('c4_7A','7A · Rule 37','amt',{tg:'7A'}),F('c4_7A1','7A1 · Rule 37A','amt',{tg:'7A1'}),F('c4_7A2','7A2 · Rule 38','amt',{tg:'7A2'}),F('c4_7B','7B · Rule 39','amt',{tg:'7B'}),F('c4_7C','7C · Rule 42','amt',{tg:'7C'}),F('c4_7D','7D · Rule 43','amt',{tg:'7D'}),F('c4_7E','7E · Section 17(5)','amt',{tg:'7E'}),F('c4_7F','7F / 7G · TRAN-1 / TRAN-2','amt',{tg:'7F/7G'}),F('c4_7H','7H · Other reversals','amt',{tg:'7H'}),F('c4_4C','GSTR-3B Table 4C (net ITC) for the year','amt',{tg:'3B 4C'}),
+  S('Table 8 — ITC as per GSTR-2B and imports'),F('c4_8A','8A · ITC as per GSTR-2B','amt',{tg:'8A'}),F('c4_8C','8C · FY 2025-26 ITC availed first in FY 2026-27','amt',{tg:'8C',h:'Negative allowed (e.g. late credit notes)'}),F('c4_8E','8E · Available but not availed','amt',{tg:'8E'}),F('c4_8F','8F · Ineligible','amt',{tg:'8F'}),F('c4_8G','8G · IGST paid on imports (ICEGATE)','amt',{tg:'8G'}),F('c4_8H1','8H1 · Import IGST availed in FY 2026-27','amt',{tg:'8H1'})],
+ sample:{c4_6A:'5200000',c4_6A1:'230000',c4_6B:'4280000',c4_6C:'50000',c4_6D:'100000',c4_6E:'500000',c4_6H:'40000',c4_7A:'60000',c4_7C:'80000',c4_7E:'25000',c4_7H:'35000',c4_4C:'5000000',c4_8A:'4410000',c4_8C:'60000',c4_8E:'25000',c4_8F:'45000',c4_8G:'540000',c4_8H1:'40000'},
+ run:function(){
+  if(!has('c4_6A'))return '';
+  var a=num('c4_6A'),a1=num('c4_6A1'),a2=a-a1;var oth=num('c4_6C')+num('c4_6D')+num('c4_6E')+num('c4_6F')+num('c4_6G')+num('c4_6H');
+  var bal=a2-oth;var b=has('c4_6B')?num('c4_6B'):bal;var i6=b+oth;var j6=a2-i6;var n6=num('c4_6K');var o6=i6+n6;
+  var r7=num('c4_7A')+num('c4_7A1')+num('c4_7A2')+num('c4_7B')+num('c4_7C')+num('c4_7D')+num('c4_7E')+num('c4_7F')+num('c4_7H');var j7=o6-r7;
+  var A8=num('c4_8A'),C8=num('c4_8C'),D8=A8-(b+C8),E8=num('c4_8E'),F8=num('c4_8F'),un=D8-E8-F8;
+  var G8=num('c4_8G'),H8=num('c4_6E'),H18=num('c4_8H1'),I8=G8-(H8+H18),J8=I8>0?I8:0,K8=E8+F8+J8;
+  var o='<div class="verdict">'+vb('6J difference',inr(j6),j6===0?'ok':'bad')+vb('7J net ITC',inr(j7),'info')+vb('8D difference',inr(D8),'info')+vb('8D unexplained',inr(un),un===0?'ok':'bad')+'</div>';
+  o+=tbl(['Table','Particulars','>Amount'],[
+   ['6A2','Net ITC of current FY (6A – 6A1)',inr(a2)],
+   R(['6B','Inward supplies'+(has('c4_6B')?'':' (balancing figure)'),inr(b)],has('c4_6B')?'':'mark'),
+   ['6I','Sub-total 6B to 6H',inr(i6)],
+   R(['6J','Difference (6A2 – 6I) — should be nil',inr(j6)],j6===0?'':'mark'),
+   ['6O','Total ITC availed (6I + 6K–6M)',inr(o6)],
+   ['7I','Total reversals (7A to 7H)',inr(r7)],
+   R(['7J','Net ITC available for utilisation (6O – 7I)',inr(j7)],'tot'),
+   ['8B','= 6B',inr(b)],
+   ['8D','8A – (8B + 8C)',inr(D8)],
+   R(['—','8D not explained by 8E + 8F',inr(un)],un===0?'':'mark'),
+   ['8H','Import IGST availed (= 6E)',inr(H8)],
+   ['8I','8G – (8H + 8H1)',inr(I8)],
+   ['8J','Import ITC available but not availed',inr(J8)],
+   R(['8K','Total ITC lapsed (8E + 8F + 8J)',inr(K8)],'tot')
+  ]);
+  if(has('c4_4C')){var cc=num('c4_4C');var dd=cc-(j7+a1);o+='<p class="note">Check with GSTR-3B 4C: 7J + 6A1 = '+inr(j7+a1)+' vs 4C '+inr(cc)+' → difference '+inr(dd)+'. 7J excludes 6A1, so 7J alone will not equal 4C — a difference GSTN has acknowledged (FAQ of 04.12.2025).</p>';}
+  if(!has('c4_6B'))o+='<p class="note">6B taken as balancing figure — split inputs / input services and capital goods before filing.</p>';
+  if(C8<0)o+='<p class="note">Negative 8C: late-uploaded credit note — report the reversal in Table 12 where ITC was availed.</p>';
+  return o;
+ }});
+
+CALCS.push({id:'c5',c:'#0E7490',ti:'GSTR-9C Table 5 — turnover reconciliation + DRC-03',sub:'5A → 5P vs 5Q → 5R · tax and section 50 interest on un-reconciled turnover',
+ fields:[F('c5_5A','5A · Turnover as per AFS for the State/UT','amt',{tg:'5A'}),S('Additions (+)'),F('c5_5B','5B · Unbilled revenue at beginning','amt',{tg:'5B'}),F('c5_5C','5C · Unadjusted advances at end','amt',{tg:'5C'}),F('c5_5D','5D · Deemed supply (Schedule I)','amt',{tg:'5D'}),F('c5_5E','5E · Credit notes after year-end in annual return','amt',{tg:'5E'}),F('c5_5F','5F · Trade discounts not permissible','amt',{tg:'5F'}),
+  S('Deductions (–)'),F('c5_5H','5H · Unbilled revenue at end','amt',{tg:'5H'}),F('c5_5I','5I · Unadjusted advances at beginning','amt',{tg:'5I'}),F('c5_5J','5J · Credit notes in AFS not permissible','amt',{tg:'5J'}),F('c5_5K','5K · SEZ unit supplies to DTA','amt',{tg:'5K'}),F('c5_5L','5L · Turnover under composition','amt',{tg:'5L'}),
+  S('Signed adjustments (enter – for deduction)'),F('c5_5M','5M · Section 15 and rules','amt',{tg:'5M'}),F('c5_5N','5N · Foreign-exchange fluctuation','amt',{tg:'5N'}),F('c5_5O','5O · Other reasons','amt',{tg:'5O'}),
+  S('Compare and pay'),F('c5_5Q','5Q · Turnover as per GSTR-9 (Table 5N)','amt',{tg:'5Q'}),F('c5_rt','Rate on un-reconciled turnover (%)','pct',{def:'18'}),F('c5_dd','Tax originally due on','date',{h:'Due date of the GSTR-3B for that period'}),F('c5_pd','Date of payment through DRC-03','date')],
+ sample:{c5_5A:'486000000',c5_5B:'4000000',c5_5C:'2000000',c5_5D:'18000000',c5_5F:'3000000',c5_5O:'2500000',c5_5H:'5500000',c5_5I:'1500000',c5_5N:'-1200000',c5_5Q:'506800000',c5_rt:'18',c5_dd:'2026-04-21',c5_pd:'2026-11-25'},
+ run:function(){
+  if(!has('c5_5A'))return '';
+  var add=num('c5_5B')+num('c5_5C')+num('c5_5D')+num('c5_5E')+num('c5_5F');var ded=num('c5_5H')+num('c5_5I')+num('c5_5J')+num('c5_5K')+num('c5_5L');var sg=num('c5_5M')+num('c5_5N')+num('c5_5O');
+  var P=num('c5_5A')+add-ded+sg;var o='<div class="verdict">'+vb('5P · Turnover after adjustments',inr(P),'info');
+  if(!has('c5_5Q'))return o+'</div>';
+  var Rr=P-num('c5_5Q');o+=vb('5R · Un-reconciled',inr(Rr),Rr===0?'ok':'bad')+'</div>';
+  var rows=[['5A','Turnover per AFS',inr(num('c5_5A'))],['5B–5F','Additions',inr(add)],['5H–5L','Deductions','(–) '+inr(ded)],['5M–5O','Signed adjustments',inr(sg)],R(['5P','Annual turnover after adjustments',inr(P)],'tot'),['5Q','Turnover per GSTR-9',inr(num('c5_5Q'))],R(['5R','Un-reconciled (reasons in Table 6)',inr(Rr)],'mark')];
+  if(Rr>0){var rt=num('c5_rt');var tax=Rr*rt/100;rows.push(['Part V','Additional tax @ '+rt+'% (DRC-03)',inr(tax)]);
+   var dd=pd('c5_dd'),pp=pd('c5_pd');if(dd&&pp&&pp>dd){var dy=days(pp,dd);var it=tax*18/100*dy/365;rows.push(['s.50(1)','Interest @ 18% p.a. for '+dy+' days',inr(it,true)]);rows.push(R(['','Total payable through DRC-03',inr(tax+it,true)],'tot'));}}
+  o+=tbl(['Table','Particulars','>Amount'],rows);
+  o+='<p class="note">'+(Rr>0?'Positive 5R: books exceed GSTR-9 — check for undeclared supplies; pay additional liability through DRC-03 before filing. ':Rr<0?'Negative 5R: GSTR-9 exceeds books — look for duplicate reporting, advances or non-books items. ':'')+'For FY 2025-26, 5B–5N may be reported together in 5O; keep the item-wise working on file.</p>';
+  return o;
+ }});
+
+CALCS.push({id:'c6',c:'#0284C7',ti:'GSTR-9C Table 12 — ITC reconciliation',sub:'Books (12A ± 12B / 12C) vs GSTR-9 (12E) → 12F',
+ fields:[F('c6_A','12A · ITC as per audited accounts (GST input ledgers)','amt',{tg:'12A'}),F('c6_B','12B · Booked in earlier FYs, claimed this FY (= 6A1)','amt',{tg:'12B'}),F('c6_C','12C · Booked this FY, to be claimed later (= Table 13)','amt',{tg:'12C'}),
+  F('c6_E','12E · ITC as per GSTR-9','amt',{tg:'12E',h:'Leave blank to compute from 7J + 6A1 below'}),F('c6_7J','Table 7J of GSTR-9','amt',{tg:'7J'}),F('c6_6A1','Table 6A1 of GSTR-9','amt',{tg:'6A1'})],
+ sample:{c6_A:'4890000',c6_B:'230000',c6_C:'145000',c6_7J:'4770000',c6_6A1:'230000'},
+ run:function(){
+  if(!has('c6_A'))return '';
+  var D=num('c6_A')+num('c6_B')-num('c6_C');var E=has('c6_E')?num('c6_E'):num('c6_7J')+num('c6_6A1');var Fd=D-E;
+  var o='<div class="verdict">'+vb('12D · Books after adjustment',inr(D),'info')+vb('12F · Un-reconciled ITC',inr(Fd),Fd===0?'ok':'bad')+'</div>';
+  o+=tbl(['Table','Particulars','>Amount'],[['12A','ITC per audited accounts',inr(num('c6_A'))],['12B','(+) earlier-FY ITC claimed this FY',inr(num('c6_B'))],['12C','(–) this-FY ITC to be claimed later',inr(num('c6_C'))],R(['12D','ITC per books after adjustment',inr(D)],'tot'),['12E','ITC per GSTR-9'+(has('c6_E')?'':' (7J + 6A1)'),inr(E)],R(['12F','Un-reconciled ITC (reasons in Table 13)',inr(Fd)],Fd===0?'':'mark')]);
+  if(has('c6_7J')&&!has('c6_E'))o+='<p class="note">If the portal\'s auto-populated 12E reflects only 7J ('+inr(num('c6_7J'))+'), 12B ('+inr(num('c6_B'))+') will appear as a further difference — explain it as prior-year ITC reported in 6A1.</p>';
+  o+='<p class="note">'+(Fd<0?'Negative 12F: GSTR-9 ITC exceeds books — typically reversals booked this year but made in GSTR-3B next year (Table 12 of GSTR-9). ':Fd>0?'Positive 12F: books exceed GSTR-9 — ITC booked but not availed; check lapse and Table 8E. ':'')+'Tax on un-reconciled ITC (Table 16) is payable through DRC-03.</p>';
+  return o;
+ }});
+
+CALCS.push({id:'c7',c:'#15803D',ti:'Rule 42 annual re-computation — placement',sub:'Rule 42(1) monthly vs Rule 42(2) final · Tables 7C, 12, 13',
+ fields:[F('c7m','Reversed month-wise under Rule 42(1) in FY 2025-26','amt',{tg:'7C'}),F('c7f','Final reversal due under Rule 42(2)','amt'),F('c7d','Date of GSTR-3B adjustment','date',{h:'Before due date of the September 2026 return'}),F('c7i','Interest from (for short reversal)','date',{h:'Optional – for section 50 interest'})],
+ sample:{c7m:'80000',c7f:'95000',c7d:'2026-10-20',c7i:'2026-04-30'},
+ run:function(){
+  if(!has('c7m')||!has('c7f'))return '';
+  var m=num('c7m'),f=num('c7f'),d=f-m;var o='<div class="verdict">';
+  if(d>0){o+=vb('Short reversal',inr(d),'bad')+vb('GSTR-3B (Sept 2026)','Further reversal + interest','warn')+'</div>';
+   o+=tbl(['Return','Table','>Amount'],[['GSTR-9 FY 2025-26','7C (monthly figure)',inr(m)],R(['GSTR-9 FY 2025-26','12 (reversal in FY 2026-27)',inr(d)],'mark')]);
+   var a=pd('c7i'),b=pd('c7d');if(a&&b&&b>a){var dy=days(b,a);o+='<p class="note">Indicative interest u/s 50 @ 18% p.a. for '+dy+' days: <b>'+inr(d*0.18*dy/365,true)+'</b> (interest is payable only where ITC was wrongly availed and utilised).</p>';}
+  }else if(d<0){o+=vb('Excess reversal',inr(-d),'ok')+vb('GSTR-3B (Sept 2026)','Reclaim','info')+'</div>';
+   o+=tbl(['Return','Table','>Amount'],[['GSTR-9 FY 2025-26','7C (monthly figure)',inr(m)],R(['GSTR-9 FY 2025-26','13 (availed in FY 2026-27)',inr(-d)],'mark'),['GSTR-9 FY 2026-27','6A1',inr(-d)]]);
+  }else{o+=vb('Difference','Nil','ok')+'</div><p class="note">Report 7C at '+inr(m)+'; no Table 12 / 13 entry.</p>';}
+  o+='<p class="note">GSTN has not clarified the Rule 42(2) annual adjustment; this follows the scheme of Tables 12 and 13. Some practitioners show the final figure in 7C with a note.</p>';
+  return o;
+ }});
+
+CALCS.push({id:'c8',c:'#2563EB',ti:'Outward adjustments — Tables 4, 10, 11, 14',sub:'Where an FY 2025-26 amendment, debit note or credit note is reported',
+ fields:[F('c8k','Type of adjustment','sel',{opts:[['add','Invoice omitted, declared later (addition)'],['dn','Debit note (addition)'],['inc','Amendment increasing value / tax'],['dec','Amendment reducing value / tax'],['cn','Credit note (incl. post-supply discount)']]}),
+  F('c8w','Declared in GSTR-1/1A of','sel',{opts:[['in','April 2025 – March 2026 (within the year)'],['win','April – November 2026 (by 30.11.2026)'],['late','After 30.11.2026 / not declared']]}),
+  F('c8d','Date of credit note','date',{h:'For credit notes only'}),F('c8v','Taxable value','amt'),F('c8t','Tax','amt')],
+ sample:{c8k:'cn',c8w:'win',c8d:'2026-11-18',c8v:'250000',c8t:'45000'},
+ run:function(){
+  var k=val('c8k'),w=val('c8w');if(!has('c8v')&&!has('c8t'))return '';
+  var red=(k==='cn'||k==='dec');var cd=pd('c8d');
+  if(k==='cn'&&cd&&cd>pds('2026-11-30'))w='late';
+  var tb,why,cls='ok';
+  if(w==='in'){tb=red?'4I / 4L':(k==='add'?'4A / 4B (as applicable)':'4J / 4K');why='Declared within the year — Tables 4I–4L are mandatory for taxable supplies; for supplies in Table 5, 5H–5K is optional and may be clubbed in 5A–5F.';}
+  else if(w==='win'){tb=red?'11':'10 and 14';why=red?'Reduction declared within the window up to 30.11.2026.':'Addition declared in GSTR-1 of Apr–Nov 2026 — not in Table 4; differential tax paid goes to Table 14. Interest paid with that GSTR-3B belongs to FY 2026-27 and is not in Table 9.';cls='warn';}
+  else{tb='Not reportable';cls='bad';why=red?'Beyond 30.11.2026 — section 34(2) bars reduction of output tax; may only be a financial credit note without GST.':'Not declared within the window — pay through DRC-03 with interest under section 50 and explain as a reconciling item in GSTR-9C.';}
+  var o='<div class="verdict">'+vb('Report in GSTR-9 Table',tb,cls)+(has('c8v')?vb('Value',inr(num('c8v')),'info'):'')+(has('c8t')?vb('Tax',inr(num('c8t')),'info'):'')+'</div><p class="note">'+why+'</p>';
+  if(k==='cn'&&cd&&w!=='late'){o+='<p class="note">'+(cd>=pds('2026-11-01')?'Credit note dated on or after 01.11.2026 — governed by amended sections 15(3)(b) and 34(1); no prior agreement needed, recipient must reverse attributable ITC.':'Credit note dated before 01.11.2026 — governed by unamended section 15(3)(b) read with Circular 251/08/2025-GST.')+'</p>';}
+  return o;
+ }});
+
+function fieldHTML(f,c){
+  if(f.sec)return '<div class="fsec">'+f.sec+'</div>';
+  var tg=f.tg?'<span class="tg">'+f.tg+'</span>':'';
+  var lab=f.l;if(f.tg&&lab.indexOf(f.tg+' · ')===0)lab=lab.slice(f.tg.length+3);
+  var s='<div class="f"><label for="'+f.id+'">'+tg+lab+'</label>';
+  if(f.t==='sel'){s+='<select id="'+f.id+'">';for(var i=0;i<f.opts.length;i++)s+='<option value="'+f.opts[i][0]+'">'+f.opts[i][1]+'</option>';s+='</select>';}
+  else if(f.t==='date'){s+='<input type="date" id="'+f.id+'" value="'+(f.def||'')+'">';}
+  else if(f.t==='pct'){s+='<input type="text" inputmode="decimal" class="amt" id="'+f.id+'" value="'+(f.def||'')+'">';}
+  else{s+='<input type="text" inputmode="decimal" class="amt" id="'+f.id+'" placeholder="0" data-amt="1">';}
+  if(f.h)s+='<small>'+f.h+'</small>';
+  return s+'</div>';
+}
+H.calc=function(){
+  var s='<div class="sechead"><h2>Calculators</h2><span class="chip teal">8 tools · each with Load sample &amp; Clear</span></div>';
+  s+='<p class="lead">Amounts in ₹ (commas added automatically). Every sample uses the same company — M/s Sample Industries — so figures tie across calculators. Use the master “Load sample” in the top bar to fill all eight at once.</p><div class="grid">';
+  for(var i=0;i<CALCS.length;i++){var C=CALCS[i];
+    s+='<section class="card calc srch" style="--c:'+C.c+'" id="'+C.id+'"><div class="hd"><div class="ti"><span class="no">'+(i+1)+'</span><div><h3 style="margin:0">'+C.ti+'</h3><p>'+C.sub+'</p></div></div><div class="acts"><button class="btn sm" type="button" data-sample="'+i+'">Load sample</button><button class="btn sm ghost" type="button" data-clear="'+i+'">Clear</button></div></div><div class="fields">';
+    for(var j=0;j<C.fields.length;j++)s+=fieldHTML(C.fields[j],C);
+    s+='</div>'+(C.extra||'')+'<div class="res noabbr" id="'+C.id+'_r"></div></section>';
+  }
+  return s+'</div>';
+};
+function runCalc(i){var C=CALCS[i];var r=$(C.id+'_r');try{r.innerHTML=C.run()||'';}catch(e){r.innerHTML='<p class="note">Check inputs.</p>';}}
+function setV(id,v){var el=$(id);if(!el)return;if(el.getAttribute('data-amt')&&v!==''){el.value=fmtIn(parseFloat(v));}else el.value=v;}
+function sampleCalc(i){var C=CALCS[i];clearCalc(i,true);for(var k in C.sample){if(C.sample.hasOwnProperty(k))setV(k,C.sample[k]);}runCalc(i);}
+function clearCalc(i,silent){var C=CALCS[i];for(var j=0;j<C.fields.length;j++){var f=C.fields[j];if(f.sec)continue;var el=$(f.id);if(f.t==='sel')el.selectedIndex=0;else el.value=f.def||'';}if(!silent)runCalc(i);}
+var CASES={1:['2025-09-15','2025-09-15','2025-10-10'],2:['2025-09-18','2025-09-25','2025-09-05'],3:['2025-09-30','2025-09-19','2025-10-05'],4:['2025-10-10','2025-10-10','2025-09-15'],5:['2025-09-23','2025-09-20','2025-09-20'],6:['2025-10-02','2025-10-01','2025-10-15']};
+
+/* ===================== ABBREVIATION EXPANDER ===================== */
+var ABRE=null;
+function expandAbbr(root){
+  var keys=[];for(var k in ABM)if(ABM.hasOwnProperty(k))keys.push(k);
+  keys.sort(function(a,b){return b.length-a.length;});
+  if(!ABRE)ABRE=new RegExp('(^|[^A-Za-z0-9])('+keys.join('|')+')(?![A-Za-z0-9])','g');
+  var seen={};var walker=[];
+  (function collect(n){
+    for(var c=n.firstChild;c;c=c.nextSibling){
+      if(c.nodeType===3){walker.push(c);}
+      else if(c.nodeType===1){var tn=c.tagName;if(tn==='A'||tn==='SCRIPT'||tn==='STYLE'||tn==='SELECT'||tn==='OPTION'||tn==='INPUT'||tn==='BUTTON'||tn==='ABBR'||tn==='LABEL'||tn==='TH'||(c.className&&String(c.className).indexOf('noabbr')>-1)||(c.className&&String(c.className).indexOf('sechead')>-1))continue;collect(c);}
+    }
+  })(root);
+  for(var i=0;i<walker.length;i++){
+    var tnode=walker[i];var txt=tnode.nodeValue;ABRE.lastIndex=0;var m,last=0,frag=null;
+    while((m=ABRE.exec(txt))!==null){
+      var ab=m[2];if(seen[ab])continue;seen[ab]=1;
+      if(!frag)frag=document.createDocumentFragment();
+      var st=m.index+m[1].length;
+      frag.appendChild(document.createTextNode(txt.slice(last,st)));
+      var e=document.createElement('abbr');e.title=ABM[ab];e.appendChild(document.createTextNode(ab));frag.appendChild(e);
+      var sp=document.createElement('span');sp.className='ff';sp.appendChild(document.createTextNode(' ('+ABM[ab]+')'));frag.appendChild(sp);
+      last=st+ab.length;
+    }
+    if(frag){frag.appendChild(document.createTextNode(txt.slice(last)));tnode.parentNode.replaceChild(frag,tnode);}
+  }
+}
+
+/* ===================== RENDER & WIRE ===================== */
+function build(){
+  var nav='',pan='';
+  for(var i=0;i<TABS.length;i++){var t=TABS[i];
+    nav+='<button class="tab'+(i===0?' on':'')+'" type="button" data-tab="'+t[0]+'"><i style="background:'+t[2]+'"></i>'+t[1]+'<em class="cnt" id="cnt_'+t[0]+'"></em></button>';
+    pan+='<section class="panel'+(i===0?' on':'')+'" id="p_'+t[0]+'">'+H[t[0]]()+'<div class="empty" id="e_'+t[0]+'">No match in this section — see the highlighted tabs.</div></section>';
+  }
+  $('tabs').innerHTML=nav;$('panels').innerHTML=pan;
+  for(var j=0;j<TABS.length;j++){if(TABS[j][0]!=='gloss')expandAbbr($('p_'+TABS[j][0]));}
+}
+function showTab(id){
+  var tb=document.querySelectorAll('.tab');for(var i=0;i<tb.length;i++)tb[i].className=tb[i].className.replace(' on','')+(tb[i].getAttribute('data-tab')===id?' on':'');
+  var ps=document.querySelectorAll('.panel');for(var j=0;j<ps.length;j++)ps[j].className='panel'+(ps[j].id==='p_'+id?' on':'');
+  try{if(location.hash!=='#'+id)history.replaceState(null,'','#'+id);}catch(e){}
+}
+function ckUpdate(){var li=document.querySelectorAll('.ck li');var d=0;for(var i=0;i<li.length;i++)if(li[i].className.indexOf('done')>-1)d++;$('ckTxt').innerHTML=d+' of '+li.length+' done';$('ckBar').style.width=(li.length?d/li.length*100:0)+'%';}
+function ckSave(){try{localStorage.setItem('gstr9ck2526',JSON.stringify(CKS));}catch(e){}}
+function search(q){
+  q=q.toLowerCase().replace(/^\s+|\s+$/g,'');
+  for(var i=0;i<TABS.length;i++){var id=TABS[i][0];var p=$('p_'+id);var it=p.querySelectorAll('.srch');var n=0;
+    for(var j=0;j<it.length;j++){var hit=!q||(it[j].textContent||'').toLowerCase().indexOf(q)>-1;      it[j].className=it[j].className.replace(/\s?hidden-s/g,'')+(hit?'':' hidden-s');if(hit)n++;}
+    var tb=document.querySelector('.tab[data-tab="'+id+'"]');tb.className=tb.className.replace(/\s?hit/g,'')+(q&&n?' hit':'');$('cnt_'+id).innerHTML=q?n:'';
+    $('e_'+id).style.display=(q&&!n)?'block':'none';
+  }
+}
+function openModal(html,wide){$('md').className='md'+(wide?' wide':'');$('md').innerHTML='<button class="x" type="button" id="mx" aria-label="Close">×</button>'+html;$('ov').className='ov on';expandAbbr($('md'));}
+function closeModal(){$('ov').className='ov';}
+
+function kpis(){var t=todayUTC();var a=days(pds('2026-11-30'),t),b=days(pds('2026-12-31'),t);$('kCut').innerHTML=a>=0?a:'Passed';$('kDue').innerHTML=b>=0?b:'Passed';}
+
+build();kpis();expandAbbr(document.querySelector('.hero'));
+for(var ci=0;ci<CALCS.length;ci++)runCalc(ci);
+if(location.hash){var hh=location.hash.slice(1);for(var ti=0;ti<TABS.length;ti++)if(TABS[ti][0]===hh)showTab(hh);}
+ckUpdate();
+flowShow(0);flowPlay(true);
+
+document.addEventListener('click',function(e){
+  var t=e.target;if(t.id==='ov'){closeModal();return;}
+  while(t&&t!==document){
+    if(t.getAttribute){
+      if(t.getAttribute('data-tab')){showTab(t.getAttribute('data-tab'));var y=$('panels').getBoundingClientRect().top+window.pageYOffset-document.querySelector('.bar').offsetHeight-6;if(window.pageYOffset>y)window.scrollTo(0,y);return;}
+      if(t.getAttribute('data-sample')!==null){sampleCalc(+t.getAttribute('data-sample'));return;}
+      if(t.getAttribute('data-clear')!==null){clearCalc(+t.getAttribute('data-clear'));return;}
+      if(t.getAttribute('data-case')){var cs=CASES[t.getAttribute('data-case')];setV('c3chg','2025-09-22');setV('c3old','12');setV('c3new','5');setV('c3sup',cs[0]);setV('c3inv',cs[1]);setV('c3pay',cs[2]);$('c3kind').value='g';runCalc(2);return;}
+      if(t.tagName==='A'&&t.getAttribute('href'))return;
+      if(t.getAttribute('data-nt')!==null){var N=NT[+t.getAttribute('data-nt')];openModal('<span class="chip mono">'+N[1]+'</span><h3>'+N[0]+'</h3><p style="margin:0 0 6px"><b>'+N[2]+'</b></p><p style="margin:0">'+N[3]+'</p><div class="mt">'+A(N[5],'Open '+(N[4]==='c'?'circular':'notification')+' on CBIC portal')+'</div>');return;}
+      if(t.getAttribute('data-adv')!==null){var V=ADV[+t.getAttribute('data-adv')];openModal('<span class="chip mono">'+V[0]+'</span><h3>'+V[1]+'</h3><p style="margin:0">'+V[2]+'</p><div class="mt">'+A(V[3],V[3].indexOf('/read/')>-1?'Read advisory on GST portal':'GST portal — News &amp; Updates')+A('https://www.gst.gov.in/help/returns','Returns help',true)+'</div>');return;}
+      if(t.getAttribute('data-mo')){var f=t.getAttribute('data-mo');var bt=$('moSeg').querySelectorAll('button');for(var q=0;q<bt.length;q++)bt[q].className=bt[q]===t?'on':'';$('mo9').innerHTML=tbl(['Table','Nature of reporting','Status','Relaxation / note'],moRows(MO9,f),'tbcol');$('mo9c').innerHTML=tbl(['Table','Nature of reporting','Status','Relaxation / note'],moRows(MO9C,f),'tbcol');return;}
+      if(t.getAttribute('data-fs')!==null){flowPlay(false);FI=+t.getAttribute('data-fs');flowShow(FI);return;}
+      if(t.getAttribute('data-fb')){flowPlay(false);flowShow(null,t.getAttribute('data-fb'));return;}
+      if(t.id==='fPlay'){flowPlay(!FPLAY);return;}
+      if(t.id==='fNext'){flowPlay(false);FI=(FI+1)%FS.length;flowShow(FI);return;}
+      if(t.id==='fPrev'){flowPlay(false);FI=(FI-1+FS.length)%FS.length;flowShow(FI);return;}
+      if(t.id==='fAll'){flowPlay(false);flowShow(-1);return;}
+      if(t.getAttribute('data-law')!==null){var L=LAW[+t.getAttribute('data-law')];openModal('<span class="chip mono">'+L[0]+'</span><h3>'+L[1]+'</h3><p style="margin:0">'+L[2]+'</p>');return;}
+      if(t.getAttribute('data-k')){var k=t.getAttribute('data-k');if(CKS[k]){delete CKS[k];t.className=t.className.replace(' done','');}else{CKS[k]=1;t.className+=' done';}ckSave();ckUpdate();return;}
+      if(t.id==='ckReset'){CKS={};ckSave();var li=document.querySelectorAll('.ck li');for(var i=0;i<li.length;i++)li[i].className=li[i].className.replace(' done','');ckUpdate();return;}
+      if(t.id==='mx'){closeModal();return;}
+      if(t.id==='sampleAll'){for(var s=0;s<CALCS.length;s++)sampleCalc(s);showTab('calc');return;}
+      if(t.id==='clearAll'){for(var c=0;c<CALCS.length;c++)clearCalc(c);showTab('calc');return;}
+      if(t.tagName==='BUTTON'&&t.parentNode&&t.parentNode.className&&String(t.parentNode.className).indexOf('faq')>-1){var fq=t.parentNode;fq.className=fq.className.indexOf('open')>-1?fq.className.replace(' open',''):fq.className+' open';return;}
+    }
+    t=t.parentNode;
+  }
+});
+document.addEventListener('keydown',function(e){if(e.keyCode===27)closeModal();});
+function calcIndexOf(el){var s=el;while(s&&s.tagName!=='SECTION')s=s.parentNode;if(!s)return -1;for(var i=0;i<CALCS.length;i++)if(CALCS[i].id===s.id)return i;return -1;}
+document.addEventListener('input',function(e){var t=e.target;if(t.id==='q'){search(t.value);return;}var i=calcIndexOf(t);if(i>-1)runCalc(i);});
+document.addEventListener('change',function(e){var t=e.target;if(t.id==='xsel'){var v=t.value;$('xout').innerHTML=v===''?'':'<div class="verdict">'+vb('GSTR-9 of FY 2025-26',XS[v][1],'info')+vb('GSTR-9 of FY 2026-27',XS[v][2],'info')+'</div>';return;}var i=calcIndexOf(t);if(i>-1)runCalc(i);});
+document.addEventListener('focusout',function(e){var t=e.target;if(t.getAttribute&&t.getAttribute('data-amt')&&t.value!==''){var n=parseFloat(String(t.value).replace(/[,₹\s]/g,''));if(!isNaN(n))t.value=fmtIn(n);}});
+window.addEventListener('hashchange',function(){var h=location.hash.slice(1);for(var i=0;i<TABS.length;i++)if(TABS[i][0]===h)showTab(h);});
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

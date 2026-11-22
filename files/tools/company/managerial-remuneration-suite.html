@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Managerial Remuneration Suite — Chapter XIII, Companies Act 2013</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#F1F3F7;
+    --ink:#151F32;
+    --ink-2:#54627A;
+    --ink-3:#96A1B4;
+    --navy:#132449;
+    --navy-2:#1C3566;
+    --gold:#C0952F;
+    --gold-light:#DCAF4C;
+    --gold-soft:#FBF2DC;
+    --border:#E6E8EF;
+    --border-strong:#D6DAE4;
+    --add:#2E9C57;
+    --add-soft:#E7F6EC;
+    --less:#D14B4B;
+    --less-soft:#FBEAEA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:'Public Sans', sans-serif;
+    -webkit-font-smoothing:antialiased; padding:0 0 80px 0;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 0;}
+
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding-bottom:22px; margin-bottom:22px;}
+  .header-main{display:flex; align-items:flex-start; gap:14px;}
+  .app-mark{
+    flex:none; width:44px;height:44px; border-radius:12px;
+    background:linear-gradient(155deg, var(--navy-2), var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px -4px rgba(19,36,73,0.45);
+  }
+  .app-mark span{font-family:'Fraunces',serif; font-weight:700; font-size:13px; color:var(--gold-light);}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); display:flex; align-items:center; gap:6px;
+    margin-bottom:6px; font-weight:600;
+  }
+  h1{font-family:'Fraunces', serif; font-weight:600; font-size:clamp(24px,5vw,31px); line-height:1.12; margin:0 0 6px 0; letter-spacing:-.01em; color:var(--ink);}
+  header p{font-size:13.5px; color:var(--ink-2); max-width:560px; margin:0; line-height:1.55;}
+  .reg-no{
+    flex:none; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-3);
+    background:var(--surface-2); border:1px solid var(--border); padding:6px 10px;
+    border-radius:8px; text-align:right; line-height:1.6; white-space:nowrap;
+  }
+
+  .tabs{display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; background:var(--surface-2); padding:5px; border-radius:12px; border:1px solid var(--border);}
+  .tab{
+    font-family:'Public Sans', sans-serif; font-size:12.5px; font-weight:600; padding:9px 13px;
+    background:transparent; color:var(--ink-2); border:none; cursor:pointer; border-radius:8px;
+    display:flex; align-items:baseline; gap:6px; transition:background .15s, color .15s;
+  }
+  .tab .num{color:var(--ink-3); font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:10px;}
+  .tab.active{background:var(--navy); color:#fff; box-shadow:0 2px 8px -2px rgba(19,36,73,0.35);}
+  .tab.active .num{color:var(--gold-light);}
+  .tab:not(.active):hover{background:#EBEDF3; color:var(--ink);}
+
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:26px 24px 28px; box-shadow:0 1px 2px rgba(16,24,40,0.03), 0 12px 32px -16px rgba(16,24,40,0.10);
+  }
+  .view{display:none;} .view.active{display:block;}
+
+  h2{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 4px; color:var(--ink);}
+  .sub{font-size:12px; color:var(--ink-3); margin:0 0 20px; font-family:'IBM Plex Mono', monospace;}
+  h3{font-family:'Fraunces', serif; font-size:15px; font-weight:600; margin:24px 0 10px; color:var(--ink);}
+  p, li{font-size:13.5px; line-height:1.65; color:var(--ink-2);}
+  .note{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--gold-light); padding:10px 13px; background:var(--gold-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+  .warn{font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--less); padding:10px 13px; background:var(--less-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;}
+
+  .profile-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;}
+  .profile-field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:150px;}
+  .profile-field label{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3);}
+  .profile-field input{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--ink);
+  }
+  .profile-field input:focus{outline:2px solid var(--gold-light); border-color:var(--gold);}
+  .toggle-group{display:flex; gap:6px;}
+  .toggle-btn{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600; padding:8px 16px;
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-2);
+    cursor:pointer; border-radius:8px;
+  }
+  .toggle-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  table.thresh{width:100%; border-collapse:collapse; margin-top:8px; font-size:12.5px;}
+  table.thresh th, table.thresh td{border:1px solid var(--border); padding:9px 10px; vertical-align:middle;}
+  table.thresh th{background:var(--navy); color:#fff; font-family:'Public Sans',sans-serif; font-size:10.5px; font-weight:600; text-align:center;}
+  table.thresh td{background:var(--surface);}
+  table.thresh td.tname{font-weight:600; color:var(--ink); font-size:12.5px;}
+  table.thresh td.tformula{font-size:11px; color:var(--ink-3); font-family:'IBM Plex Mono',monospace;}
+  table.thresh td.tval{text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--navy); background:var(--surface-2);}
+  table.thresh input{
+    width:100%; border:none; background:transparent; text-align:right;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:#0033CC; padding:4px;
+  }
+  table.thresh input:focus{outline:2px solid var(--gold-light); background:#fff; border-radius:4px;}
+  .pill{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.02em;}
+  .pill.ok{background:var(--add-soft); color:var(--add);}
+  .pill.req{background:var(--less-soft); color:var(--less);}
+  .pill.warn2{background:var(--gold-soft); color:var(--gold);}
+  .pill.na{background:var(--surface-2); color:var(--ink-3);}
+
+  .verdict-card{margin-top:16px; border-radius:12px; padding:16px 18px; background:linear-gradient(135deg, var(--navy), var(--navy-2));}
+  .verdict-card .vk{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.05em;}
+  .verdict-card .vv{font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:#fff; margin-top:4px;}
+  .verdict-card .vv small{font-size:12px; font-weight:500; color:#9FACC9;}
+  .verdict-card .status-line{margin-top:10px; font-size:13px; font-weight:600;}
+  .verdict-card .status-line.ok{color:#8BE0A8;}
+  .verdict-card .status-line.req{color:#F0A6A6;}
+  .verdict-card .status-line.warn2{color:#F3D28A;}
+
+  .mat-slabs{display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px;}
+  .mat-slab{display:flex; justify-content:space-between; gap:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 13px; font-size:12px;}
+  .mat-slab b{color:var(--ink); font-weight:600;}
+  .mat-slab .formula{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:700;}
+
+  .def-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:560px){.def-grid{grid-template-columns:1fr;}}
+  .def-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .def-card .clno{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700;}
+  .def-card b{font-size:13px; color:var(--ink); display:block; margin:2px 0 3px;}
+  .def-card p{margin:0; font-size:12px; line-height:1.5;}
+
+  .guide-list{counter-reset:guide; margin-top:14px;}
+  .guide-item{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);}
+  .guide-item:last-child{border-bottom:none;}
+  .guide-num{
+    counter-increment:guide; flex:none; width:28px; height:28px; border-radius:50%;
+    background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700;
+  }
+  .guide-num::before{content:counter(guide);}
+  .guide-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:3px;}
+  .guide-body p{margin:0; font-size:12px;}
+  .guide-body .when{font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--gold); text-transform:uppercase; letter-spacing:.04em; margin-left:8px;}
+
+  .role-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:600px){.role-grid{grid-template-columns:1fr;}}
+  .role-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 15px;}
+  .role-card .rc-head{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--gold); font-weight:700; margin-bottom:8px;}
+  .role-card ul{margin:0; padding-left:18px;}
+  .role-card li{font-size:12px; margin-bottom:6px;}
+
+  table.simple{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+  table.simple th, table.simple td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); color:var(--ink-2);}
+  table.simple th{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); font-weight:600;}
+  table.simple td b{color:var(--ink);}
+
+  .exclude-list{margin-top:10px; padding-left:0; list-style:none;}
+  .exclude-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .exclude-list li::before{content:"✕"; position:absolute; left:0; top:1px; color:var(--less); font-size:11px; font-weight:700;}
+  .check-list{margin-top:10px; padding-left:0; list-style:none;}
+  .check-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .check-list li::before{content:"✓"; position:absolute; left:0; top:1px; color:var(--add); font-size:11px; font-weight:700;}
+
+  .exempt-box{margin-top:16px; background:var(--gold-soft); border:1px solid #EEDCA6; border-radius:10px; padding:14px 16px;}
+  .exempt-box b{color:var(--gold); font-size:12.5px; display:block; margin-bottom:6px;}
+
+  .doc-list{margin-top:14px; border-top:1px solid var(--border);}
+  .doc-row{display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border);}
+  .doc-row .doc-no{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--gold); font-weight:700; flex:none; width:22px; padding-top:1px;}
+  .doc-row .doc-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:2px;}
+  .doc-row .doc-body p{margin:0; font-size:12px;}
+  .doc-tag{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase;
+    padding:2px 8px; border-radius:20px; margin-left:8px; background:var(--gold-soft); color:var(--gold);
+    font-weight:700; vertical-align:1px;
+  }
+
+  .disclaimer{margin-top:30px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--ink-3); line-height:1.6; font-family:'IBM Plex Mono',monospace;}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-main">
+      <div class="app-mark"><span>MGR</span></div>
+      <div>
+        <div class="eyebrow">Companies Act, 2013 · Chapter XIII</div>
+        <h1>Managerial Remuneration Suite</h1>
+        <p>Sections 196–205, read with Schedule V and the Companies (Appointment and Remuneration of Managerial Personnel) Rules, 2014 — a working calculator plus reference on appointment, limits, clawback, KMP and penalties.</p>
+      </div>
+    </div>
+    <div class="reg-no">v1.0<br>Aug 2026</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="calc"><span class="num">01</span> Calculator</div>
+    <div class="tab" data-tab="appoint"><span class="num">02</span> Appointment</div>
+    <div class="tab" data-tab="limits"><span class="num">03</span> Remuneration Limits</div>
+    <div class="tab" data-tab="clawback"><span class="num">04</span> Recovery &amp; Loss of Office</div>
+    <div class="tab" data-tab="kmp"><span class="num">05</span> Key Managerial Personnel</div>
+    <div class="tab" data-tab="audit"><span class="num">06</span> Secretarial Audit</div>
+    <div class="tab" data-tab="docs"><span class="num">07</span> Documents &amp; Filings</div>
+    <div class="tab" data-tab="penalty"><span class="num">08</span> Penalties</div>
+  </div>
+
+  <div class="panel">
+
+    <!-- ============ TAB 1: CALCULATOR ============ -->
+    <div class="view active" id="view-calc">
+      <h2>Company profile</h2>
+      <p class="sub">Section 197 caps apply to public companies; private companies are exempt from the percentage ceilings</p>
+
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Does the company have adequate profits this year?</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="profit-yes">Yes</button>
+            <button class="toggle-btn" id="profit-no">No / Inadequate</button>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label>More than one MD / WTD / Manager?</label>
+          <div class="toggle-group">
+            <button class="toggle-btn" id="multi-yes">Yes</button>
+            <button class="toggle-btn active" id="multi-no">No</button>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label>Does an MD / WTD / Manager exist at all?</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="hasmd-yes">Yes</button>
+            <button class="toggle-btn" id="hasmd-no">No</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REGIME 1 -->
+      <div id="regime1-block">
+        <h2>Regime 1 — Adequate profits (Section 197)</h2>
+        <p class="sub">Percentage of net profit computed under Section 198</p>
+        <div class="profile-row">
+          <div class="profile-field">
+            <label for="np198">Net profit u/s 198 (₹ lakh)</label>
+            <input type="number" id="np198" value="0">
+          </div>
+        </div>
+        <table class="thresh">
+          <thead><tr><th style="text-align:left;">Cap</th><th>Rate</th><th>Limit (₹ lakh)</th><th>Proposed remuneration</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="tname">Overall managerial remuneration</td>
+              <td class="tformula">11% of net profit</td>
+              <td class="tval" id="r1-overall-limit">₹ 0</td>
+              <td><input type="number" id="r1-overall-actual" value="0"></td>
+              <td style="text-align:center;"><span class="pill na" id="r1-overall-pill">—</span></td>
+            </tr>
+            <tr>
+              <td class="tname">MD / WTD / Manager <span id="r1-mdwtd-label">(one such person)</span></td>
+              <td class="tformula" id="r1-mdwtd-formula">5% of net profit</td>
+              <td class="tval" id="r1-mdwtd-limit">₹ 0</td>
+              <td><input type="number" id="r1-mdwtd-actual" value="0"></td>
+              <td style="text-align:center;"><span class="pill na" id="r1-mdwtd-pill">—</span></td>
+            </tr>
+            <tr>
+              <td class="tname">Non-executive / other directors</td>
+              <td class="tformula" id="r1-nonexec-formula">1% of net profit</td>
+              <td class="tval" id="r1-nonexec-limit">₹ 0</td>
+              <td><input type="number" id="r1-nonexec-actual" value="0"></td>
+              <td style="text-align:center;"><span class="pill na" id="r1-nonexec-pill">—</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">Exceeding the 11% overall cap requires a <b>special resolution</b> at the AGM with an explanatory statement, plus disclosure in the Board's Report under Section 197(12) read with Rule 5.</p>
+      </div>
+
+      <!-- REGIME 2 -->
+      <div id="regime2-block" style="display:none;">
+        <h2>Regime 2 — No profit / inadequate profit (Schedule V, Part II)</h2>
+        <p class="sub">Yearly per-person limit is a function of effective capital, not profit</p>
+
+        <h3>Effective capital</h3>
+        <div class="profile-row">
+          <div class="profile-field"><label for="ec-psc">Paid-up share capital (₹ lakh)</label><input type="number" id="ec-psc" value="0"></div>
+          <div class="profile-field"><label for="ec-rs">Reserves &amp; surplus (₹ lakh)</label><input type="number" id="ec-rs" value="0"></div>
+          <div class="profile-field"><label for="ec-ltb">Long-term borrowings (₹ lakh)</label><input type="number" id="ec-ltb" value="0"></div>
+        </div>
+        <div class="profile-row">
+          <div class="profile-field"><label for="ec-losses">Accumulated losses (₹ lakh)</label><input type="number" id="ec-losses" value="0"></div>
+          <div class="profile-field"><label for="ec-intang">Unamortised intangibles (₹ lakh)</label><input type="number" id="ec-intang" value="0"></div>
+          <div class="profile-field">
+            <label>Managerial person is a professional? <span style="text-transform:none; letter-spacing:0;">(no capital interest, arm's length)</span></label>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="prof-yes">Yes</button>
+              <button class="toggle-btn active" id="prof-no">No</button>
+            </div>
+          </div>
+        </div>
+
+        <table class="thresh">
+          <tr><td class="tname">Effective capital</td><td class="tval" id="ec-result" colspan="4">₹ 0 lakh</td></tr>
+        </table>
+
+        <div class="mat-slabs" style="margin-top:12px;">
+          <div class="mat-slab"><span>Negative or below ₹5 crore</span><span class="formula">₹60 lakh / year</span></div>
+          <div class="mat-slab"><span>₹5 crore to below ₹100 crore</span><span class="formula">₹84 lakh / year</span></div>
+          <div class="mat-slab"><span>₹100 crore to below ₹250 crore</span><span class="formula">₹1.2 crore / year</span></div>
+          <div class="mat-slab"><span>₹250 crore and above</span><span class="formula">₹1.2 cr + 0.01% of excess over ₹250 cr</span></div>
+        </div>
+
+        <div class="profile-row" style="margin-top:14px;">
+          <div class="profile-field">
+            <label for="ec-proposed">Proposed yearly remuneration per person (₹ lakh)</label>
+            <input type="number" id="ec-proposed" value="0">
+          </div>
+        </div>
+
+        <div class="verdict-card">
+          <div class="vk">Table limit (ordinary resolution)</div>
+          <div class="vv" id="ec-table-limit">₹ 0 <small>lakh / year</small></div>
+          <div class="status-line" id="ec-status">Enter figures above</div>
+        </div>
+        <p class="note">If the managerial person qualifies as a <b>professional</b> under Schedule V Part II — no capital interest in the company or its group, no relation to promoters/directors in the last 2 years, and possesses graduate-level qualification with relevant expertise — there is <b>no ceiling</b> at all, and the table above does not apply.</p>
+        <p class="note">The table limit is payable on an <b>ordinary resolution</b>. Up to <b>2×</b> the table limit is payable with a <b>special resolution</b> and explanatory statement. Above 2×, Schedule V does not authorise the payment through this route at all.</p>
+      </div>
+    </div>
+
+    <!-- ============ TAB 2: APPOINTMENT ============ -->
+    <div class="view" id="view-appoint">
+      <h2>Appointment of managerial personnel — Section 196</h2>
+      <p class="sub">Managing Director, Whole-Time Director, or Manager</p>
+
+      <h3>Eligibility conditions</h3>
+      <div class="check-list">
+        <li>Age between 21 and 70 years — below 21 or above 70 requires a <b>special resolution</b>, with the explanatory statement justifying the appointment (Schedule V, Part I).</li>
+        <li>Not an undischarged insolvent, and has not at any time been adjudged insolvent.</li>
+        <li>Has not at any time suspended payment to creditors, or made a composition with them.</li>
+        <li>Has not at any time been convicted of an offence and sentenced to imprisonment for more than 6 months.</li>
+        <li>Not sentenced to imprisonment for 5 years or more under specified enactments (Schedule V, Part I) in the preceding 5 years.</li>
+        <li>Not detained under the Conservation of Foreign Exchange and Prevention of Smuggling Activities Act (COFEPOSA), 1974.</li>
+      </div>
+
+      <h3>Tenure</h3>
+      <p>Appointment cannot exceed <b>5 years at a time</b>. Re-appointment cannot be made earlier than <b>1 year before the expiry</b> of the current term.</p>
+
+      <h3>Approval process</h3>
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="rc-head">Board</div>
+          <ul>
+            <li>Approval at a duly convened Board meeting — not by circular resolution.</li>
+            <li>Terms of appointment and remuneration approved together.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="rc-head">Shareholders</div>
+          <ul>
+            <li><b>Ordinary resolution</b> at the next general meeting is sufficient where the Schedule V, Part I conditions are met.</li>
+            <li><b>Special resolution</b> required where those conditions are not met (e.g. age outside 21–70).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note">The requirement of Central Government approval for appointments outside Schedule V conditions was removed by the 2018 amendment — a special resolution now suffices instead. Section 196(4) itself was relaxed from special to ordinary resolution by the Companies (Amendment) Act, 2020, except where Part I conditions aren't met.</div>
+
+      <h3>Return of appointment</h3>
+      <p>A return of appointment in <b>Form MR-1</b> must be filed with the Registrar within <b>60 days</b> of the appointment of an MD, WTD or Manager.</p>
+    </div>
+
+    <!-- ============ TAB 3: REMUNERATION LIMITS ============ -->
+    <div class="view" id="view-limits">
+      <h2>Section 197 — the full picture</h2>
+      <p class="sub">Applies to public companies; private companies are outside the percentage caps</p>
+
+      <table class="simple">
+        <tr><th>Cap</th><th>Limit</th></tr>
+        <tr><td><b>Overall managerial remuneration</b></td><td>11% of net profit (computed u/s 198), for all directors and manager together</td></tr>
+        <tr><td><b>Single MD / WTD / Manager</b></td><td>5% of net profit</td></tr>
+        <tr><td><b>More than one such person</b></td><td>10% of net profit in aggregate</td></tr>
+        <tr><td><b>Non-executive directors, if an MD/WTD/Manager exists</b></td><td>1% of net profit</td></tr>
+        <tr><td><b>Non-executive directors, if none exists</b></td><td>3% of net profit</td></tr>
+      </table>
+      <p class="note">"Net profit" here is the Section 198 figure — a specific computation starting from accounting profit, adding back items such as the managerial remuneration itself, and excluding certain capital profits — not the P&amp;L figure or EBITDA.</p>
+
+      <h3>Sitting fees, commission &amp; independent directors</h3>
+      <div class="check-list">
+        <li>Sitting fees for attending Board or committee meetings — capped at <b>₹1,00,000 per meeting</b> under Rule 4 of the Companies (Appointment and Remuneration of Managerial Personnel) Rules, 2014.</li>
+        <li>Non-executive and independent directors may receive a profit-related commission, subject to Board and shareholder approval within the applicable cap.</li>
+        <li>Independent directors are <b>not entitled to stock options</b> under any circumstance — only fees, reimbursement, and profit-related commission.</li>
+      </div>
+
+      <h3>Insurance premium — Section 197(13)</h3>
+      <p>Premium paid by the company on a policy indemnifying any of its directors, MD, WTD, manager, or KMP against liability in respect of any negligence, default, misfeasance, breach of duty or breach of trust is <b>not treated as remuneration</b> — unless that person is proved to be guilty, in which case the premium paid on their behalf is treated as remuneration.</p>
+
+      <div class="exempt-box">
+        <b>Private companies</b>
+        Section 197's percentage ceilings do not apply to private companies at all. Other governance and disclosure requirements may still apply depending on the company's other characteristics (e.g. Section 203 KMP rules, Section 204 secretarial audit).
+      </div>
+    </div>
+
+    <!-- ============ TAB 4: RECOVERY & LOSS OF OFFICE ============ -->
+    <div class="view" id="view-clawback">
+      <h2>Recovery of remuneration — Section 199</h2>
+      <p class="sub">The clawback provision</p>
+      <p>Where a company is required to <b>restate its financial statements</b> due to fraud or non-compliance with any requirement of the Act or the rules, and it is found that the MD, WTD, Manager or CEO received remuneration in excess of what would have been payable based on the restated figures, the company must recover that excess from them — for a period covering the <b>two preceding financial years</b>.</p>
+      <p class="note">Recovery under Section 199 does not require proof of personal wrongdoing by the individual — it is triggered by the fact of restatement due to fraud or non-compliance, and the resulting overpayment.</p>
+
+      <h2 style="margin-top:30px;">Compensation for loss of office — Section 202</h2>
+      <p class="sub">Restrictions on payment to an MD, WTD or Manager on ceasing to hold office</p>
+
+      <h3>The cap</h3>
+      <p>Any payment for loss of office cannot exceed the remuneration the person would have earned for the <b>remainder of their term, or 3 years, whichever is shorter</b> — computed on the basis of the <b>average remuneration</b> actually drawn during the preceding 3 years (or the actual period served, if shorter).</p>
+
+      <h3>When no such payment may be made</h3>
+      <div class="exclude-list">
+        <li>Where the company is being wound up due to the director's own negligence or default.</li>
+        <li>Where the director resigns following an actual or expected reconstruction or amalgamation, and is offered re-employment on similar or better terms in the reconstructed/amalgamated company.</li>
+        <li>Where the director is guilty of fraud, breach of trust, gross negligence or mismanagement in relation to the company's affairs.</li>
+        <li>Where the director resigns otherwise than in connection with a reconstruction or amalgamation, and was in a position to receive payment in circumstances not covered by the permitted exceptions.</li>
+      </div>
+    </div>
+
+    <!-- ============ TAB 5: KEY MANAGERIAL PERSONNEL ============ -->
+    <div class="view" id="view-kmp">
+      <h2>Section 203 — mandatory KMP</h2>
+      <p class="sub">Applicability: every listed company, and every public company with paid-up share capital of ₹10 crore or more</p>
+
+      <h3>Who must be appointed</h3>
+      <div class="def-grid">
+        <div class="def-card"><span class="clno">i.</span><b>MD, CEO or Manager</b><p>In their absence, a Whole-Time Director.</p></div>
+        <div class="def-card"><span class="clno">ii.</span><b>Company Secretary</b><p>A whole-time CS, qualified under the Company Secretaries Act.</p></div>
+        <div class="def-card"><span class="clno">iii.</span><b>Chief Financial Officer</b><p>Responsible for the financial affairs of the company.</p></div>
+      </div>
+
+      <h3>Chairperson / MD-CEO separation</h3>
+      <p>One individual cannot ordinarily hold the office of Chairperson <b>and</b> MD or CEO of the same company at the same time — unless the company's articles provide otherwise, or the company does not carry on multiple businesses. Certain classes of listed companies carry a further exemption under SEBI LODR.</p>
+
+      <h3>Other constraints</h3>
+      <div class="check-list">
+        <li>A vacancy in any whole-time KMP office must be filled by the Board within <b>6 months</b>.</li>
+        <li>An individual cannot be KMP of more than one company at the same time — except as a director in another company, or as permitted for KMP of a holding company also being a director of its subsidiary.</li>
+      </div>
+
+      <h2 style="margin-top:30px;">Section 205 — functions of the Company Secretary</h2>
+      <div class="check-list">
+        <li>Report to the Board on compliance with the Act, rules and other applicable laws.</li>
+        <li>Ensure the company complies with applicable secretarial standards.</li>
+        <li>Discharge such other duties as prescribed under the rules.</li>
+      </div>
+    </div>
+
+    <!-- ============ TAB 6: SECRETARIAL AUDIT ============ -->
+    <div class="view" id="view-audit">
+      <h2>Section 204 — Secretarial Audit</h2>
+      <p class="sub">Independent verification of secretarial and legal compliance</p>
+
+      <h3>Applicability</h3>
+      <div class="check-list">
+        <li>Every listed company.</li>
+        <li>Every public company with paid-up share capital of <b>₹50 crore or more</b>.</li>
+        <li>Every public company with turnover of <b>₹250 crore or more</b>.</li>
+        <li>Every company with outstanding loans or borrowings from banks or public financial institutions of <b>₹100 crore or more</b> (added by the 2020 amendment to the Rules).</li>
+      </div>
+
+      <h3>The report</h3>
+      <p>A <b>Practising Company Secretary</b> conducts the audit and issues the report in <b>Form MR-3</b>, which is annexed to the Board's Report. The Board must explain, in its report, any qualification or observation made by the Secretarial Auditor.</p>
+
+      <div class="note">Secretarial audit is distinct from statutory financial audit — it verifies compliance with company law, SEBI regulations, FEMA and other applicable corporate laws, not the accuracy of financial statements.</div>
+    </div>
+
+    <!-- ============ TAB 7: DOCUMENTS & FILINGS ============ -->
+    <div class="view" id="view-docs">
+      <h2>Documents, forms &amp; filings</h2>
+      <p class="sub">Paper trail for managerial remuneration compliance</p>
+      <div class="doc-list">
+        <div class="doc-row"><div class="doc-no">01</div><div class="doc-body"><b>Board resolution appointing MD/WTD/Manager</b><span class="doc-tag">Sec. 196</span><p>Passed at a Board meeting, covering terms and remuneration.</p></div></div>
+        <div class="doc-row"><div class="doc-no">02</div><div class="doc-body"><b>Shareholder resolution (ordinary or special)</b><span class="doc-tag">Sec. 196/197</span><p>At the next general meeting, with explanatory statement per Section 102.</p></div></div>
+        <div class="doc-row"><div class="doc-no">03</div><div class="doc-body"><b>Form MR-1 — Return of appointment</b><span class="doc-tag">60 days</span><p>Filed with the Registrar within 60 days of appointment of MD/WTD/Manager.</p></div></div>
+        <div class="doc-row"><div class="doc-no">04</div><div class="doc-body"><b>Form MGT-14</b><span class="doc-tag">30 days</span><p>Filing of the special resolution (and certain Board resolutions), within 30 days of passing.</p></div></div>
+        <div class="doc-row"><div class="doc-no">05</div><div class="doc-body"><b>Form MR-3 — Secretarial Audit Report</b><span class="doc-tag">Sec. 204</span><p>By a Practising Company Secretary, annexed to the Board's Report, for applicable companies.</p></div></div>
+        <div class="doc-row"><div class="doc-no">06</div><div class="doc-body"><b>Board's Report disclosures</b><span class="doc-tag">Sec. 197(12), Rule 5</span><p>Ratio of each director's remuneration to median employee remuneration, percentage increase in remuneration, comparison of KMP remuneration against company performance, and related particulars — mainly for listed companies and prescribed classes.</p></div></div>
+        <div class="doc-row"><div class="doc-no">07</div><div class="doc-body"><b>Nomination &amp; Remuneration Committee minutes</b><span class="doc-tag">Sec. 178</span><p>Recording the basis for recommending remuneration, where the company is required to have an NRC.</p></div></div>
+        <div class="doc-row"><div class="doc-no">08</div><div class="doc-body"><b>Register of Directors and KMP</b><span class="doc-tag">Sec. 170</span><p>Particulars of directors and KMP, including remuneration-relevant details, kept at the registered office.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 8: PENALTIES ============ -->
+    <div class="view" id="view-penalty">
+      <h2>Consequences of non-compliance</h2>
+      <p class="sub">Section 197 &amp; related provisions</p>
+
+      <h3>Excess remuneration</h3>
+      <p>Any remuneration drawn in excess of what Section 197 or Schedule V permits must be <b>refunded to the company</b> by the recipient. The company cannot waive recovery of this excess without the approval required under the Act (a special resolution, where applicable) — a director cannot simply be let off by Board decision alone.</p>
+
+      <h3>Holding office in contravention</h3>
+      <p>If a managerial person or director receives remuneration in contravention of Section 197, they hold the excess amount <b>in trust for the company</b> until repayment. Continued retention without repayment compounds the contravention.</p>
+
+      <h3>General penalty — Section 172</h3>
+      <p>Where no specific penalty is prescribed for a particular contravention under this Chapter, the company and every officer in default are liable under the <b>general penalty provision</b>, Section 172 of the Act.</p>
+
+      <div class="warn">Where excess remuneration or improper compensation for loss of office is used to divert value from the company or its shareholders, this may separately attract action for oppression and mismanagement, or under Section 447 (fraud), independent of the Chapter XIII consequences above.</div>
+
+      <h3>Clawback non-recovery</h3>
+      <p>Failure to recover excess remuneration required under Section 199 following a restatement is itself a contravention — the burden falls on the company and its officers to pursue recovery once the restatement establishes the overpayment.</p>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    Working tool for illustrative computation and reference only — not legal advice. Figures under Schedule V, the percentage caps under Section 197, and the applicability thresholds under Sections 203 and 204 are amended periodically — verify current figures against the latest Act, Rules and MCA notifications, ideally with your company secretary, before relying on this for a filing.
+  </div>
+</div>
+
+<script>
+  // ---- Tabs ----
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('.view');
+  tabs.forEach(t=>{
+    t.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      views.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('view-'+t.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Profile toggles ----
+  let hasProfit = true, hasMultiple = false, hasMdWtd = true, isProfessional = false;
+
+  const profitYesBtn = document.getElementById('profit-yes');
+  const profitNoBtn = document.getElementById('profit-no');
+  const regime1Block = document.getElementById('regime1-block');
+  const regime2Block = document.getElementById('regime2-block');
+  function setProfit(val){
+    hasProfit = val;
+    profitYesBtn.classList.toggle('active', val);
+    profitNoBtn.classList.toggle('active', !val);
+    regime1Block.style.display = val ? 'block' : 'none';
+    regime2Block.style.display = val ? 'none' : 'block';
+  }
+  profitYesBtn.addEventListener('click', ()=>setProfit(true));
+  profitNoBtn.addEventListener('click', ()=>setProfit(false));
+
+  const multiYesBtn = document.getElementById('multi-yes');
+  const multiNoBtn = document.getElementById('multi-no');
+  function setMulti(val){
+    hasMultiple = val;
+    multiYesBtn.classList.toggle('active', val);
+    multiNoBtn.classList.toggle('active', !val);
+    computeRegime1();
+  }
+  multiYesBtn.addEventListener('click', ()=>setMulti(true));
+  multiNoBtn.addEventListener('click', ()=>setMulti(false));
+
+  const hasmdYesBtn = document.getElementById('hasmd-yes');
+  const hasmdNoBtn = document.getElementById('hasmd-no');
+  function setHasMd(val){
+    hasMdWtd = val;
+    hasmdYesBtn.classList.toggle('active', val);
+    hasmdNoBtn.classList.toggle('active', !val);
+    computeRegime1();
+  }
+  hasmdYesBtn.addEventListener('click', ()=>setHasMd(true));
+  hasmdNoBtn.addEventListener('click', ()=>setHasMd(false));
+
+  const profYesBtn = document.getElementById('prof-yes');
+  const profNoBtn = document.getElementById('prof-no');
+  function setProfessional(val){
+    isProfessional = val;
+    profYesBtn.classList.toggle('active', val);
+    profNoBtn.classList.toggle('active', !val);
+    computeRegime2();
+  }
+  profYesBtn.addEventListener('click', ()=>setProfessional(true));
+  profNoBtn.addEventListener('click', ()=>setProfessional(false));
+
+  function fmt(n){
+    if(isNaN(n)) n=0;
+    return '₹ ' + (Math.round(n*100)/100).toLocaleString('en-IN');
+  }
+
+  // ---- Regime 1: percentage of net profit ----
+  function computeRegime1(){
+    const np = parseFloat(document.getElementById('np198').value)||0;
+    const overallLimit = np * 0.11;
+    const mdwtdRate = hasMultiple ? 0.10 : 0.05;
+    const mdwtdLimit = np * mdwtdRate;
+    const nonExecRate = hasMdWtd ? 0.01 : 0.03;
+    const nonExecLimit = np * nonExecRate;
+
+    document.getElementById('r1-overall-limit').textContent = fmt(overallLimit);
+    document.getElementById('r1-mdwtd-limit').textContent = fmt(mdwtdLimit);
+    document.getElementById('r1-nonexec-limit').textContent = fmt(nonExecLimit);
+    document.getElementById('r1-mdwtd-label').textContent = hasMultiple ? '(aggregate, more than one)' : '(one such person)';
+    document.getElementById('r1-mdwtd-formula').textContent = hasMultiple ? '10% of net profit' : '5% of net profit';
+    document.getElementById('r1-nonexec-formula').textContent = hasMdWtd ? '1% of net profit' : '3% of net profit';
+
+    evalPill('r1-overall-actual', overallLimit, 'r1-overall-pill');
+    evalPill('r1-mdwtd-actual', mdwtdLimit, 'r1-mdwtd-pill');
+    evalPill('r1-nonexec-actual', nonExecLimit, 'r1-nonexec-pill');
+  }
+  function evalPill(inputId, limit, pillId){
+    const val = parseFloat(document.getElementById(inputId).value)||0;
+    const pill = document.getElementById(pillId);
+    if(val === 0){ pill.textContent='—'; pill.className='pill na'; }
+    else if(val > limit){ pill.textContent='Special resolution'; pill.className='pill req'; }
+    else { pill.textContent='Within cap'; pill.className='pill ok'; }
+  }
+  ['np198','r1-overall-actual','r1-mdwtd-actual','r1-nonexec-actual'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', computeRegime1);
+  });
+
+  // ---- Regime 2: Schedule V effective capital ----
+  function scheduleVLimit(ecLakh){
+    // ecLakh in ₹ lakh; slabs in ₹ crore converted to lakh (1 cr = 100 lakh)
+    const ecCr = ecLakh / 100;
+    if(ecCr < 5) return 60;
+    if(ecCr < 100) return 84;
+    if(ecCr < 250) return 120;
+    return 120 + (ecCr - 250) * 0.0001 * 100; // 0.01% of excess over 250cr, result in lakh
+  }
+
+  function computeRegime2(){
+    const psc = parseFloat(document.getElementById('ec-psc').value)||0;
+    const rs = parseFloat(document.getElementById('ec-rs').value)||0;
+    const ltb = parseFloat(document.getElementById('ec-ltb').value)||0;
+    const losses = parseFloat(document.getElementById('ec-losses').value)||0;
+    const intang = parseFloat(document.getElementById('ec-intang').value)||0;
+    const ec = psc + rs + ltb - losses - intang;
+
+    document.getElementById('ec-result').textContent = fmt(ec) + ' lakh (₹ ' + fmt(ec/100).replace('₹ ','') + ' crore)';
+
+    const tableLimit = scheduleVLimit(ec);
+    document.getElementById('ec-table-limit').innerHTML = fmt(tableLimit) + ' <small>lakh / year</small>';
+
+    const proposed = parseFloat(document.getElementById('ec-proposed').value)||0;
+    const statusEl = document.getElementById('ec-status');
+
+    if(isProfessional){
+      statusEl.textContent = 'No ceiling — qualifies as a professional under Schedule V Part II';
+      statusEl.className = 'status-line ok';
+      return;
+    }
+
+    if(proposed === 0){
+      statusEl.textContent = 'Enter proposed remuneration to check the resolution required';
+      statusEl.className = 'status-line';
+    } else if(proposed <= tableLimit){
+      statusEl.textContent = 'Within table limit — ordinary resolution';
+      statusEl.className = 'status-line ok';
+    } else if(proposed <= tableLimit * 2){
+      statusEl.textContent = 'Above table limit, within 2× — special resolution required';
+      statusEl.className = 'status-line warn2';
+    } else {
+      statusEl.textContent = 'Exceeds 2× the table limit — not permitted under Schedule V via this route';
+      statusEl.className = 'status-line req';
+    }
+  }
+  ['ec-psc','ec-rs','ec-ltb','ec-losses','ec-intang','ec-proposed'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', computeRegime2);
+  });
+
+  // ---- init ----
+  computeRegime1();
+  computeRegime2();
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPT Compliance Suite — Section 188 &amp; SEBI LODR Reg. 23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#F1F3F7;
+    --ink:#000000;
+    --ink-2:#000000;
+    --ink-3:#4A4A4A;
+    --navy:#132449;
+    --navy-2:#1C3566;
+    --gold:#C0952F;
+    --gold-light:#DCAF4C;
+    --gold-soft:#FBF2DC;
+    --border:#E6E8EF;
+    --border-strong:#D6DAE4;
+    --add:#2E9C57;
+    --add-soft:#E7F6EC;
+    --less:#D14B4B;
+    --less-soft:#FBEAEA;
+    --white:#FFFFFF;
+    --panel:#FFFFFF;
+    --panel-2:#F7F8FB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Public Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 80px 0;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 0;}
+
+  header{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    padding-bottom:22px; margin-bottom:22px;
+  }
+  .header-main{display:flex; align-items:flex-start; gap:14px;}
+  .app-mark{
+    flex:none; width:44px;height:44px; border-radius:12px;
+    background:linear-gradient(155deg, var(--navy-2), var(--navy));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px -4px rgba(19,36,73,0.45);
+  }
+  .app-mark span{font-family:'Fraunces',serif; font-weight:700; font-size:15px; color:var(--gold-light);}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); display:flex; align-items:center; gap:6px;
+    margin-bottom:6px; font-weight:600;
+  }
+  h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:clamp(24px,5vw,31px);
+    line-height:1.12; margin:0 0 6px 0; letter-spacing:-.01em; color:var(--ink);
+  }
+  header p{font-size:13.5px; color:var(--ink-2); max-width:540px; margin:0; line-height:1.55;}
+  .reg-no{
+    flex:none; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-3);
+    background:var(--surface-2); border:1px solid var(--border); padding:6px 10px;
+    border-radius:8px; text-align:right; line-height:1.6; white-space:nowrap;
+  }
+
+  .tabs{
+    display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap;
+    background:var(--surface-2); padding:5px; border-radius:12px; border:1px solid var(--border);
+  }
+  .tab{
+    font-family:'Public Sans', sans-serif; font-size:12.5px; font-weight:600; padding:9px 13px;
+    background:transparent; color:var(--ink-2); border:none; cursor:pointer; border-radius:8px;
+    display:flex; align-items:baseline; gap:6px; transition:background .15s, color .15s;
+  }
+  .tab .num{color:var(--ink-3); font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:10px;}
+  .tab.active{background:var(--navy); color:#fff; box-shadow:0 2px 8px -2px rgba(19,36,73,0.35);}
+  .tab.active .num{color:var(--gold-light);}
+  .tab:not(.active):hover{background:#EBEDF3; color:var(--ink);}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:26px 24px 28px; box-shadow:0 1px 2px rgba(16,24,40,0.03), 0 12px 32px -16px rgba(16,24,40,0.10);
+  }
+  .view{display:none;} .view.active{display:block;}
+
+  h2{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 4px; color:var(--ink);}
+  .sub{font-size:12px; color:var(--ink-3); margin:0 0 20px; font-family:'IBM Plex Mono', monospace;}
+  h3{font-family:'Fraunces', serif; font-size:15px; font-weight:600; margin:24px 0 10px; color:var(--ink);}
+  p, li{font-size:13.5px; line-height:1.65; color:var(--ink-2);}
+  .note{
+    font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--gold-light);
+    padding:10px 13px; background:var(--gold-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;
+  }
+  .warn{
+    font-size:12.5px; color:var(--ink-2); border-left:3px solid var(--less);
+    padding:10px 13px; background:var(--less-soft); border-radius:0 8px 8px 0; margin:14px 0; line-height:1.55;
+  }
+
+  /* PROFILE / TOGGLE */
+  .profile-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;}
+  .profile-field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:150px;}
+  .profile-field label{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--ink-3);
+  }
+  .profile-field input{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--ink);
+  }
+  .profile-field input:focus{outline:2px solid var(--gold-light); border-color:var(--gold);}
+  .toggle-group{display:flex; gap:6px;}
+  .toggle-btn{
+    font-family:'Public Sans',sans-serif; font-size:12.5px; font-weight:600; padding:8px 16px;
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-2);
+    cursor:pointer; border-radius:8px;
+  }
+  .toggle-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  /* THRESHOLD TABLE */
+  table.thresh{width:100%; border-collapse:collapse; margin-top:8px; font-size:12.5px;}
+  table.thresh th, table.thresh td{border:1px solid var(--border); padding:9px 10px; vertical-align:middle;}
+  table.thresh th{
+    background:var(--navy); color:#fff; font-family:'Public Sans',sans-serif;
+    font-size:10.5px; font-weight:600; text-align:center;
+  }
+  table.thresh td{background:var(--surface);}
+  table.thresh td.tname{font-weight:600; color:var(--ink); font-size:12.5px;}
+  table.thresh td.tformula{font-size:11px; color:var(--ink-3); font-family:'IBM Plex Mono',monospace;}
+  table.thresh td.tval{
+    text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--navy);
+    background:var(--surface-2);
+  }
+  table.thresh input{
+    width:100%; border:none; background:transparent; text-align:right;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:#0033CC; padding:4px;
+  }
+  table.thresh input:focus{outline:2px solid var(--gold-light); background:#fff; border-radius:4px;}
+  .pill{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700;
+    padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.02em;
+  }
+  .pill.ok{background:var(--add-soft); color:var(--add);}
+  .pill.req{background:var(--less-soft); color:var(--less);}
+  .pill.na{background:var(--surface-2); color:var(--ink-3);}
+
+  /* MATERIALITY BLOCK */
+  .mat-slabs{display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px;}
+  .mat-slab{
+    display:flex; justify-content:space-between; gap:10px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:8px; padding:10px 13px; font-size:12px;
+  }
+  .mat-slab b{color:var(--ink); font-weight:600;}
+  .mat-slab .formula{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:700;}
+
+  .verdict-card{
+    margin-top:16px; border-radius:12px; padding:16px 18px; background:linear-gradient(135deg, var(--navy), var(--navy-2));
+  }
+  .verdict-card .vk{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#B9C4DE; text-transform:uppercase; letter-spacing:.05em;}
+  .verdict-card .vv{font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:#fff; margin-top:4px;}
+  .verdict-card .vv small{font-size:12px; font-weight:500; color:#9FACC9;}
+  .verdict-card .status-line{margin-top:10px; font-size:13px; font-weight:600;}
+  .verdict-card .status-line.ok{color:#8BE0A8;}
+  .verdict-card .status-line.req{color:#F0A6A6;}
+
+  /* DEFINITION CARDS */
+  .def-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:560px){.def-grid{grid-template-columns:1fr;}}
+  .def-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .def-card .clno{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold); font-weight:700;}
+  .def-card b{font-size:13px; color:var(--ink); display:block; margin:2px 0 3px;}
+  .def-card p{margin:0; font-size:12px; line-height:1.5;}
+
+  /* TIMELINE / GUIDE */
+  .guide-list{counter-reset:guide; margin-top:14px;}
+  .guide-item{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);}
+  .guide-item:last-child{border-bottom:none;}
+  .guide-num{
+    counter-increment:guide; flex:none; width:28px; height:28px; border-radius:50%;
+    background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700;
+  }
+  .guide-num::before{content:counter(guide);}
+  .guide-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:3px;}
+  .guide-body p{margin:0; font-size:12px;}
+  .guide-body .when{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--gold);
+    text-transform:uppercase; letter-spacing:.04em; margin-left:8px;
+  }
+
+  /* ROLE / APPROVAL MATRIX CARDS */
+  .role-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:14px;}
+  @media(max-width:680px){.role-grid{grid-template-columns:1fr;}}
+  .role-card{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 15px;}
+  .role-card .rc-head{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--gold); font-weight:700; margin-bottom:8px;
+  }
+  .role-card ul{margin:0; padding-left:18px;}
+  .role-card li{font-size:12px; margin-bottom:6px;}
+
+  table.simple{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+  table.simple th, table.simple td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); color:var(--ink-2);}
+  table.simple th{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--ink-3); font-weight:600;
+  }
+  table.simple td b{color:var(--ink);}
+
+  .exclude-list{margin-top:10px; padding-left:0; list-style:none;}
+  .exclude-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .exclude-list li::before{content:"✕"; position:absolute; left:0; top:1px; color:var(--less); font-size:11px; font-weight:700;}
+  .check-list{margin-top:10px; padding-left:0; list-style:none;}
+  .check-list li{position:relative; padding-left:22px; margin-bottom:8px;}
+  .check-list li::before{content:"✓"; position:absolute; left:0; top:1px; color:var(--add); font-size:11px; font-weight:700;}
+
+  .exempt-box{margin-top:16px; background:var(--gold-soft); border:1px solid #EEDCA6; border-radius:10px; padding:14px 16px;}
+  .exempt-box b{color:var(--gold); font-size:12.5px; display:block; margin-bottom:6px;}
+
+  .doc-list{margin-top:14px; border-top:1px solid var(--border);}
+  .doc-row{display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border);}
+  .doc-row .doc-no{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--gold); font-weight:700; flex:none; width:22px; padding-top:1px;}
+  .doc-row .doc-body b{font-size:13px; color:var(--ink); display:block; margin-bottom:2px;}
+  .doc-row .doc-body p{margin:0; font-size:12px;}
+  .doc-tag{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase;
+    padding:2px 8px; border-radius:20px; margin-left:8px; background:var(--gold-soft); color:var(--gold);
+    font-weight:700; vertical-align:1px;
+  }
+
+  .disclaimer{
+    margin-top:30px; padding-top:16px; border-top:1px solid var(--border); font-size:11px;
+    color:var(--ink-3); line-height:1.6; font-family:'IBM Plex Mono',monospace;
+  }
+</style>
+<style id="rk-mobile-fix">@media (max-width:700px){.app,.grid2{grid-template-columns:minmax(0,1fr)!important}.app>*,.grid2>*,.panel,.panel-form,.panel-preview,.calc-card,.side-panel,.fld{min-width:0!important;max-width:100%!important}.panel-preview{overflow-x:auto}nav.toptabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}nav.toptabs>*{flex:0 0 auto}table.thresh{display:block;overflow-x:auto;max-width:100%}.fld input,.fld select,.fld .inw{max-width:100%;min-width:0}header.top .brand{min-width:0;flex-wrap:wrap}header.top .brand *{white-space:normal;min-width:0}.unibar,.pager,.fbar .grid{flex-wrap:wrap}.fbar .fld{flex:1 1 100%}.unibar input{min-width:0;flex:1 1 100%}fieldset{min-width:0!important;max-width:100%}fieldset *{max-width:100%}}</style></head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-main">
+      <div class="app-mark"><span>RPT</span></div>
+      <div>
+        <div class="eyebrow">Companies Act, 2013 · SEBI LODR</div>
+        <h1>Related Party Transactions Suite</h1>
+        <p>A working calculator for Section 188 &amp; Rule 15 thresholds and SEBI LODR Reg. 23 materiality (Schedule XII), plus definitions, the approval matrix, documentation and penalties.</p>
+      </div>
+    </div>
+    <div class="reg-no">v1.0<br>Aug 2026</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="calc"><span class="num">01</span> Calculator</div>
+    <div class="tab" data-tab="related"><span class="num">02</span> Who's a Related Party</div>
+    <div class="tab" data-tab="s188"><span class="num">03</span> Section 188</div>
+    <div class="tab" data-tab="approval"><span class="num">04</span> Approval Matrix</div>
+    <div class="tab" data-tab="lodr"><span class="num">05</span> SEBI LODR Reg. 23</div>
+    <div class="tab" data-tab="docs"><span class="num">06</span> Documents &amp; Register</div>
+    <div class="tab" data-tab="guide"><span class="num">07</span> Compliance Guide</div>
+    <div class="tab" data-tab="penalty"><span class="num">08</span> Penalties</div>
+  </div>
+
+  <div class="panel">
+
+    <!-- ============ TAB 1: CALCULATOR ============ -->
+    <div class="view active" id="view-calc">
+      <h2>Company profile</h2>
+      <p class="sub">Used to compute both Section 188 and SEBI LODR thresholds below</p>
+
+      <div class="profile-row">
+        <div class="profile-field">
+          <label>Listed company?</label>
+          <div class="toggle-group">
+            <button class="toggle-btn" id="listed-yes">Yes</button>
+            <button class="toggle-btn active" id="listed-no">No</button>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label for="p-turnover">Annual turnover (₹ crore)</label>
+          <input type="number" id="p-turnover" value="0">
+        </div>
+        <div class="profile-field">
+          <label for="p-networth">Net worth (₹ crore)</label>
+          <input type="number" id="p-networth" value="0">
+        </div>
+      </div>
+
+      <h2>Section 188 — Rule 15 thresholds</h2>
+      <p class="sub">Companies (Meetings of Board and its Powers) Rules, 2014, Rule 15(3) — shareholder ordinary resolution triggers</p>
+
+      <table class="thresh" id="s188-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Transaction type</th>
+            <th>Threshold (lower of)</th>
+            <th>Computed limit (₹ cr)</th>
+            <th>Your transaction value</th>
+            <th>Approval needed</th>
+          </tr>
+        </thead>
+        <tbody id="s188-body"></tbody>
+      </table>
+      <p class="note">Board approval (by resolution at a meeting) and Audit Committee approval (where applicable) are required for <b>every</b> related-party transaction that is not both in the ordinary course of business and at arm's length — regardless of value. The table above only tells you whether <b>shareholder</b> approval is additionally triggered.</p>
+
+      <h2 style="margin-top:30px;">SEBI LODR — Regulation 23 materiality (Schedule XII)</h2>
+      <p class="sub" id="lodr-calc-sub">Visible when "Listed company?" is set to Yes</p>
+
+      <div id="lodr-calc-block" style="display:none;">
+        <div class="mat-slabs">
+          <div class="mat-slab"><span>Turnover up to ₹20,000 crore</span><span class="formula">10% of consolidated turnover</span></div>
+          <div class="mat-slab"><span>₹20,000 – ₹40,000 crore</span><span class="formula">₹2,000 cr + 5% of turnover above ₹20,000 cr</span></div>
+          <div class="mat-slab"><span>Above ₹40,000 crore</span><span class="formula">₹3,000 cr + 2.5% of turnover above ₹40,000 cr (capped at ₹5,000 cr)</span></div>
+        </div>
+
+        <div class="profile-row" style="margin-top:16px;">
+          <div class="profile-field">
+            <label for="lodr-value">Aggregate RPT value this FY (₹ crore)</label>
+            <input type="number" id="lodr-value" value="0">
+          </div>
+          <div class="profile-field">
+            <label>Brand / royalty payment?</label>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="royalty-yes">Yes</button>
+              <button class="toggle-btn active" id="royalty-no">No</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="verdict-card">
+          <div class="vk">Applicable materiality threshold</div>
+          <div class="vv" id="lodr-threshold">₹ 0 <small>crore</small></div>
+          <div class="status-line" id="lodr-status">Enter figures above</div>
+        </div>
+        <p class="note">Brand/royalty payments use a flat 2% of annual consolidated turnover instead of the Schedule XII slabs. Material RPTs require prior Audit Committee approval and a shareholder ordinary resolution in which <b>no related party may vote</b>, regardless of any Companies Act exception.</p>
+      </div>
+
+      <h3>Underwriting &amp; office-of-profit checks</h3>
+      <div class="check-list">
+        <li>Underwriting subscription of securities: threshold is <b>1% of net worth</b> — computed below from your net worth figure.</li>
+      </div>
+      <table class="thresh" style="margin-top:8px;">
+        <tr><td class="tname">1% of net worth</td><td class="tval" id="underwriting-limit">₹ 0 cr</td></tr>
+      </table>
+    </div>
+
+    <!-- ============ TAB 2: WHO'S A RELATED PARTY ============ -->
+    <div class="view" id="view-related">
+      <h2>Related party — Section 2(76)</h2>
+      <p class="sub">Companies Act, 2013 — applies to every company</p>
+      <div class="def-grid">
+        <div class="def-card"><span class="clno">(i)</span><b>Director / KMP &amp; relatives</b><p>A director, key managerial personnel, or their relative.</p></div>
+        <div class="def-card"><span class="clno">(ii)</span><b>Firm as partner</b><p>A firm in which a director, manager, or relative of either is a partner.</p></div>
+        <div class="def-card"><span class="clno">(iii)</span><b>Private company</b><p>A private company in which a director or manager (or their relative) is a member or director.</p></div>
+        <div class="def-card"><span class="clno">(iv)</span><b>Public company</b><p>A public company in which a director or manager is a director and holds, along with relatives, more than 2% of paid-up share capital.</p></div>
+        <div class="def-card"><span class="clno">(v)</span><b>Body corporate under instruction</b><p>Any body corporate whose Board, MD or manager is accustomed to act on the directions of a director or manager (excludes advice given in a professional capacity).</p></div>
+        <div class="def-card"><span class="clno">(vi)</span><b>Person giving instructions</b><p>Any person on whose directions a director or manager is accustomed to act (same professional-advice carve-out).</p></div>
+        <div class="def-card"><span class="clno">(vii)</span><b>Holding / subsidiary / associate</b><p>A holding, subsidiary or associate company, and a subsidiary of a common holding company (fellow subsidiary).</p></div>
+        <div class="def-card"><span class="clno">(viii)</span><b>Investing company / venturer</b><p>An investing company or the venturer of the company (as defined in the Accounting Standards).</p></div>
+        <div class="def-card"><span class="clno">(ix)</span><b>Holding company's director/KMP</b><p>A director or KMP of the holding company, or their relative.</p></div>
+      </div>
+
+      <h2 style="margin-top:30px;">SEBI LODR — Regulation 2(1)(zc)</h2>
+      <p class="sub">Additional coverage for listed entities — as amended November 2025</p>
+      <div class="check-list">
+        <li>Any related party under Section 2(76) of the Companies Act, or under the applicable Accounting Standards.</li>
+        <li>Any person or entity forming part of the promoter or promoter group of the listed entity.</li>
+        <li>Any person or entity holding 10% or more of the equity shares of the listed entity, directly or on a beneficial basis, at any time during the immediately preceding financial year.</li>
+        <li>Directors or key managerial personnel of the listed entity <b>or its subsidiary</b>, and their relatives — explicitly captured following the November 2025 amendment.</li>
+      </div>
+
+      <div class="exempt-box">
+        <b>Retail-purchase carve-out (Nov 2025 amendment)</b>
+        Retail purchases by directors or KMP (and their relatives) from the listed entity or its subsidiary are excluded from the definition of an RPT, provided the same terms are uniformly offered to all directors, KMPs and their relatives.
+      </div>
+    </div>
+
+    <!-- ============ TAB 3: SECTION 188 ============ -->
+    <div class="view" id="view-s188">
+      <h2>Contracts requiring approval — Section 188(1)</h2>
+      <p class="sub">Six categories of related-party contracts covered by the section</p>
+      <table class="simple">
+        <tr><th>Category</th><th>Covers</th></tr>
+        <tr><td><b>Goods / materials</b></td><td>Sale, purchase or supply of any goods or materials.</td></tr>
+        <tr><td><b>Property</b></td><td>Selling, disposing of, or buying property of any kind.</td></tr>
+        <tr><td><b>Leasing</b></td><td>Leasing of property of any kind.</td></tr>
+        <tr><td><b>Services</b></td><td>Availing or rendering of any services.</td></tr>
+        <tr><td><b>Agency appointment</b></td><td>Appointment of a related party's agent for purchase or sale of goods, materials, services or property.</td></tr>
+        <tr><td><b>Office or place of profit</b></td><td>Appointment of a related party to any office or place of profit in the company, its subsidiary or associate.</td></tr>
+        <tr><td><b>Underwriting</b></td><td>Underwriting the subscription of any securities or derivatives of the company.</td></tr>
+      </table>
+
+      <h3>The ordinary-course + arm's-length exemption</h3>
+      <p>A transaction is outside Section 188's approval requirements only if it satisfies <b>both</b> conditions together:</p>
+      <div class="check-list">
+        <li>It is entered into in the <b>ordinary course of business</b> of the company.</li>
+        <li>It is on an <b>arm's length basis</b> — as if between unrelated parties, with no favourable terms flowing from the relationship.</li>
+      </div>
+      <div class="warn">Satisfying only one condition does not exempt the transaction — both must hold. Under SEBI LODR, even transactions meeting both conditions are <b>not</b> exempt from Audit Committee approval or disclosure — the exemption there only narrows the shareholder-approval requirement, not the AC's oversight.</div>
+
+      <h3>What "office or place of profit" means</h3>
+      <p>Any office where the appointee receives remuneration in any form — salary, fees, commission, or the free use of company property (accommodation, car, etc.) that exceeds normal entitlement. The Rule 15 threshold for this category is a <b>monthly remuneration exceeding ₹2.5 lakh</b>.</p>
+    </div>
+
+    <!-- ============ TAB 4: APPROVAL MATRIX ============ -->
+    <div class="view" id="view-approval">
+      <h2>Who approves what</h2>
+      <p class="sub">Three layers, each with its own trigger and voting rule</p>
+
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="rc-head">Board</div>
+          <ul>
+            <li>Required for every RPT not exempt under the ordinary-course + arm's-length test.</li>
+            <li>Must be passed by resolution at a <b>Board meeting</b> — not by circular resolution.</li>
+            <li>An interested director cannot be present during discussion or voting on that item.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="rc-head">Audit Committee</div>
+          <ul>
+            <li>Mandatory where the company is required to have an AC — every listed company, and public companies crossing the Section 177 thresholds.</li>
+            <li>Approves, or grants omnibus approval for, all RPTs before they go to the Board.</li>
+            <li>Omnibus approval criteria are laid down by the AC and are valid for a maximum of one year before renewal.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="rc-head">Shareholders</div>
+          <ul>
+            <li>Ordinary resolution required once a Rule 15 threshold is crossed (Companies Act) or a transaction is material (SEBI LODR).</li>
+            <li>Companies Act: related-party members cannot vote, <b>unless</b> 90%+ of members (in number) are relatives of promoters or are themselves related parties.</li>
+            <li>SEBI LODR: <b>no</b> related party may vote on a material RPT resolution — this 90% exception does not apply to listed entities.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Explanatory statement — Rule 15(1)</h3>
+      <p>The notice for the shareholder resolution must disclose, at minimum:</p>
+      <div class="check-list">
+        <li>Name of the related party and nature of the relationship.</li>
+        <li>Nature, duration and material terms of the contract or arrangement.</li>
+        <li>Any advance paid or received for the contract or arrangement.</li>
+        <li>The manner of determining the pricing and other commercial terms, indicating whether it was arrived at through an independent price determination process.</li>
+        <li>Any other information relevant or important for members to take a decision.</li>
+      </div>
+    </div>
+
+    <!-- ============ TAB 5: SEBI LODR ============ -->
+    <div class="view" id="view-lodr">
+      <h2>Regulation 23 — the listed-company overlay</h2>
+      <p class="sub">Applies in addition to, not instead of, Section 188</p>
+
+      <h3>Materiality — Schedule XII (SEBI LODR Fifth Amendment, 2025)</h3>
+      <p>The earlier flat "₹1,000 crore or 10% of consolidated turnover, whichever is lower" test was replaced with a graded, turnover-linked scale, effective from the Fifth Amendment Regulations notified 18 November 2025:</p>
+      <div class="mat-slabs">
+        <div class="mat-slab"><span>Turnover up to ₹20,000 crore</span><span class="formula">10% of consolidated turnover</span></div>
+        <div class="mat-slab"><span>₹20,000 – ₹40,000 crore</span><span class="formula">₹2,000 cr + 5% of turnover above ₹20,000 cr</span></div>
+        <div class="mat-slab"><span>Above ₹40,000 crore</span><span class="formula">₹3,000 cr + 2.5% of turnover above ₹40,000 cr (capped at ₹5,000 cr)</span></div>
+      </div>
+      <p class="note">Brand or royalty transactions use a separate, tighter threshold — <b>2% of annual consolidated turnover</b> — instead of the graded scale. SME-listed entities use a flat ₹50 crore or 10% of turnover, whichever is lower.</p>
+
+      <h3>Subsidiary-level transactions</h3>
+      <p>Where a related-party transaction is entered into by a subsidiary and the listed entity itself is not a party, the listed entity's Audit Committee must still approve it in advance if the value exceeds the lower of:</p>
+      <div class="check-list">
+        <li>10% of the subsidiary's annual standalone turnover (per its last audited financials); or</li>
+        <li>The listed entity's own Schedule XII materiality threshold.</li>
+      </div>
+      <p>If the subsidiary has less than a year of audited standalone financials, the comparator becomes 10% of its aggregate paid-up capital and securities premium (measured within 3 months of seeking approval), against the same Schedule XII threshold.</p>
+
+      <h3>Omnibus approval validity</h3>
+      <table class="simple">
+        <tr><th>Granted at</th><th>Valid until</th></tr>
+        <tr><td>Annual General Meeting</td><td>The next AGM, within the timelines prescribed under Section 96 of the Companies Act</td></tr>
+        <tr><td>Any other general meeting (incl. postal ballot)</td><td>A maximum of one year from the date of approval</td></tr>
+      </table>
+
+      <h3>Disclosure &amp; other requirements</h3>
+      <div class="check-list">
+        <li>RPT disclosures to the stock exchange within 15 days of publishing financial results, on a half-yearly basis.</li>
+        <li>A Board-approved RPT policy on materiality and dealing with related parties, published on the company website and reviewed at least once every 3 years.</li>
+        <li>High Value Debt Listed Entities (HVDLEs): from 1 April 2025, material RPTs additionally require a No-Objection Certificate from the Debenture Trustee, who in turn seeks one from unrelated debenture holders.</li>
+      </div>
+
+      <p class="note">SEBI has amended Regulation 23 repeatedly over 2023–2026 — always confirm the current Schedule XII figures and disclosure formats against the latest SEBI Master Circular before relying on them for a filing.</p>
+    </div>
+
+    <!-- ============ TAB 6: DOCUMENTS & REGISTER ============ -->
+    <div class="view" id="view-docs">
+      <h2>Documents &amp; registers to maintain</h2>
+      <p class="sub">Paper trail evidencing RPT compliance</p>
+      <div class="doc-list">
+        <div class="doc-row"><div class="doc-no">01</div><div class="doc-body"><b>Register of Contracts — Form MBP-4</b><span class="doc-tag">Sec. 189</span><p>Entries made within 7 days of the contract; signed by all directors present at the next Board meeting; kept at the registered office and open for inspection.</p></div></div>
+        <div class="doc-row"><div class="doc-no">02</div><div class="doc-body"><b>Board resolution &amp; minutes</b><span class="doc-tag">Board</span><p>Recording the approval, terms, and the interested director's recusal from discussion and voting.</p></div></div>
+        <div class="doc-row"><div class="doc-no">03</div><div class="doc-body"><b>Audit Committee approval / omnibus framework</b><span class="doc-tag">Sec. 177</span><p>Minutes of specific approval, or the criteria document for an omnibus approval and its annual renewal.</p></div></div>
+        <div class="doc-row"><div class="doc-no">04</div><div class="doc-body"><b>Notice &amp; explanatory statement</b><span class="doc-tag">Sec. 102</span><p>For the shareholder ordinary resolution, disclosing the Rule 15(1) particulars in full.</p></div></div>
+        <div class="doc-row"><div class="doc-no">05</div><div class="doc-body"><b>Form MGT-14</b><span class="doc-tag">Public cos.</span><p>Filing of the Board resolution under Section 179(3) read with Rule 8, within 30 days — required for public companies, not private companies.</p></div></div>
+        <div class="doc-row"><div class="doc-no">06</div><div class="doc-body"><b>Form AOC-2</b><span class="doc-tag">Sec. 134(3)(h)</span><p>Annexed to the Directors' Report — particulars of contracts/arrangements, split between arm's-length and not-at-arm's-length transactions.</p></div></div>
+        <div class="doc-row"><div class="doc-no">07</div><div class="doc-body"><b>Related-party disclosures in financial statements</b><span class="doc-tag">Ind AS 24</span><p>Notes to accounts disclosing relationships, transactions and outstanding balances.</p></div></div>
+        <div class="doc-row"><div class="doc-no">08</div><div class="doc-body"><b>RPT Policy</b><span class="doc-tag">Listed cos.</span><p>Board-approved policy on materiality and dealing with related parties, published on the company website.</p></div></div>
+        <div class="doc-row"><div class="doc-no">09</div><div class="doc-body"><b>Half-yearly RPT disclosure to stock exchanges</b><span class="doc-tag">LODR</span><p>Filed within 15 days of publishing financial results, in the SEBI-prescribed format.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 7: COMPLIANCE GUIDE ============ -->
+    <div class="view" id="view-guide">
+      <h2>The RPT compliance workflow</h2>
+      <p class="sub">Start to finish, for a single transaction</p>
+      <div class="guide-list">
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Identify the counterparty<span class="when">Before contracting</span></b><p>Check against Section 2(76) and, if listed, Reg. 2(1)(zc) — including the promoter-group and 10%-shareholder tests.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Test ordinary course + arm's length<span class="when">Before contracting</span></b><p>Both conditions must hold together to fall outside Section 188 approvals.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Audit Committee approval<span class="when">Prior</span></b><p>Specific or omnibus approval, where the company is required to have an AC.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Board approval<span class="when">Board meeting</span></b><p>Resolution passed at a meeting; interested director recuses from discussion and voting.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Check Rule 15 thresholds<span class="when">Companies Act</span></b><p>If crossed, obtain a shareholder ordinary resolution — related members abstain unless the 90% exception applies.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Check Schedule XII materiality<span class="when">Listed cos.</span></b><p>If material, obtain a shareholder ordinary resolution where no related party may vote at all.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Update the Register of Contracts<span class="when">Within 7 days</span></b><p>Form MBP-4, signed at the next Board meeting.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>File Form MGT-14<span class="when">Within 30 days</span></b><p>Public companies only, for the Board resolution.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Disclose in Directors' Report &amp; accounts<span class="when">Year-end</span></b><p>Form AOC-2 and Ind AS 24 notes to the financial statements.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Half-yearly stock exchange disclosure<span class="when">Listed cos.</span></b><p>Within 15 days of publishing financial results.</p></div></div>
+        <div class="guide-item"><div class="guide-num"></div><div class="guide-body"><b>Renew omnibus approvals<span class="when">Annually</span></b><p>AC criteria expire after a year; AGM-granted shareholder omnibus approval lasts until the next AGM.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 8: PENALTIES ============ -->
+    <div class="view" id="view-penalty">
+      <h2>Consequences of non-compliance</h2>
+      <p class="sub">Section 188(3)–(5)</p>
+
+      <h3>Voidable contract</h3>
+      <p>A contract entered into without the Board or shareholder consent required under Section 188 is <b>voidable</b> at the option of the Board. If not ratified by the Board or, where required, by shareholders within <b>3 months</b> of the date the contract was entered into, any director or employee responsible must indemnify the company against any resulting loss.</p>
+
+      <h3>Penalty — Section 188(5)</h3>
+      <table class="simple">
+        <tr><th>Company type</th><th>Consequence for officer in default</th></tr>
+        <tr><td><b>Listed company</b></td><td>Imprisonment up to 1 year, or fine, or both, as prescribed under the section</td></tr>
+        <tr><td><b>Any other company</b></td><td>Fine as prescribed under the section</td></tr>
+      </table>
+      <p class="note">Exact fine quantum has been revised more than once, including through decriminalisation reforms under the Companies (Amendment) Act, 2020 — confirm the current figures under Section 188(5) before advising on a specific case.</p>
+
+      <h3>SEBI LODR consequences</h3>
+      <div class="check-list">
+        <li>Monetary penalties and directions under the SEBI Act for non-compliance with Regulation 23, including disclosure lapses.</li>
+        <li>Potential action against the listed entity, its directors and KMPs where an RPT is used to divert value from the company or its minority shareholders.</li>
+        <li>Reputational and governance-rating consequences, including qualified audit opinions where RPT approvals were not obtained as required.</li>
+      </div>
+
+      <div class="warn">If an RPT is structured to defraud the company, shareholders, or creditors, it may separately attract action under Section 447 (fraud) of the Companies Act, independent of the Section 188 consequences above.</div>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    Working tool for illustrative computation and reference only — not legal advice. Related-party rules under the Companies Act and SEBI LODR are amended frequently; verify current thresholds, forms and penalty quantum against the latest Act, Rules and SEBI circulars — ideally with your company secretary — before relying on this for a filing.
+  </div>
+</div>
+
+<script>
+  // ---- Tabs ----
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('.view');
+  tabs.forEach(t=>{
+    t.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      views.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('view-'+t.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Profile state ----
+  let isListed = false;
+  let isRoyalty = false;
+
+  const listedYesBtn = document.getElementById('listed-yes');
+  const listedNoBtn = document.getElementById('listed-no');
+  const lodrBlock = document.getElementById('lodr-calc-block');
+  const lodrSub = document.getElementById('lodr-calc-sub');
+
+  function setListed(val){
+    isListed = val;
+    listedYesBtn.classList.toggle('active', val);
+    listedNoBtn.classList.toggle('active', !val);
+    lodrBlock.style.display = val ? 'block' : 'none';
+    lodrSub.textContent = val
+      ? 'SEBI LODR Fifth Amendment Regulations, 2025 — Schedule XII graded thresholds'
+      : 'Visible when "Listed company?" is set to Yes';
+    computeLodr();
+  }
+  listedYesBtn.addEventListener('click', ()=>setListed(true));
+  listedNoBtn.addEventListener('click', ()=>setListed(false));
+
+  const royaltyYesBtn = document.getElementById('royalty-yes');
+  const royaltyNoBtn = document.getElementById('royalty-no');
+  function setRoyalty(val){
+    isRoyalty = val;
+    royaltyYesBtn.classList.toggle('active', val);
+    royaltyNoBtn.classList.toggle('active', !val);
+    computeLodr();
+  }
+  royaltyYesBtn.addEventListener('click', ()=>setRoyalty(true));
+  royaltyNoBtn.addEventListener('click', ()=>setRoyalty(false));
+
+  function fmtCr(n){
+    if(isNaN(n)) n = 0;
+    return '₹ ' + (Math.round(n*100)/100).toLocaleString('en-IN');
+  }
+
+  // ---- Section 188 / Rule 15 table ----
+  const S188_TYPES = [
+    { name: "Sale, purchase or supply of goods/materials", formula: "10% of turnover or ₹100 cr", calc: (t,n)=> Math.min(t*0.10, 100) },
+    { name: "Selling, disposing or buying of property", formula: "10% of net worth or ₹100 cr", calc: (t,n)=> Math.min(n*0.10, 100) },
+    { name: "Leasing of property", formula: "10% of turnover or net worth, or ₹100 cr", calc: (t,n)=> Math.min(t*0.10, n*0.10, 100) },
+    { name: "Availing or rendering of services", formula: "10% of turnover or ₹50 cr", calc: (t,n)=> Math.min(t*0.10, 50) },
+    { name: "Appointment to office/place of profit", formula: "Monthly remuneration exceeding ₹2.5 lakh", calc: ()=> null, special:'office' },
+  ];
+
+  const s188Body = document.getElementById('s188-body');
+  function renderS188(){
+    const t = parseFloat(document.getElementById('p-turnover').value)||0;
+    const n = parseFloat(document.getElementById('p-networth').value)||0;
+    let html = '';
+    S188_TYPES.forEach((row, idx)=>{
+      if(row.special === 'office'){
+        html += `<tr data-idx="${idx}">
+          <td class="tname">${row.name}</td>
+          <td class="tformula">${row.formula}</td>
+          <td class="tval">₹ 2.5 lakh / month</td>
+          <td><input type="number" class="s188-val" data-idx="${idx}" placeholder="₹ lakh / month"></td>
+          <td style="text-align:center;"><span class="pill na" id="s188-pill-${idx}">—</span></td>
+        </tr>`;
+      } else {
+        const limit = row.calc(t, n);
+        html += `<tr data-idx="${idx}">
+          <td class="tname">${row.name}</td>
+          <td class="tformula">${row.formula}</td>
+          <td class="tval">${fmtCr(limit)} cr</td>
+          <td><input type="number" class="s188-val" data-idx="${idx}" placeholder="₹ cr"></td>
+          <td style="text-align:center;"><span class="pill na" id="s188-pill-${idx}">—</span></td>
+        </tr>`;
+      }
+    });
+    s188Body.innerHTML = html;
+    s188Body.querySelectorAll('.s188-val').forEach(inp=>{
+      inp.addEventListener('input', ()=>evalS188Row(inp.dataset.idx));
+    });
+  }
+
+  function evalS188Row(idx){
+    idx = parseInt(idx);
+    const row = S188_TYPES[idx];
+    const t = parseFloat(document.getElementById('p-turnover').value)||0;
+    const n = parseFloat(document.getElementById('p-networth').value)||0;
+    const input = s188Body.querySelector(`.s188-val[data-idx="${idx}"]`);
+    const val = parseFloat(input.value)||0;
+    const pill = document.getElementById('s188-pill-'+idx);
+    let limit, exceeded;
+    if(row.special === 'office'){
+      limit = 2.5; // lakh
+      exceeded = val > limit;
+    } else {
+      limit = row.calc(t, n);
+      exceeded = val > limit;
+    }
+    if(val === 0){
+      pill.textContent = '—'; pill.className = 'pill na';
+    } else if(exceeded){
+      pill.textContent = 'Required'; pill.className = 'pill req';
+    } else {
+      pill.textContent = 'Board only'; pill.className = 'pill ok';
+    }
+  }
+
+  document.getElementById('p-turnover').addEventListener('input', ()=>{ renderS188(); computeLodr(); computeUnderwriting(); });
+  document.getElementById('p-networth').addEventListener('input', ()=>{ renderS188(); computeUnderwriting(); });
+
+  function computeUnderwriting(){
+    const n = parseFloat(document.getElementById('p-networth').value)||0;
+    document.getElementById('underwriting-limit').textContent = fmtCr(n*0.01) + ' cr';
+  }
+
+  // ---- SEBI LODR materiality (Schedule XII) ----
+  function scheduleXIIThreshold(turnover){
+    if(turnover <= 20000){
+      return turnover * 0.10;
+    } else if(turnover <= 40000){
+      return 2000 + (turnover - 20000) * 0.05;
+    } else {
+      const raw = 3000 + (turnover - 40000) * 0.025;
+      return Math.min(raw, 5000);
+    }
+  }
+
+  function computeLodr(){
+    if(!isListed) return;
+    const t = parseFloat(document.getElementById('p-turnover').value)||0;
+    const rptVal = parseFloat(document.getElementById('lodr-value').value)||0;
+    let threshold;
+    if(isRoyalty){
+      threshold = t * 0.02;
+    } else {
+      threshold = scheduleXIIThreshold(t);
+    }
+    document.getElementById('lodr-threshold').innerHTML = fmtCr(threshold) + ' <small>crore</small>';
+    const statusEl = document.getElementById('lodr-status');
+    if(rptVal === 0){
+      statusEl.textContent = 'Enter the aggregate RPT value to check materiality';
+      statusEl.className = 'status-line';
+    } else if(rptVal > threshold){
+      statusEl.textContent = 'Material — shareholder ordinary resolution required, no related party may vote';
+      statusEl.className = 'status-line req';
+    } else {
+      statusEl.textContent = 'Not material — Audit Committee approval still required';
+      statusEl.className = 'status-line ok';
+    }
+  }
+  document.getElementById('lodr-value').addEventListener('input', computeLodr);
+
+  // ---- init ----
+  renderS188();
+  computeUnderwriting();
+  setListed(false);
+</script>
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>

@@ -1,0 +1,967 @@
+<title>GST Forms Reckoner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: diagonal two-tone header, sticky pill tabs with a profile bar under them; every panel reads the one profile. Single light look by design. */
+:root{
+  --bg:#F4F5FB;--card:#FFFFFF;--ink:#15162B;--mut:#575B78;--line:#E2E4F3;--soft:#F0F1FA;
+  --d:#5B3FD6;--d2:#3B259E;--dsoft:#EEEAFE;
+  --r:#0B7F7A;--r2:#075C58;--rsoft:#DDF4F2;
+  --s:#E39A0B;--s2:#8A5A00;--ssoft:#FFF1D2;
+  --ok:#12875A;--oksoft:#DDF5EA;--bad:#C9282F;--badsoft:#FDE4E5;--warn:#8F5600;--warnsoft:#FFEFD3;
+  --disp:'Bricolage Grotesque','Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+body.lock{overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--bg)}
+h1,h2,h3,h4{font-family:var(--disp);margin:0;line-height:1.15;color:var(--ink);text-wrap:balance}
+p{margin:0 0 10px}
+button,select,input{font-family:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--d);outline-offset:2px}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{background:linear-gradient(100deg,var(--d) 0,var(--d) 57%,var(--r) 57%,var(--r) 100%);color:#fff;padding-block:20px 22px}
+.top .in{max-width:1100px;margin:0 auto;display:flex;gap:14px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap}
+.top h1{color:#fff;font-size:clamp(26px,6vw,40px);font-weight:700;margin:6px 0}
+.brand{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.14em}
+.sub{margin:0;max-width:40em;font-size:14px;opacity:.95}
+.badge{background:#fff;color:var(--ink);border-radius:999px;padding:9px 16px;font-weight:600;font-size:13px;white-space:nowrap}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:rgba(244,245,251,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.tabs .row{max-width:1100px;margin:0 auto;display:flex;gap:8px;padding-block:10px;overflow-x:auto;scrollbar-width:none}
+.tabs .row::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.tab .ct{display:inline-block;min-width:22px;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--dsoft);color:var(--d2);font-size:12px}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab[aria-selected="true"] .ct{background:#fff;color:var(--ink)}
+.prof{max-width:1100px;margin:0 auto;padding-block:0 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.prof select{min-height:40px;border:1px solid #C6C9E2;border-radius:10px;background:#fff;padding:0 10px;font-size:14px;font-weight:500;max-width:100%}
+.prof .lb{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.prof .grp{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 150px}
+.prof .grp.wide{flex:2 1 230px}
+.flagbtn{min-height:40px;border-radius:10px;border:1px solid #C6C9E2;background:#fff;padding:0 12px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
+.flagbtn b{color:var(--d)}
+.flags{max-width:1100px;margin:0 auto;padding-block:0 10px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:36px;border-radius:999px;border:1px solid #C6C9E2;background:#fff;padding:0 12px;font-size:13px;font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--r);border-color:var(--r);color:#fff}
+.wrap{max-width:1100px;margin:0 auto;padding-block:16px 70px}
+.panel[hidden]{display:none}
+.lead{font-size:16px;max-width:48em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;min-width:0}
+.card h2{font-size:22px;margin-bottom:8px}
+.card h3{font-size:17px;margin-bottom:6px}
+.mut{color:var(--mut);font-size:13px}
+.sec-h{font-size:19px;margin:20px 0 10px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:760px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1020px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:420px){.grid{grid-template-columns:minmax(0,1fr)}}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:900px){.grid2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.grid2 .card{margin:0}
+.tile{display:flex;flex-direction:column;gap:4px;text-align:left;background:#fff;border:1px solid var(--line);border-left:4px solid var(--c,var(--d));border-radius:14px;padding:12px 12px 12px 14px;min-height:104px;cursor:pointer;font-size:14px;transition:transform .15s,box-shadow .15s}
+.tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(21,22,43,.08)}
+.tile .fc{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--c,var(--d))}
+.tile b{font-family:var(--disp);font-size:15.5px;font-weight:600;line-height:1.25}
+.tile span.w{color:var(--mut);font-size:12.5px;margin-top:auto}
+.tile.off{opacity:.45;border-left-color:#C6C9E2}
+.ref{display:inline-flex;align-items:baseline;gap:2px;font-family:var(--mono);font-size:11.5px;line-height:1.35;background:var(--dsoft);color:var(--d2);border-radius:8px;padding:4px 8px;margin:2px 4px 2px 0}
+.vfy{font-family:var(--body);font-size:10px;font-weight:600;background:var(--warnsoft);color:var(--warn);border-radius:6px;padding:1px 6px;margin-left:6px}
+.pill{display:inline-block;border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--oksoft);color:var(--ok)}.p-bad{background:var(--badsoft);color:var(--bad)}.p-warn{background:var(--warnsoft);color:var(--warn)}.p-d{background:var(--dsoft);color:var(--d2)}.p-r{background:var(--rsoft);color:var(--r2)}.p-m{background:var(--soft);color:var(--mut)}
+.note{border-radius:12px;padding:11px 13px;font-size:14px;margin:10px 0}
+.note.warn{background:var(--warnsoft);color:#5E3800}.note.bad{background:var(--badsoft);color:#7C151A}.note.ok{background:var(--oksoft);color:#0A5436}.note.info{background:var(--dsoft);color:var(--d2)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin:8px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+.tw.wide table{min-width:640px}
+th{background:var(--soft);text-align:left;font-weight:600;font-size:13px;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13px;white-space:nowrap}
+tr.tot td{font-weight:600;background:#F8F8FD}
+tr.gh td{background:var(--dsoft);color:var(--d2);font-family:var(--disp);font-weight:600;font-size:15px}
+tr.click{cursor:pointer}tr.click:hover td{background:#FAFAFF}
+.fcode{font-family:var(--mono);font-weight:500;color:var(--d2);white-space:nowrap}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--d);background:var(--d);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--d2)}
+.btn.t{border-color:var(--r);background:var(--r)}
+.btn.t.ghost{background:#fff;color:var(--r2)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.verdict{border-radius:16px;padding:16px;border:1px solid;margin-bottom:14px}
+.verdict h3{font-size:20px;margin-bottom:6px}
+.verdict ul{margin:6px 0 0;padding-left:20px}
+.v-ok{background:var(--oksoft);border-color:#9ED9BF}.v-bad{background:var(--badsoft);border-color:#F0AEB1}.v-warn{background:var(--warnsoft);border-color:#EBC57F}.v-info{background:var(--dsoft);border-color:#CFC6FA}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-top:4px solid var(--c,var(--d));border-radius:14px;padding:12px 14px;min-width:0}
+.kpi .k{font-size:12px;color:var(--mut);font-weight:600}
+.kpi .v{font-family:var(--disp);font-size:22px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.kpi .s{font-size:12.5px;color:var(--mut)}
+.fg{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:10px 0}
+@media (min-width:700px){.fg{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut);min-width:0}
+.fld input,.fld select{min-height:46px;width:100%;border:1px solid #C6C9E2;border-radius:10px;padding:0 12px;background:#fff;font-size:15px;font-weight:500;color:var(--ink)}
+.fld input[type=number]{font-family:var(--mono);text-align:right;font-size:16px}
+.calc{border-top:5px solid var(--c,var(--d))}
+.seg3{display:flex;gap:6px;margin:8px 0 4px;flex-wrap:wrap}
+.seg3 button{flex:1 1 auto;min-height:42px;border-radius:12px;border:1px solid #C6C9E2;background:#fff;font-weight:700;font-size:13.5px;cursor:pointer;padding:0 10px}
+.seg3 button.on{background:var(--d);border-color:var(--d);color:#fff}
+.srch{width:100%;min-height:46px;border:1px solid #C6C9E2;border-radius:12px;padding:0 14px;font-size:16px;background:#fff;margin-bottom:8px}
+/* sheet */
+.ov{position:fixed;inset:0;background:rgba(21,22,43,.55);opacity:0;pointer-events:none;transition:opacity .2s;z-index:80}
+.ov.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:640px;max-height:88vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;transform:translate(-50%,100%);transition:transform .24s ease;z-index:90;padding:0 max(18px,env(safe-area-inset-right,0px)) calc(26px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));visibility:hidden}
+.sheet.on{transform:translate(-50%,0);visibility:visible}
+.sh{position:sticky;top:0;background:#fff;display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:14px 0 8px;z-index:2}
+.sh h3{font-size:21px;padding-top:4px}
+.x{flex:0 0 44px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:22px;line-height:1;cursor:pointer}
+.sheet ul{margin:6px 0 10px;padding-left:20px}
+.sheet li{margin-bottom:6px}
+.bar{height:4px;border-radius:4px;background:var(--c,var(--d));margin:0 0 10px}
+.dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:6px 12px;margin:8px 0 12px;font-size:14px}
+.dl dt{color:var(--mut);font-weight:600;font-size:12.5px;padding-top:2px}
+.dl dd{margin:0}
+.rel{display:flex;flex-wrap:wrap;gap:6px}
+.rel button{min-height:36px;border-radius:999px;border:1px solid var(--line);background:var(--dsoft);color:var(--d2);font-family:var(--mono);font-size:12.5px;padding:0 12px;cursor:pointer}
+/* diagrams */
+.hero{background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;margin-bottom:14px;overflow-x:auto}
+.hero svg,.pic svg{display:block;width:100%;height:auto}
+.hero svg{min-width:600px}
+.pic{overflow-x:auto}
+.pic.flow svg{min-width:560px}
+.draw path.ln{stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);animation:dr 1.1s ease forwards}
+.pop{animation:pp .5s ease both}
+@keyframes dr{to{stroke-dashoffset:0}}
+@keyframes pp{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pulse{animation:pl 1.6s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.45}}
+/* animation stage */
+.stage{max-width:560px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:6px}
+.stage svg{display:block;width:100%;height:auto}
+.anctl{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px;align-items:center}
+.anctl .btn{min-width:84px}
+.spd{display:flex;gap:6px;margin-left:auto}
+.spd button{min-height:44px;min-width:50px;border-radius:10px;border:1px solid #C6C9E2;background:#fff;font-weight:600;font-size:13px;cursor:pointer}
+.spd button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chips8{display:flex;gap:6px;overflow-x:auto;padding:4px 0 6px}
+.chips8 button{flex:0 0 44px;height:44px;border-radius:50%;border:1px solid #C6C9E2;background:#fff;font-weight:700;font-size:15px;cursor:pointer}
+.chips8 button.done{background:var(--dsoft);border-color:#CFC6FA}
+.chips8 button.on{background:var(--d);border-color:var(--d);color:#fff}
+.scrub{width:100%;min-height:44px;accent-color:var(--d);margin:0}
+.capbox{background:#fff;border:1px solid var(--line);border-left:5px solid var(--d);border-radius:14px;padding:12px 14px;margin-top:8px}
+.capbox h3{font-size:18px;margin-bottom:4px}
+.allgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:8px}
+@media (min-width:640px){.allgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.tile8{display:flex;flex-direction:column;gap:6px;text-align:left;background:#fff;border:1px solid var(--line);border-left:5px solid var(--d);border-radius:14px;padding:10px;cursor:pointer;font-size:13.5px;line-height:1.45}
+.tile8 svg{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.tile8 b{font-family:var(--disp);font-size:16px;font-weight:600}
+/* calendar */
+.due{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);background:#fff;cursor:pointer;text-align:left;width:100%;border-left:0;border-right:0;border-top:0;font-size:14px}
+.due:last-child{border-bottom:0}
+.due:hover{background:#FAFAFF}
+.due .d{font-family:var(--mono);font-size:12px;color:var(--mut);line-height:1.2}
+.due .d b{display:block;font-family:var(--disp);font-size:24px;color:var(--ink)}
+.due .t b{font-family:var(--mono);color:var(--d2);font-weight:500}
+.due .t span{display:block;font-size:13px;color:var(--mut)}
+.mhead{background:var(--soft);font-family:var(--disp);font-weight:600;padding:8px 14px;border-bottom:1px solid var(--line)}
+@media (max-width:480px){.due{grid-template-columns:60px minmax(0,1fr)}.due .pill{grid-column:2;justify-self:start}}
+/* checklist */
+.ck{display:flex;gap:12px;align-items:flex-start;width:100%;min-height:48px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-size:14.5px;line-height:1.45}
+.ck .bx{flex:0 0 26px;height:26px;margin-top:1px;border:2px solid #9AA0C8;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px}
+.ck.on{background:#F3FBF7;border-color:#A9DEC6}
+.ck.on .bx{background:var(--ok);border-color:var(--ok)}
+.ck.on .bx:after{content:'\2713'}
+.ck small{display:block;color:var(--mut);font-size:12.5px}
+.prog{height:12px;border-radius:8px;background:#E7E9F6;overflow:hidden;margin:8px 0}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--d),var(--r));width:0;transition:width .3s}
+details.fold{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:10px}
+details.fold summary{min-height:48px;display:flex;align-items:center;padding:0 16px;font-family:var(--disp);font-weight:600;font-size:16.5px;cursor:pointer;list-style:none;gap:10px}
+details.fold summary::-webkit-details-marker{display:none}
+details.fold summary:after{content:'+';margin-left:auto;font-size:22px;color:var(--d)}
+details.fold[open] summary:after{content:'\2212'}
+details.fold .in{padding:0 16px 14px}
+.steps{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:12px 0}
+@media (min-width:760px){.steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.step{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}
+.step .no{flex:0 0 32px;height:32px;border-radius:50%;background:var(--d);color:#fff;font-family:var(--disp);font-weight:700;display:flex;align-items:center;justify-content:center}
+.step:nth-child(3n+2) .no{background:var(--r)}
+.step:nth-child(3n) .no{background:var(--s);color:#2B1B00}
+footer{max-width:1100px;margin:0 auto;padding-block:6px 40px;color:var(--mut);font-size:12.5px}
+footer b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.draw path.ln{stroke-dashoffset:0}}
+</style>
+
+<header class="top gut">
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+  <div class="in">
+    <div>
+      <div class="brand">GST · CGST ACT 2017</div>
+      <h1>GST Forms Reckoner</h1>
+      <p class="sub">Pick the business. See only the GST forms that apply to it, when each is due, how the return cycle works, and what it costs to be late. Rates follow GST 2.0 (5%, 18%, 40%).</p>
+    </div>
+    <div class="badge" id="todayBadge">Position as of 19 Nov 2026</div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="row gut" id="tabs" role="tablist"></div>
+  <div class="prof gut" id="profBar">
+    <label class="grp wide"><span class="lb">Business type</span><select id="pType"></select></label>
+    <label class="grp"><span class="lb">Turnover (aggregate, FY)</span><select id="pBand"></select></label>
+    <label class="grp"><span class="lb">Return scheme</span><select id="pScheme"><option value="auto">Recommended for me</option><option value="monthly">Monthly (GSTR-1 + 3B)</option><option value="qrmp">QRMP (quarterly)</option><option value="comp">Composition</option></select></label>
+    <label class="grp"><span class="lb">State / UT</span><select id="pState"></select></label>
+    <button class="flagbtn" id="flagToggle" aria-expanded="false" aria-controls="flags">Situations <b id="flagCount">0</b></button>
+  </div>
+  <div class="flags gut" id="flags" hidden></div>
+</nav>
+
+<main class="wrap gut" id="main">
+  <section class="panel" id="p-overview" role="tabpanel"></section>
+  <section class="panel" id="p-apply" role="tabpanel" hidden></section>
+  <section class="panel" id="p-forms" role="tabpanel" hidden></section>
+  <section class="panel" id="p-calendar" role="tabpanel" hidden></section>
+  <section class="panel" id="p-cycle" role="tabpanel" hidden></section>
+  <section class="panel" id="p-flow" role="tabpanel" hidden></section>
+  <section class="panel" id="p-rates" role="tabpanel" hidden></section>
+  <section class="panel" id="p-calc" role="tabpanel" hidden></section>
+  <section class="panel" id="p-list" role="tabpanel" hidden></section>
+  <section class="panel" id="p-updates" role="tabpanel" hidden></section>
+</main>
+
+<footer class="gut">
+  <p><b>Reference aid for GST practitioners and business owners.</b> Sections refer to the CGST Act, 2017 and CGST Rules, 2017. Rates reflect the GST 2.0 notifications effective 22 Sep 2025; recommendations of the 57th GST Council (8 Oct 2026) are shown separately until notified. Items marked <span class="vfy" style="margin-left:0">verify</span> depend on a notification or classification you should confirm on cbic-gst.gov.in before relying on them. Due dates can be extended by notification.</p>
+</footer>
+
+<div class="ov" id="ov"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sh"><h3 id="sheetTitle"></h3><button class="x" id="sheetX" aria-label="Close">&times;</button></div>
+  <div id="sheetBody"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var TODAY=new Date(2026,10,19);
+var MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MF=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var RMOTION=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fmtIN(n,dp){if(n===null||isNaN(n))return'—';var neg=n<0;n=Math.abs(n);var s=n.toFixed(dp||0),p=s.split('.'),i=p[0],l=i.slice(-3),r=i.slice(0,-3);if(r!=='')l=','+l;r=r.replace(/\B(?=(\d{2})+(?!\d))/g,',');return(neg?'-':'')+r+l+(p.length>1?'.'+p[1]:'')}
+function rs(n,dp){return'₹ '+fmtIN(n,dp===undefined?0:dp)}
+function pill(t,c){return'<span class="pill '+c+'">'+t+'</span>'}
+function ref(a,v){return'<span class="ref">'+a+(v?'<span class="vfy">verify</span>':'')+'</span>'}
+function ul(a){return'<ul>'+a.map(function(x){return'<li>'+x+'</li>'}).join('')+'</ul>'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function slug(id){return id.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function dstr(d){return d.getDate()+' '+MN[d.getMonth()]+' '+d.getFullYear()}
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('gstfr-'+k));localStorage.setItem('gstfr-'+k,JSON.stringify(v))}catch(e){return null}}
+
+/* ================= DATA: states ================= */
+// cat N: ₹40L goods/₹20L services; A: ₹20L/₹10L; B: ₹20L/₹20L. c75: composition limit ₹75L. q: QRMP GSTR-3B day
+var STATES=[['Andaman & Nicobar Islands','N',0,22],['Andhra Pradesh','N',0,22],['Arunachal Pradesh','B',1,24],['Assam','N',0,24],['Bihar','N',0,24],['Chandigarh','N',0,24],['Chhattisgarh','N',0,22],['Dadra & Nagar Haveli and Daman & Diu','N',0,22],['Delhi','N',0,24],['Goa','N',0,22],['Gujarat','N',0,22],['Haryana','N',0,24],['Himachal Pradesh','N',0,24],['Jammu & Kashmir','N',0,24],['Jharkhand','N',0,24],['Karnataka','N',0,22],['Kerala','N',0,22],['Ladakh','N',0,24],['Lakshadweep','N',0,22],['Madhya Pradesh','N',0,22],['Maharashtra','N',0,22],['Manipur','A',1,24],['Meghalaya','B',1,24],['Mizoram','A',1,24],['Nagaland','A',1,24],['Odisha','N',0,24],['Puducherry','B',0,22],['Punjab','N',0,24],['Rajasthan','N',0,24],['Sikkim','B',1,24],['Tamil Nadu','N',0,22],['Telangana','B',0,22],['Tripura','A',1,24],['Uttar Pradesh','N',0,24],['Uttarakhand','B',1,24],['West Bengal','N',0,24]];
+var ST={};STATES.forEach(function(s){ST[s[0]]={cat:s[1],c75:!!s[2],q:s[3]}});
+
+/* ================= DATA: bands ================= */
+var BANDS=[['b1','Up to ₹20 lakh',0,2e6],['b2','₹20 – 40 lakh',2e6,4e6],['b3','₹40 lakh – 1.5 crore',4e6,1.5e7],['b4','₹1.5 – 2 crore',1.5e7,2e7],['b5','₹2 – 5 crore',2e7,5e7],['b6','₹5 – 10 crore',5e7,1e8],['b7','Above ₹10 crore',1e8,1e9]];
+
+/* ================= DATA: business types ================= */
+// sup: g goods, s services, b both. comp: composition rate (0 = not eligible). sp: special registration
+var TYPES={
+ trader:{n:'Trader / wholesaler / retailer',sup:'g',comp:1,c:'#5B3FD6',tips:['HSN on every invoice: 4 digits up to ₹5 Cr turnover, 6 digits above.','Collect the GSTIN of business buyers so their ITC flows through your GSTR-1.']},
+ mfg:{n:'Manufacturer',sup:'g',comp:1,c:'#3B259E',tips:['Goods sent to job workers must come back within 1 year (inputs) or 3 years (capital goods); report in ITC-04.','Inverted duty structure (inputs taxed higher than output) can be refunded in RFD-01.','Pan masala, tobacco, ice cream and aerated-water makers cannot opt for composition.']},
+ service:{n:'Service provider / agency / IT',sup:'s',comp:6,c:'#0B7F7A',tips:['Place of supply for most B2B services is the client\'s location: charge IGST if the client is in another state.','GST on advances for services is due when the advance is received.']},
+ prof:{n:'Professional / freelancer',sup:'s',comp:6,c:'#075C58',tips:['Legal services by an advocate to a business are under reverse charge: the client pays the GST.','Services to foreign clients paid in foreign exchange are exports: file a LUT and invoice at 0%.']},
+ rest:{n:'Restaurant / café / cloud kitchen',sup:'s',comp:5,c:'#E39A0B',tips:['Restaurant service is 5% without ITC (18% with ITC only in hotels with a room tariff above ₹7,500).','Orders through Swiggy or Zomato: the platform pays the 5% under Section 9(5), not the restaurant.','Composition is also 5%; its benefit is lighter compliance, not lower tax.']},
+ hotel:{n:'Hotel / homestay / lodging',sup:'s',comp:6,c:'#8A5A00',tips:['Rooms up to ₹7,500 a night: 5% without ITC. Above ₹7,500: 18% with ITC.','Bookings through an aggregator for notified accommodation: the platform pays GST under Section 9(5).']},
+ ecoms:{n:'E-commerce seller',sup:'g',comp:1,c:'#5B3FD6',tips:['The platform collects 0.5% GST TCS; claim it from the electronic cash ledger and match with the platform\'s GSTR-8.','Register in every state where your stock sits in a platform warehouse.','Intra-state sellers below the threshold may enrol on the portal instead of registering.']},
+ eco:{n:'E-commerce operator (marketplace)',sup:'s',comp:0,c:'#C9282F',sp:'eco',tips:['Register in each state in REG-07 to collect TCS and file GSTR-8 by the 10th.','For notified services (restaurant, passenger transport, accommodation, housekeeping) the operator itself is liable under Section 9(5).']},
+ export:{n:'Exporter (goods or services)',sup:'b',comp:0,c:'#0B7F7A',tips:['File the LUT (RFD-11) before the first export of each financial year; it covers the whole year.','Export of services needs payment in convertible foreign exchange or INR where RBI allows.','Shipping bill acts as the refund claim for IGST paid on goods exported.']},
+ contr:{n:'Works contractor / builder',sup:'s',comp:6,c:'#575B78',tips:['Works contracts for immovable property: 18%. ITC on construction of your own building is blocked by Section 17(5)(c)/(d).','Residential real estate: 1% affordable, 5% other, both without ITC.','Government contracts suffer 2% GST TDS; it is credited to your cash ledger.']},
+ gta:{n:'Transporter / GTA',sup:'s',comp:6,c:'#3B259E',tips:['Choose 5% under reverse charge (no ITC) or 18% forward charge with ITC by filing Annexure V before the year begins.','A GTA supplying only under reverse charge is exempt from registration.']},
+ jew:{n:'Jeweller / bullion dealer',sup:'g',comp:1,c:'#E39A0B',tips:['Gold, silver and jewellery: 3%. Job work on a customer\'s gold: 5%.','Rough diamonds 0.25%, cut and polished 1.5%.']},
+ govt:{n:'Government dept / PSU (TDS deductor)',sup:'s',comp:0,c:'#C9282F',sp:'tds',tips:['Deduct 2% GST TDS (1% CGST + 1% SGST, or 2% IGST) on contracts above ₹2.5 lakh.','Deposit and file GSTR-7 by the 10th; issue the TDS certificate from the portal.']},
+ isd:{n:'Corporate with branches (ISD)',sup:'b',comp:0,c:'#075C58',tips:['ISD registration is compulsory from 1 April 2025 for common input services billed to the head office.','Distribute credit to branches in proportion to turnover, in GSTR-6.']},
+ casual:{n:'Casual taxable person (fairs, exhibitions)',sup:'b',comp:0,c:'#8A5A00',sp:'casual',tips:['Apply at least 5 days before starting; registration lasts up to 90 days, extendable once.','Deposit the estimated tax in advance; the balance is refunded after the last return.']},
+ nrtp:{n:'Non-resident taxable person',sup:'b',comp:0,c:'#C9282F',sp:'nrtp',tips:['Apply in REG-09 at least 5 days before business, with an Indian authorised signatory and PAN or passport.','Advance tax deposit; GSTR-5 every month by the 13th. ITC only on imported goods.']},
+ oidar:{n:'Foreign online service (OIDAR)',sup:'s',comp:0,c:'#3B259E',sp:'oidar',tips:['Online information and database services to non-business users in India need REG-10 and GSTR-5A by the 20th.','B2B supplies to registered Indian businesses are taxed by the buyer under reverse charge.']},
+ exempt:{n:'Exempt supplies only (health, education, fresh produce)',sup:'b',comp:0,c:'#12875A',sp:'exempt',tips:['If every supply is exempt, registration is not required even above the threshold.','GST paid on purchases is a cost; no ITC.','Check each activity: cosmetic treatment at a clinic or coaching outside recognised education is taxable.']}
+};
+
+/* ================= DATA: situations (flags) ================= */
+var FLAGS=[['inter','Sells goods to other states'],['ecom','Sells via e-commerce platform'],['exp','Exports / supplies to SEZ'],['b2c','Mostly sells to consumers (B2C)'],['job','Sends goods for job work'],['rcm','Pays tax under reverse charge'],['tds','Deducts GST TDS'],['isd','Has ISD (head office services)'],['r14a','Registered under Rule 14A']];
+
+/* ================= PROFILE ================= */
+var P=store('profile')||{type:'trader',band:'b3',scheme:'auto',state:'Delhi',f:{}};
+if(!TYPES[P.type])P.type='trader';P.f=P.f||{};
+function ctx(){
+  var t=TYPES[P.type],b=BANDS.filter(function(x){return x[0]===P.band})[0]||BANDS[2],st=ST[P.state]||ST['Delhi'],f0=P.f||{},f={};for(var k in f0)f[k]=f0[k];if(P.type==='ecoms')f.ecom=true;if(P.type==='export')f.exp=true;if(P.type==='govt')f.tds=true;if(P.type==='isd')f.isd=true;var nine5=P.type==='rest'||P.type==='hotel';
+  var hi=b[3],lo=b[2];
+  var goodsOnly=t.sup==='g';
+  var thr=st.cat==='A'?(goodsOnly?2e6:1e6):st.cat==='B'?2e6:(goodsOnly?4e6:2e6);
+  var comp=[];
+  if(t.sp==='casual')comp.push('Casual taxable person — Sec 24(ii)');
+  if(t.sp==='nrtp')comp.push('Non-resident taxable person — Sec 24(v)');
+  if(t.sp==='oidar')comp.push('OIDAR services from outside India — Sec 24(xi)');
+  if(t.sp==='eco')comp.push('E-commerce operator collecting TCS — Sec 24(x)');
+  if(t.sp==='tds'||f.tds)comp.push('Required to deduct TDS — Sec 24(vi)');
+  if(P.type==='isd'||f.isd)comp.push('Input Service Distributor — Sec 24(viii)');
+  if(f.inter&&t.sup!=='s')comp.push('Inter-state supply of goods — Sec 24(i)');
+  if(f.ecom&&t.sp!=='eco'&&!nine5&&(f.inter||t.sup!=='g'))comp.push('Supplies through an e-commerce operator — Sec 24(ix)');
+  if(f.rcm)comp.push('Liable to pay tax under reverse charge — Sec 24(iii)');
+  var reg; // 'must' | 'near' | 'opt' | 'none'
+  if(t.sp==='exempt'){reg=comp.length?'must':'none'}
+  else if(comp.length||lo>=thr)reg='must';
+  else if(hi>thr)reg='near';
+  else reg='opt';
+  // composition eligibility
+  var cl=t.comp===6?5e6:(st.c75?7.5e6:1.5e7);
+  var compWhy=[];
+  if(!t.comp)compWhy.push('not available to this category');
+  if(lo>=cl)compWhy.push('turnover above the ₹'+(cl/1e5)+' lakh limit');
+  if(f.inter)compWhy.push('makes inter-state outward supplies');
+  if(f.exp)compWhy.push('exports and SEZ supplies are inter-state');
+  if(f.ecom&&!nine5&&(f.inter||t.sup!=='g'))compWhy.push('supplies services or inter-state goods through e-commerce');
+  if(P.type==='isd'||f.isd)compWhy.push('ISD units are not eligible');
+  var compOK=compWhy.length===0,compNear=compOK&&hi>cl;
+  var qrmpOK=hi<=5e7;
+  var rec;
+  if(/nrtp|oidar|tds/.test(t.sp||''))rec='special';
+  else if(t.sp==='casual')rec='monthly';
+  else if(t.sp==='exempt')rec=reg==='must'?'monthly':'none';
+  else if(compOK&&f.b2c)rec='comp';
+  else if(qrmpOK)rec='qrmp';
+  else rec='monthly';
+  var sch=rec;
+  var warn='';
+  if(P.scheme!=='auto'&&rec!=='special'&&rec!=='none'&&t.sp!=='casual'){
+    if(P.scheme==='comp'&&!compOK)warn='Composition is not available: '+compWhy.join('; ')+'. Showing the recommended scheme instead.';
+    else if(P.scheme==='qrmp'&&!qrmpOK)warn='QRMP is only for turnover up to ₹5 crore. Showing monthly returns instead.';
+    else sch=P.scheme;
+  }
+  var registered=reg!=='none';
+  return {compNear:compNear,t:t,b:b,st:st,f:f,lo:lo,hi:hi,thr:thr,comp:comp,reg:reg,cl:cl,compOK:compOK,compWhy:compWhy,qrmpOK:qrmpOK,rec:rec,sch:sch,warn:warn,registered:registered,
+    regular:sch==='monthly'||sch==='qrmp',goods:t.sup!=='s'};
+}
+var SCH_N={monthly:'Monthly returns',qrmp:'QRMP — quarterly returns, monthly tax',comp:'Composition',special:'Special registration returns',none:'No GST registration'};
+
+/* ================= DATA: forms ================= */
+/* app(c) -> false | 'yes' | 'opt' | 'event' ; why(c) explains */
+var G={reg:['Registration & scheme','#5B3FD6'],ret:['Periodic returns & payment','#0B7F7A'],ann:['Annual returns','#E39A0B'],evt:['Event-based & other','#575B78']};
+var FORMS=[
+ {id:'REG-01',g:'reg',t:'Application for GST registration',sec:['Sec 22, 25','Rule 8'],due:'Within 30 days of becoming liable',fee:'Tax, interest and penalty from the date liability arose if delayed',
+  pts:['Part A: PAN, mobile and email verified by OTP; TRN issued (valid 15 days).','Part B: business details, promoters, place of business, bank account, HSN/SAC.','Tick Rule 14A if B2B output tax will stay within ₹2.5 lakh a month for approval within 3 working days.','Aadhaar authentication of the primary signatory and one promoter; otherwise physical verification.','Approval in REG-06 with a 15-digit GSTIN.'],
+  rel:['REG-14','CMP-02','ITC-01','REG-32'],app:function(c){return c.reg!=='none'&&!/nrtp|oidar|tds/.test(c.t.sp||'')?(c.reg==='opt'?'opt':'yes'):false},
+  why:function(c){return c.reg==='must'?'Registration is mandatory for this profile.':c.reg==='near'?'Turnover can cross the ₹'+(c.thr/1e5)+' lakh threshold in this band.':'Voluntary registration.'}},
+ {id:'REG-07',g:'reg',t:'Registration as TDS deductor or TCS collector',sec:['Sec 24, 51, 52','Rule 12'],due:'Before deducting TDS / collecting TCS',fee:'—',
+  pts:['For government departments, PSUs and notified bodies deducting 2% TDS.','For e-commerce operators collecting 0.5% TCS on net taxable supplies made through them.','Separate GSTIN; no threshold.'],rel:['GSTR-7','GSTR-8'],
+  app:function(c){return c.t.sp==='eco'||c.t.sp==='tds'||c.f.tds?'yes':false},why:function(c){return c.t.sp==='eco'?'Marketplace operators collect TCS.':'You deduct GST TDS.'}},
+ {id:'REG-09',g:'reg',t:'Registration of non-resident taxable person',sec:['Sec 24(v), 27','Rule 13'],due:'At least 5 days before starting business',fee:'—',
+  pts:['Valid up to 90 days, extendable once.','Advance deposit of estimated tax liability.','Signed by an authorised signatory resident in India.'],rel:['GSTR-5'],app:function(c){return c.t.sp==='nrtp'?'yes':false},why:function(){return'Foreign business making taxable supplies in India.'}},
+ {id:'REG-10',g:'reg',t:'Registration for OIDAR / online money gaming supplier',sec:['Sec 14 IGST Act','Rule 14'],due:'Before supplying',fee:'—',pts:['For suppliers outside India providing online services to non-business recipients in India.','Simplified registration; a representative may be appointed.'],rel:['GSTR-5A'],app:function(c){return c.t.sp==='oidar'?'yes':false},why:function(){return'Online services from outside India to Indian consumers.'}},
+ {id:'REG-32',g:'reg',t:'Withdraw from Rule 14A simplified registration',sec:['Rule 14A(5)'],due:'When monthly B2B output tax exceeds ₹2.5 lakh',fee:'GSTR-1 may be blocked above the cap until withdrawn',
+  pts:['Rule 14A (from 1 Nov 2025) grants registration within 3 working days if B2B output tax stays within ₹2.5 lakh a month.','File REG-32 before the limit is crossed; returns for the period up to the application must be filed.'],rel:['REG-01'],
+  app:function(c){return c.registered&&c.f.r14a?'yes':false},why:function(){return'You hold a Rule 14A registration.'}},
+ {id:'REG-14',g:'reg',t:'Amendment of registration',sec:['Sec 28','Rule 19'],due:'Within 15 days of the change',fee:'—',
+  pts:['Core fields (name, address, partners): officer approval. Non-core fields: auto-approved.','57th Council recommends auto-acceptance of all amendments except place of business (pending notification).'],rel:['REG-01'],
+  app:function(c){return c.registered?'event':false},why:function(){return'Whenever business details change.'}},
+ {id:'REG-16',g:'reg',t:'Application for cancellation of registration',sec:['Sec 29','Rule 20'],due:'Within 30 days of closure or transfer',fee:'—',pts:['File all pending returns first.','Followed by the final return GSTR-10.'],rel:['GSTR-10'],app:function(c){return c.registered?'event':false},why:function(){return'On closure, sale or change of constitution.'}},
+ {id:'CMP-02',g:'reg',t:'Intimation to opt for composition',sec:['Sec 10','Rule 3'],due:'By 31 March for the next FY (or with REG-01)',fee:'—',
+  pts:['All registrations under the same PAN must opt together.','Manufacturers 1% of turnover; traders 1% of turnover of taxable goods only (exempt sales excluded); restaurants 5%; service providers under Sec 10(2A) 6%.','Section 10(1) dealers may supply other services only up to 10% of turnover or ₹5 lakh, whichever is higher.','Reverse ITC on stock held via ITC-03 within 60 days.'],rel:['ITC-03','CMP-08','GSTR-4','CMP-04'],
+  app:function(c){return c.sch==='comp'?'yes':(c.compOK&&c.registered&&c.rec!=='special'?'opt':false)},why:function(c){return c.sch==='comp'?'You are on composition.':'You are eligible and may opt in.'}},
+ {id:'ITC-03',g:'reg',t:'Reversal of ITC on opting for composition',sec:['Sec 18(4)','Rule 44(4)'],due:'Within 60 days of opting',fee:'Interest on credit not reversed',pts:['Reverse ITC on inputs held in stock, semi-finished and finished goods, and capital goods (reduced by 5% per quarter).'],rel:['CMP-02'],app:function(c){return c.sch==='comp'?'event':false},why:function(){return'When switching from regular to composition.'}},
+ {id:'CMP-04',g:'reg',t:'Withdrawal from composition',sec:['Sec 10(3)','Rule 6'],due:'Within 7 days of crossing the limit',fee:'—',pts:['Required when turnover crosses the limit or an ineligible supply is made.','Claim ITC on stock with ITC-01 within 30 days.'],rel:['ITC-01','CMP-02'],app:function(c){return c.sch==='comp'?'event':false},why:function(){return'When you leave composition.'}},
+ {id:'ITC-01',g:'reg',t:'Claim of ITC on stock (new registration or exiting composition)',sec:['Sec 18(1)','Rule 40'],due:'Within 30 days of eligibility',fee:'—',pts:['ITC on inputs in stock on the day before registration became due (if applied within 30 days).','No credit on invoices more than one year old.'],rel:['REG-01','CMP-04'],app:function(c){return c.regular?'event':false},why:function(){return'Once, when you register or leave composition.'}},
+
+ {id:'GSTR-1',g:'ret',t:'Statement of outward supplies (sales)',sec:['Sec 37','Rule 59'],due:function(c){return c.sch==='qrmp'?'13th of the month after the quarter':'11th of the next month'},fee:'₹50/day (₹20 nil), capped at ₹2,000 / ₹5,000 / ₹10,000 by turnover',
+  pts:['B2B invoices invoice-wise; B2C summarised by state and rate (B2C large above ₹1 lakh inter-state invoice-wise).','HSN summary split between B2B and B2C.','Data flows to buyers\' GSTR-2B through IMS and auto-fills your GSTR-3B liability.','Cannot be filed if an earlier GSTR-1 or GSTR-3B is pending, or returns older than three years.'],
+  rel:['IFF','GSTR-1A','GSTR-3B','E-INVOICE'],app:function(c){return c.regular||c.t.sp==='casual'?'yes':false},why:function(c){return c.sch==='qrmp'?'Quarterly, because you are on QRMP.':'Monthly regular filer.'}},
+ {id:'IFF',g:'ret',t:'Invoice Furnishing Facility (QRMP)',sec:['Rule 59(2)'],due:'13th of month 2 and month 3 of the quarter',fee:'No late fee (optional)',pts:['Optional upload of B2B invoices for the first two months so buyers get ITC monthly.','Limit ₹50 lakh of invoice value per month.'],rel:['GSTR-1','PMT-06'],app:function(c){return c.sch==='qrmp'?'opt':false},why:function(){return'Lets your B2B buyers claim ITC every month.'}},
+ {id:'GSTR-1A',g:'ret',t:'Amendment of GSTR-1 before GSTR-3B',sec:['Rule 59(4A)'],due:'After GSTR-1, before filing GSTR-3B of the same period',fee:'—',pts:['Add missed invoices or correct values for the current period.','Changes flow to GSTR-3B liability and buyers\' GSTR-2B.'],rel:['GSTR-1','GSTR-3B'],app:function(c){return c.regular?'opt':false},why:function(){return'Corrections in the same period.'}},
+ {id:'IMS',g:'ret',t:'Invoice Management System (purchases)',sec:['Sec 38','Rule 60'],due:'Before GSTR-2B generation on the 14th',fee:'—',pts:['Accept, reject or keep pending each supplier invoice.','Accepted and deemed-accepted invoices form GSTR-2B ITC.','Pending items roll to the next period, subject to the Section 16(4) time limit.'],rel:['GSTR-2B','GSTR-3B'],app:function(c){return c.regular?'yes':false},why:function(){return'All regular taxpayers receiving B2B invoices.'}},
+ {id:'GSTR-2B',g:'ret',t:'Auto-drafted ITC statement',sec:['Sec 38','Rule 60(7)'],due:'Generated on the 14th (quarterly for QRMP)',fee:'— (read only)',pts:['ITC available, ITC not available, and reversals, built from suppliers\' GSTR-1/IFF/1A and IMS actions.','Claim in GSTR-3B is checked against it; excess claim triggers DRC-01C.'],rel:['IMS','GSTR-3B','DRC-01C'],app:function(c){return c.regular?'yes':false},why:function(){return'Your basis for claiming ITC.'}},
+ {id:'GSTR-3B',g:'ret',t:'Summary return and payment of tax',sec:['Sec 39(1)','Rule 61'],due:function(c){return c.sch==='qrmp'?c.st.q+'th of the month after the quarter ('+P.state+')':'20th of the next month'},fee:'₹50/day (₹20 nil), capped by turnover; interest 18% p.a. on cash tax paid late',
+  pts:['Outward liability auto-filled from GSTR-1/1A and locked: correct it in GSTR-1A first.','ITC from GSTR-2B; reversals under Rules 37, 42, 43 and Section 17(5).','Set-off: IGST credit first; CGST credit never against SGST and vice versa. Reverse charge in cash.','Rule 86B: at least 1% of liability in cash if taxable value exceeds ₹50 lakh in a month (exceptions apply).'],
+  rel:['GSTR-1','GSTR-2B','PMT-06','DRC-01C'],app:function(c){return c.regular||c.t.sp==='casual'?'yes':false},why:function(c){return c.sch==='qrmp'?'Quarterly under QRMP.':'Monthly regular filer.'}},
+ {id:'PMT-06',g:'ret',t:'Challan for tax payment',sec:['Sec 49','Rule 87'],due:function(c){return c.sch==='qrmp'?'25th of month 2 and month 3 of the quarter':'With GSTR-3B (by 20th)'},fee:'Interest 18% p.a. if short-paid',
+  pts:['QRMP: pay monthly by fixed-sum method (35% of last quarter\'s cash tax, auto-calculated) or self-assessment.','No payment needed if credit covers the month or tax is nil.','Payment via net banking, UPI, card, NEFT/RTGS or over the counter (up to ₹10,000).'],rel:['GSTR-3B','IFF'],app:function(c){return c.regular||c.t.sp==='casual'?'yes':false},why:function(c){return c.sch==='qrmp'?'Monthly tax payment under QRMP.':'To deposit cash tax.'}},
+ {id:'CMP-08',g:'ret',t:'Quarterly statement and payment (composition)',sec:['Sec 39(2)','Rule 62'],due:'18th of the month after each quarter',fee:'Interest 18% p.a.; late fee follows through GSTR-4',pts:['Self-assessed tax on turnover at the composition rate, plus any reverse-charge tax.','Composition dealers cannot collect GST from customers; issue a bill of supply.'],rel:['GSTR-4','CMP-02'],app:function(c){return c.sch==='comp'?'yes':false},why:function(){return'Composition taxpayer.'}},
+ {id:'GSTR-5',g:'ret',t:'Return of non-resident taxable person',sec:['Sec 39(5)','Rule 63'],due:'13th of the next month (or 7 days after registration ends)',fee:'₹200/day (₹100 + ₹100), max ₹10,000',pts:['Covers outward supplies, imports and tax paid.','No annual return.'],rel:['REG-09'],app:function(c){return c.t.sp==='nrtp'?'yes':false},why:function(){return'Non-resident registration.'}},
+ {id:'GSTR-5A',g:'ret',t:'Return of OIDAR / online gaming supplier',sec:['Sec 39(1)','Rule 64'],due:'20th of the next month',fee:'₹200/day (₹100 + ₹100), max ₹10,000',pts:['Services to non-taxable online recipients in India; IGST paid in cash.'],rel:['REG-10'],app:function(c){return c.t.sp==='oidar'?'yes':false},why:function(){return'OIDAR registration.'}},
+ {id:'GSTR-6',g:'ret',t:'Return of Input Service Distributor',sec:['Sec 39(4)','Rule 65'],due:'13th of the next month',fee:'₹200/day (₹100 + ₹100), max ₹10,000',pts:['Credit of common input services distributed to branches by turnover ratio.','Separate ISD registration; ISD cannot pay tax.'],rel:['REG-01'],app:function(c){return P.type==='isd'||c.f.isd?'yes':false},why:function(){return'Head office distributing common input credit.'}},
+ {id:'GSTR-7',g:'ret',t:'Return for TDS deductors',sec:['Sec 39(3), 51','Rule 66'],due:'10th of the next month',fee:'₹50/day (₹25 + ₹25), max ₹2,000; interest 18% on late deposit',pts:['2% TDS on contract value above ₹2.5 lakh (excluding tax).','TDS certificate GSTR-7A generated after filing.'],rel:['REG-07'],app:function(c){return c.t.sp==='tds'||c.f.tds?'yes':false},why:function(){return'You deduct GST TDS.'}},
+ {id:'GSTR-8',g:'ret',t:'Statement of TCS by e-commerce operator',sec:['Sec 52','Rule 67'],due:'10th of the next month',fee:'₹200/day (₹100 + ₹100), max ₹10,000',pts:['TCS of 0.5% on net value of taxable supplies through the platform.','Sellers see it in their TCS credit; mismatches lead to notices.'],rel:['REG-07'],app:function(c){return c.t.sp==='eco'?'yes':false},why:function(){return'Marketplace operator.'}},
+
+ {id:'GSTR-4',g:'ann',t:'Annual return of composition taxpayer',sec:['Sec 39(2)','Rule 62'],due:'30 June after the financial year',fee:'₹50/day (₹20 nil), max ₹2,000 (₹500 nil)',pts:['Totals of the four CMP-08 statements, inward supplies and reverse-charge tax.','Composition dealers do not file GSTR-9.'],rel:['CMP-08'],app:function(c){return c.sch==='comp'?'yes':false},why:function(){return'Composition taxpayer.'}},
+ {id:'GSTR-9',g:'ann',t:'Annual return',sec:['Sec 44','Rule 80'],due:'31 December after the financial year',fee:'₹200/day up to 0.5% of turnover (above ₹20 Cr); ₹100/day up to 0.04% (₹5–20 Cr); ₹50/day up to 0.04% (up to ₹5 Cr)',
+  pts:['Optional for turnover up to ₹2 crore.','Reconciles a year of GSTR-1 and GSTR-3B; additional liability paid through DRC-03.','Not filed by composition, casual, non-resident, OIDAR, ISD or TDS/TCS registrations.'],rel:['GSTR-9C','DRC-03','GSTR-3B'],
+  app:function(c){return c.regular&&c.t.sp!=='casual'?(c.hi<=2e7?'opt':'yes'):false},why:function(c){return c.hi<=2e7?'Optional at your turnover (up to ₹2 Cr).':'Mandatory above ₹2 Cr turnover.'}},
+ {id:'GSTR-9C',g:'ann',t:'Reconciliation statement (self-certified)',sec:['Sec 44','Rule 80(3)'],due:'31 December, with GSTR-9',fee:'Covered by the GSTR-9 late fee',pts:['Reconciles audited financial statements with GSTR-9.','Self-certified by the taxpayer; no CA audit certificate needed since 2021.'],rel:['GSTR-9'],app:function(c){return c.regular&&c.lo>=5e7?'yes':false},why:function(){return'Turnover above ₹5 crore.'}},
+
+ {id:'E-INVOICE',g:'evt',t:'E-invoice (IRN from the Invoice Registration Portal)',sec:['Rule 48(4)'],due:'Before issuing each B2B / export invoice',fee:'Invoice without IRN is not a valid invoice; penalty under Sec 122',pts:['Mandatory where turnover exceeded ₹5 crore in any year from 2017-18.','Taxpayers at ₹10 crore and above must report within 30 days of the invoice date.','57th Council recommends extending it to RCM purchases from unregistered persons and import of services (≥ ₹5 Cr).'],rel:['GSTR-1','EWB-01'],
+  app:function(c){return c.regular&&c.lo>=5e7?'yes':false},why:function(){return'Turnover above ₹5 crore.'}},
+ {id:'EWB-01',g:'evt',t:'E-way bill for movement of goods',sec:['Sec 68','Rule 138'],due:'Before the goods move',fee:'Detention; penalty of tax plus 200% (or ₹25,000) under Sec 129',pts:['Consignment value above ₹50,000 (some states set different limits intra-state).','Part B carries vehicle details; validity 1 day per 200 km.','Auto-generated from e-invoice when transport details are given.'],rel:['E-INVOICE'],app:function(c){return c.registered&&c.goods?'yes':false},why:function(){return'You move goods.'}},
+ {id:'ITC-04',g:'evt',t:'Goods sent to and received from job workers',sec:['Sec 143','Rule 45'],due:function(c){return c.lo>=5e7?'25 Oct and 25 Apr (half-yearly)':'25 April (annual)'},fee:'—',pts:['Report inputs and capital goods sent for job work and returned.','Not returned in time (1 year inputs / 3 years capital goods) = deemed supply.'],rel:['GSTR-1'],app:function(c){return c.regular&&(P.type==='mfg'||c.f.job)?(c.f.job?'yes':'event'):false},why:function(){return'Manufacturers using job workers.'}},
+ {id:'RFD-11',g:'evt',t:'Letter of Undertaking (LUT) for zero-rated supplies',sec:['Sec 16 IGST Act','Rule 96A'],due:'Before the first export of each FY',fee:'Without LUT, IGST must be paid on exports and claimed back',pts:['Valid for the whole financial year.','Exports of goods must be completed within 3 months; services paid in foreign exchange within 1 year.'],rel:['RFD-01'],app:function(c){return c.registered&&(P.type==='export'||c.f.exp)?'yes':false},why:function(){return'You export or supply to SEZ.'}},
+ {id:'RFD-01',g:'evt',t:'Application for refund',sec:['Sec 54','Rule 89'],due:'Within 2 years of the relevant date',fee:'—',pts:['Unused ITC on exports under LUT, inverted duty structure, excess cash ledger balance.','90% provisional refund for zero-rated supplies; 57th Council recommends system-based automated sanction.'],rel:['RFD-11','PMT-09'],app:function(c){return c.registered&&(P.type==='export'||c.f.exp||P.type==='mfg')?'event':false},why:function(){return'Exports or inverted duty structure.'}},
+ {id:'DRC-01C',g:'evt',t:'Reply to ITC mismatch intimation (GSTR-2B vs 3B)',sec:['Rule 88D'],due:'Within 7 days of the intimation',fee:'GSTR-1 for the next period is blocked until you reply or pay',pts:['Triggered when ITC claimed in GSTR-3B exceeds GSTR-2B beyond the set limit.','Explain the difference or pay through DRC-03.'],rel:['GSTR-2B','DRC-03'],app:function(c){return c.regular?'event':false},why:function(){return'Issued when ITC claimed is higher than GSTR-2B.'}},
+ {id:'DRC-03',g:'evt',t:'Voluntary payment of tax, interest or penalty',sec:['Sec 73(5), 74(5)','Sec 74A (FY 2024-25 onward)','Rule 142(2)'],due:'Any time; before a show-cause notice to avoid penalty',fee:'—',pts:['Used for annual-return differences, audit findings and mismatch intimations.','Up to FY 2023-24: Sec 73/74. From FY 2024-25: a single Sec 74A procedure with a common time limit.','Non-fraud cases: tax with interest paid before the notice, or within 60 days of it under Sec 74A, means no penalty.','Use DRC-03A to link an earlier DRC-03 payment to a demand order.'],rel:['GSTR-9','DRC-01C'],app:function(c){return c.registered?'event':false},why:function(){return'When extra tax is found payable.'}},
+ {id:'PMT-09',g:'evt',t:'Transfer within the electronic cash ledger',sec:['Sec 49(10)','Rule 87(14)'],due:'Any time',fee:'—',pts:['Move cash wrongly deposited under one head (e.g., CGST) to another (e.g., IGST), or between tax, interest and penalty.'],rel:['PMT-06'],app:function(c){return c.registered?'event':false},why:function(){return'To fix a challan paid under the wrong head.'}},
+ {id:'GSTR-10',g:'evt',t:'Final return on cancellation',sec:['Sec 45','Rule 81'],due:'Within 3 months of cancellation order',fee:'₹200/day (₹100 + ₹100), max ₹10,000',pts:['Pay tax on stock and capital goods held on the cancellation date (higher of ITC or tax on transaction value).'],rel:['REG-16'],app:function(c){return c.registered&&c.regular?'event':false},why:function(){return'After cancellation.'}}
+];
+var FBY={};FORMS.forEach(function(f){FBY[f.id]=f});
+function fdue(f,c){return typeof f.due==='function'?f.due(c):f.due}
+
+/* ================= tabs + hash routing ================= */
+var TABS=[['overview','Overview'],['apply','My forms'],['forms','All forms'],['calendar','Due dates'],['cycle','Return cycle'],['flow','Decision chart'],['rates','GST rates'],['calc','Calculators'],['list','Checklist'],['updates','Updates']];
+var CUR='overview';
+function buildTabs(){
+  $('tabs').innerHTML=TABS.map(function(t){return'<button class="tab" role="tab" data-t="'+t[0]+'" aria-selected="false">'+t[1]+(t[0]==='apply'?'<span class="ct" id="tabCt">0</span>':'')+'</button>'}).join('');
+  [].forEach.call($('tabs').querySelectorAll('.tab'),function(b){b.onclick=function(){go(b.getAttribute('data-t'))}});
+}
+function go(name,keepScroll){
+  if(location.hash.slice(1)!==name){try{history.pushState(null,'','#'+name)}catch(e){location.hash=name}}
+  show(name,keepScroll);
+}
+function show(name,keepScroll){
+  if(!$('p-'+name))name='overview';
+  CUR=name;
+  TABS.forEach(function(t){$('p-'+t[0]).hidden=t[0]!==name});
+  [].forEach.call($('tabs').querySelectorAll('.tab'),function(b){var s=b.getAttribute('data-t')===name;b.setAttribute('aria-selected',s);if(s&&b.scrollIntoView){try{b.scrollIntoView({block:'nearest',inline:'center'})}catch(e){}}});
+  if(!keepScroll)window.scrollTo(0,0);
+  render(name);
+  if(name==='cycle')anStart();else anPause();
+}
+function route(){
+  var h=location.hash.slice(1).toLowerCase();
+  if(!h){show('overview',true);return}
+  for(var i=0;i<TABS.length;i++)if(TABS[i][0]===h){show(h);return}
+  var f=FORMS.filter(function(x){return slug(x.id)===h})[0];
+  if(f){show('forms',true);openForm(f.id,true);return}
+  show('overview',true);
+}
+window.addEventListener('hashchange',route);
+document.addEventListener('click',function(e){
+  var g=e.target.closest('[data-go]');if(g){e.preventDefault();closeSheet(true);go(g.getAttribute('data-go'));return}
+  var fm=e.target.closest('[data-form]');if(fm){e.preventDefault();openForm(fm.getAttribute('data-form'))}
+});
+
+/* ================= sheet ================= */
+var lastFocus=null,sheetForm=null;
+function openSheet(title,html){lastFocus=document.activeElement;$('sheetTitle').innerHTML=title;$('sheetBody').innerHTML=html;$('ov').className='ov on';$('sheet').className='sheet on';document.body.className='lock';$('sheet').scrollTop=0;$('sheetX').focus()}
+function closeSheet(silent){if($('sheet').className!=='sheet on')return;$('ov').className='ov';$('sheet').className='sheet';document.body.className='';
+  if(sheetForm&&!silent){sheetForm=null;if(location.hash.slice(1)!==CUR){try{history.replaceState(null,'','#'+CUR)}catch(e){}}}
+  sheetForm=null;if(lastFocus&&lastFocus.focus&&!silent)lastFocus.focus()}
+$('ov').onclick=function(){closeSheet()};$('sheetX').onclick=function(){closeSheet()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+function openForm(id,fromRoute){
+  var f=FBY[id];if(!f)return;var c=ctx(),a=f.app(c);sheetForm=id;
+  if(!fromRoute){try{history.replaceState(null,'','#'+slug(id))}catch(e){}}
+  var st=a==='yes'?pill('Applies to you','p-ok'):a==='opt'?pill('Optional / choice','p-d'):a==='event'?pill('When the event occurs','p-warn'):pill('Not for this profile','p-m');
+  var h='<div class="bar" style="--c:'+G[f.g][1]+'"></div><p>'+st+' <span class="mut">'+G[f.g][0]+'</span></p>'+
+   '<p style="font-size:16px"><b>'+f.t+'</b></p>'+
+   (a?'<div class="note '+(a==='yes'?'ok':'info')+'">'+f.why(c)+'</div>':'<div class="note warn">This form does not apply to <b>'+esc(c.t.n)+'</b> with the current settings. Change the profile bar to test another case.</div>')+
+   '<dl class="dl"><dt>Due</dt><dd><b>'+fdue(f,c)+'</b></dd><dt>Late fee / risk</dt><dd>'+f.fee+'</dd><dt>Law</dt><dd>'+f.sec.map(function(s){return ref(s)}).join('')+'</dd></dl>'+
+   '<h4 style="font-size:15px">Key points</h4>'+ul(f.pts)+
+   '<h4 style="font-size:15px;margin-top:8px">Linked forms</h4><div class="rel">'+f.rel.filter(function(r){return FBY[r]}).map(function(r){return'<button data-form="'+r+'">'+r+'</button>'}).join('')+'</div>'+
+   '<div class="btns" style="margin-top:14px"><button class="btn" data-go="calendar">See due dates</button><button class="btn t ghost" data-go="cycle">See it in the return cycle</button></div>';
+  openSheet('<span class="fcode" style="font-size:19px">'+f.id+'</span>',h);
+}
+
+/* ================= profile bar ================= */
+function buildProfile(){
+  $('pType').innerHTML=Object.keys(TYPES).map(function(k){return'<option value="'+k+'">'+TYPES[k].n+'</option>'}).join('');
+  $('pBand').innerHTML=BANDS.map(function(b){return'<option value="'+b[0]+'">'+b[1]+'</option>'}).join('');
+  $('pState').innerHTML=STATES.map(function(s){return'<option>'+s[0]+'</option>'}).join('');
+  $('flags').innerHTML=FLAGS.map(function(f){return'<button class="chip" data-flag="'+f[0]+'" aria-pressed="false">'+f[1]+'</button>'}).join('');
+  $('pType').value=P.type;$('pBand').value=P.band;$('pScheme').value=P.scheme;$('pState').value=P.state;
+  ['pType','pBand','pScheme','pState'].forEach(function(id){$(id).onchange=function(){P.type=$('pType').value;P.band=$('pBand').value;P.scheme=$('pScheme').value;P.state=$('pState').value;changed()}});
+  [].forEach.call($('flags').querySelectorAll('.chip'),function(b){b.onclick=function(){var k=b.getAttribute('data-flag');P.f[k]=!P.f[k];changed()}});
+  $('flagToggle').onclick=function(){var o=$('flags').hidden;$('flags').hidden=!o;$('flagToggle').setAttribute('aria-expanded',o)};
+  syncFlags();
+}
+function syncFlags(){var n=0;[].forEach.call($('flags').querySelectorAll('.chip'),function(b){var on=!!P.f[b.getAttribute('data-flag')];b.setAttribute('aria-pressed',on);if(on)n++});$('flagCount').textContent=n}
+function changed(){store('profile',P);syncFlags();updateCount();render(CUR);if(CUR==='cycle')anGo(AN.i,AN.t)}
+function applicable(c){return FORMS.map(function(f){return{f:f,a:f.app(c)}}).filter(function(x){return x.a})}
+function updateCount(){var c=ctx();$('tabCt').textContent=applicable(c).filter(function(x){return x.a==='yes'}).length}
+
+/* ================= render dispatcher ================= */
+function render(n){({overview:rOverview,apply:rApply,forms:rForms,calendar:rCal,cycle:rCycle,flow:rFlow,rates:rRates,calc:rCalc,list:rList,updates:rUpdates})[n]()}
+
+/* ================= OVERVIEW ================= */
+function heroSvg(c){
+  var m=c.sch==='qrmp';
+  if(c.sch==='special'||c.sch==='none'){var sp=c.t.sp,nodes0=c.sch==='none'?[['Purchase','GST paid = cost',120,'#575B78'],['Exempt sale','no GST charged',360,'#12875A'],['No returns','unless registered',600,'#0B7F7A']]:
+    [[sp==='nrtp'?'REG-09':sp==='oidar'?'REG-10':'REG-07',sp==='tds'?'TDS registration':'5 days before',120,'#5B3FD6'],[sp==='tds'?'Deduct 2%':'Supply + deposit',sp==='tds'?'contracts > ₹2.5 lakh':'advance tax',360,'#E39A0B'],[sp==='nrtp'?'GSTR-5':sp==='oidar'?'GSTR-5A':'GSTR-7',sp==='nrtp'?'13th monthly':sp==='oidar'?'20th monthly':'10th monthly',600,'#0B7F7A']];
+    var s0='<svg viewBox="0 0 720 170" role="img" aria-label="Your GST cycle"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15162B"/></marker></defs><text x="20" y="28" font-family="Bricolage Grotesque,sans-serif" font-size="17" font-weight="700" fill="#15162B">Your cycle: '+esc(SCH_N[c.sch])+'</text><g class="draw">';
+    for(var j=0;j<2;j++)s0+='<path class="ln" style="--len:200" d="M'+(nodes0[j][2]+72)+' 100 L'+(nodes0[j+1][2]-72)+' 100" stroke="#15162B" stroke-width="2" fill="none" marker-end="url(#ah)"/>';
+    s0+='</g>';nodes0.forEach(function(n,i){s0+='<g class="pop" style="animation-delay:'+(i*.2)+'s"><rect x="'+(n[2]-70)+'" y="65" width="140" height="70" rx="14" fill="#fff" stroke="'+n[3]+'" stroke-width="2.5"/><rect x="'+(n[2]-70)+'" y="65" width="140" height="8" rx="4" fill="'+n[3]+'"/><text x="'+n[2]+'" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="14" font-weight="500" fill="#15162B">'+n[0]+'</text><text x="'+n[2]+'" y="121" text-anchor="middle" font-family="Figtree,sans-serif" font-size="11.5" fill="#575B78">'+n[1]+'</text></g>'});
+    return s0+'</svg>'}
+  var nodes=[
+   ['Invoice','Tax invoice / e-invoice',40,'#5B3FD6'],
+   [c.sch==='comp'?'CMP-08':'GSTR-1',c.sch==='comp'?'18th after quarter':m?'13th after quarter':'by 11th',190,'#3B259E'],
+   [c.sch==='comp'?'No ITC':'GSTR-2B',c.sch==='comp'?'Bill of supply only':'via IMS, 14th',340,'#0B7F7A'],
+   [c.sch==='comp'?'GSTR-4':'GSTR-3B',c.sch==='comp'?'30 June':m?c.st.q+'th after quarter':'by 20th',490,'#E39A0B'],
+   ['GSTR-9',c.sch==='comp'?'not filed':(c.hi<=2e7?'optional, 31 Dec':'31 Dec'),640,'#575B78']];
+  var s='<svg viewBox="0 0 720 210" role="img" aria-label="Your GST cycle: invoice, statement, ITC, summary return, annual return"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15162B"/></marker></defs>';
+  s+='<text x="20" y="28" font-family="Bricolage Grotesque,sans-serif" font-size="17" font-weight="700" fill="#15162B">Your cycle: '+esc(SCH_N[c.sch])+'</text>';
+  s+='<g class="draw">';
+  for(var i=0;i<nodes.length-1;i++){s+='<path class="ln" style="--len:90;animation-delay:'+(i*.25)+'s" d="M'+(nodes[i][2]+56)+' 105 L'+(nodes[i+1][2]-56)+' 105" stroke="#15162B" stroke-width="2" fill="none" marker-end="url(#ah)"/>'}
+  s+='</g>';
+  nodes.forEach(function(n,i){s+='<g class="pop" style="animation-delay:'+(i*.2)+'s"><rect x="'+(n[2]-55)+'" y="70" width="110" height="70" rx="14" fill="#fff" stroke="'+n[3]+'" stroke-width="2.5"/><rect x="'+(n[2]-55)+'" y="70" width="110" height="8" rx="4" fill="'+n[3]+'"/>'+
+   '<text x="'+n[2]+'" y="105" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="14" font-weight="500" fill="#15162B">'+n[0]+'</text><text x="'+n[2]+'" y="126" text-anchor="middle" font-family="Figtree,sans-serif" font-size="11.5" fill="#575B78">'+n[1]+'</text></g>'});
+  s+='<path d="M640 145 Q 640 190 360 190 Q 80 190 40 145" fill="none" stroke="#C6C9E2" stroke-width="1.5" stroke-dasharray="4 5"/><text x="360" y="183" text-anchor="middle" font-family="Figtree,sans-serif" font-size="11.5" fill="#575B78">Repeats every '+(c.sch==='monthly'?'month':'quarter')+'; ITC for a year must be claimed by 30 November after the year ends</text>';
+  return s+'</svg>';
+}
+function regVerdict(c){
+  var cls,h,body=[];
+  if(c.reg==='none'){cls='v-info';h='No GST registration needed'}
+  else if(c.reg==='must'){cls='v-bad';h='GST registration is mandatory'}
+  else if(c.reg==='near'){cls='v-warn';h='Registration depends on where turnover lands'}
+  else{cls='v-ok';h='Registration is optional (voluntary)'}
+  if(c.comp.length)body=body.concat(c.comp.map(function(x){return'Compulsory regardless of turnover: '+x}));
+  if(c.t.sp!=='exempt'&&!/nrtp|oidar|eco|tds/.test(c.t.sp||'')&&!c.comp.length)body.push('Threshold for '+(c.t.sup==='g'?'goods':'services or mixed')+' suppliers in '+P.state+': <b>₹'+(c.thr/1e5)+' lakh</b> aggregate turnover. Selected band: '+c.b[1]+'.');
+  if(c.reg==='near')body.push('Register within 30 days of the day turnover crosses ₹'+(c.thr/1e5)+' lakh. Tax is due on supplies from that date.');
+  if(c.reg==='opt')body.push('Register voluntarily if B2B buyers need ITC, you export (to claim refunds), or tenders and marketplaces ask for a GSTIN.');
+  if(c.reg==='none')body.push('Wholly exempt or non-taxable supplies do not require registration. GST on purchases is a cost.');
+  if(c.f.ecom&&c.t.sup==='g'&&!c.f.inter&&c.reg!=='must')body.push('Intra-state sellers on e-commerce below the threshold may take an enrolment number instead of a GSTIN.');
+  return'<div class="verdict '+cls+'"><h3>'+h+'</h3>'+ul(body)+'</div>';
+}
+function rOverview(){
+  var c=ctx(),ap=applicable(c),yes=ap.filter(function(x){return x.a==='yes'}),nx=nextDues(c,1)[0];
+  var h='<div class="card"><h2>'+esc(c.t.n)+'</h2><p class="lead">Turnover '+c.b[1]+' in '+esc(P.state)+'. Everything in this reckoner, from the forms list to the calendar, the animation and the checklist, now follows this profile. Change it in the bar above at any time.</p>'+
+   '<div class="btns"><button class="btn" data-go="apply">My applicable forms</button><button class="btn t" data-go="calendar">My due dates</button><button class="btn ghost" data-go="cycle">Watch the return cycle</button></div></div>';
+  if(c.warn)h+='<div class="note warn">'+c.warn+'</div>';
+  h+='<div class="kpis">'+
+   '<div class="kpi" style="--c:var(--d)"><div class="k">Registration</div><div class="v">'+({must:'Mandatory',near:'At threshold',opt:'Optional',none:'Not needed'})[c.reg]+'</div><div class="s">'+(c.comp.length?c.comp.length+' compulsory trigger'+(c.comp.length>1?'s':''):'Threshold ₹'+(c.thr/1e5)+' lakh')+'</div></div>'+
+   '<div class="kpi" style="--c:var(--r)"><div class="k">Return scheme</div><div class="v" style="font-size:18px">'+SCH_N[c.sch]+'</div><div class="s">'+(c.sch===c.rec?'Recommended':'Chosen by you')+'</div></div>'+
+   '<div class="kpi" style="--c:var(--s)"><div class="k">Forms that apply</div><div class="v">'+yes.length+' <span style="font-size:14px;color:var(--mut)">+ '+(ap.length-yes.length)+' optional / event</span></div><div class="s">of '+FORMS.length+' GST forms tracked</div></div>'+
+   (nx?'<div class="kpi" style="--c:var(--bad)"><div class="k">Next due</div><div class="v" style="font-size:18px">'+nx.f+' · '+nx.d.getDate()+' '+MN[nx.d.getMonth()]+'</div><div class="s">'+daysTxt(nx.d)+' · '+nx.w+'</div></div>':'')+
+   '</div>';
+  h+='<div class="hero">'+heroSvg(c)+'</div>';
+  h+=regVerdict(c);
+  h+='<h3 class="sec-h">Scheme options for this business</h3><div class="grid2">'+
+   '<div class="card"><h3>Composition '+(c.compOK?pill('Eligible','p-ok'):pill('Not eligible','p-bad'))+'</h3><p class="mut">'+(c.compOK?'Rate '+c.t.comp+'% of turnover, limit ₹'+(c.cl/1e5)+' lakh'+(c.compNear?' (only while turnover stays within this limit; your band goes above it)':'')+'. No ITC, no GST on invoices, quarterly CMP-08 and annual GSTR-4.':'Reason: '+c.compWhy.join('; ')+'.')+'</p>'+(c.compOK?'<button class="btn ghost" data-go="calc">Compare composition vs regular</button>':'')+'</div>'+
+   '<div class="card"><h3>QRMP '+(c.qrmpOK?pill('Eligible','p-ok'):pill('Not eligible','p-bad'))+'</h3><p class="mut">'+(c.qrmpOK?'GSTR-1 and GSTR-3B quarterly; tax paid monthly by PMT-06 on the 25th. GSTR-3B for '+esc(P.state)+' is due on the '+c.st.q+'th.':'Turnover above ₹5 crore: monthly GSTR-1 (11th) and GSTR-3B (20th).')+'</p></div></div>';
+  var tips=c.t.tips||[];
+  if(tips.length)h+='<div class="card"><h3>Specific to '+esc(c.t.n.toLowerCase())+'</h3>'+ul(tips)+'</div>';
+  var nav=[['apply','My forms','The forms that apply, grouped and explained','#5B3FD6'],['calendar','Due dates','Next six months with countdowns','#C9282F'],['cycle','Return cycle','Animated: invoice to annual return','#0B7F7A'],['flow','Decision chart','Your registration and scheme path','#3B259E'],['rates','GST rates','GST 2.0 rates, before and after','#E39A0B'],['calc','Calculators','Invoice, late fee, set-off, composition','#075C58'],['list','Checklist','Monthly, quarterly and yearly tasks','#12875A'],['updates','Updates','In force and pending changes','#575B78']];
+  h+='<h3 class="sec-h">Go to</h3><div class="grid">'+nav.map(function(n){return'<button class="tile" style="--c:'+n[3]+'" data-go="'+n[0]+'"><b>'+n[1]+'</b><span class="w">'+n[2]+'</span></button>'}).join('')+'</div>';
+  $('p-overview').innerHTML=h;
+}
+
+/* ================= MY FORMS ================= */
+function formRow(x,c){var f=x.f;return'<tr class="click" data-form="'+f.id+'"><td class="fcode">'+f.id+'</td><td>'+f.t+'<div class="mut">'+f.why(c)+'</div></td><td>'+fdue(f,c)+'</td><td>'+(x.a==='yes'&&c.reg==='opt'&&x.f.id!=='REG-01'?pill('If you register','p-r'):x.a==='yes'?pill('Required','p-ok'):x.a==='opt'?pill('Optional','p-d'):pill('If it happens','p-warn'))+'</td></tr>'}
+function rApply(){
+  var c=ctx(),ap=applicable(c),na=FORMS.filter(function(f){return!f.app(c)});
+  var h='<div class="card"><h2>Forms for '+esc(c.t.n.toLowerCase())+'</h2><p class="lead">Only the forms that apply to this profile. Tap a row for the full briefing, the law, the late fee and linked forms.</p>'+
+   '<p>'+pill(SCH_N[c.sch],'p-r')+' '+pill(c.b[1],'p-d')+' '+pill(esc(P.state),'p-m')+'</p></div>';
+  if(c.warn)h+='<div class="note warn">'+c.warn+'</div>';
+  if(c.reg==='opt')h+='<div class="note info">Registration is optional at this turnover. Forms marked <b>If you register</b> start only once you take a GSTIN.</div>';
+  if(c.reg==='none')h+='<div class="note info">No registration is needed for this profile, so no GST returns apply. The list below shows what would apply if you register.</div>';
+  ['reg','ret','ann','evt'].forEach(function(g){
+    var rows=ap.filter(function(x){return x.f.g===g});if(!rows.length)return;
+    h+='<h3 class="sec-h"><span style="width:12px;height:12px;border-radius:3px;background:'+G[g][1]+';display:inline-block"></span>'+G[g][0]+' <span class="mut">'+rows.length+'</span></h3>';
+    h+='<div class="tw wide"><table><thead><tr><th>Form</th><th>What it is</th><th>When</th><th>Status</th></tr></thead><tbody>'+rows.map(function(x){return formRow(x,c)}).join('')+'</tbody></table></div>';
+  });
+  h+='<details class="fold"><summary>Not applicable to this profile <span class="mut">'+na.length+' forms</span></summary><div class="in"><p class="mut">Hidden from your list. Tap to read why each exists.</p><div class="rel">'+na.map(function(f){return'<button data-form="'+f.id+'">'+f.id+'</button>'}).join('')+'</div></div></details>';
+  h+='<div class="btns"><button class="btn" data-go="calendar">See these on the calendar</button><button class="btn t ghost" data-go="list">Open the checklist</button><button class="btn ghost" data-go="flow">Why these forms (decision chart)</button></div>';
+  $('p-apply').innerHTML=h;
+}
+
+/* ================= ALL FORMS ================= */
+var showAll=false,fq='';
+function rForms(){
+  var c=ctx();
+  var h='<div class="card"><h2>Form directory</h2><p class="lead">Every GST form this reckoner tracks, grouped by purpose. Forms that do not apply to the current profile are faded; tap any tile for the briefing.</p>'+
+   '<div class="seg3" id="fMode"><button data-m="0" class="'+(showAll?'':'on')+'">Only my forms</button><button data-m="1" class="'+(showAll?'on':'')+'">All forms</button></div></div>'+
+   '<input class="srch" id="fSearch" type="search" placeholder="Search forms, e.g. refund, annual, TDS" value="'+esc(fq)+'" aria-label="Search forms">';
+  ['reg','ret','ann','evt'].forEach(function(g){
+    var list=FORMS.filter(function(f){var a=f.app(c);return f.g===g&&(showAll||a)&&(!fq||(f.id+' '+f.t+' '+f.pts.join(' ')).toLowerCase().indexOf(fq.toLowerCase())>=0)});
+    if(!list.length)return;
+    h+='<h3 class="sec-h">'+G[g][0]+'</h3><div class="grid">'+list.map(function(f){var a=f.app(c);return'<button class="tile'+(a?'':' off')+'" style="--c:'+G[g][1]+'" data-form="'+f.id+'"><span class="fc">'+f.id+'</span><b>'+f.t+'</b><span class="w">'+(a==='yes'?'Applies · ':a==='opt'?'Optional · ':a==='event'?'On event · ':'')+fdue(f,c)+'</span></button>'}).join('')+'</div>';
+  });
+  $('p-forms').innerHTML=h;
+  [].forEach.call($('fMode').querySelectorAll('button'),function(b){b.onclick=function(){showAll=b.getAttribute('data-m')==='1';rForms()}});
+  $('fSearch').oninput=function(){fq=this.value;var pos=this.selectionStart;rForms();var s=$('fSearch');s.focus();try{s.setSelectionRange(pos,pos)}catch(e){}};
+}
+
+/* ================= CALENDAR ================= */
+function daysTxt(d){var n=Math.round((d-TODAY)/864e5);return n===0?'Today':n===1?'Tomorrow':n<0?Math.abs(n)+' days ago':'in '+n+' days'}
+function genDues(c,from,to){
+  var ev=[],push=function(d,f,w){if(d>=from&&d<=to)ev.push({d:d,f:f,w:w})};
+  var isA=function(id){var f=FBY[id];return f&&f.app(c)};
+  for(var k=-4;k<14;k++){
+    var p=new Date(from.getFullYear(),from.getMonth()+k,1),y=p.getFullYear(),m=p.getMonth(),qEnd=m%3===2,nm=function(day){return new Date(y,m+1,day)};
+    var per=MN[m]+' '+y,qs=MN[(m+10)%12]+'–'+MN[m]+' '+y;
+    if(c.sch==='monthly'&&c.registered){push(nm(11),'GSTR-1','Sales for '+per);push(nm(14),'GSTR-2B','ITC statement for '+per+' generated');push(nm(20),'GSTR-3B','Summary return and tax for '+per)}
+    if(c.sch==='qrmp'&&c.registered){
+      if(!qEnd){push(nm(13),'IFF','Optional B2B invoices for '+per);push(nm(25),'PMT-06','Tax payment for '+per)}
+      else{push(nm(13),'GSTR-1','Quarterly sales, '+qs);push(nm(14),'GSTR-2B','Quarterly ITC statement, '+qs);push(nm(c.st.q),'GSTR-3B','Quarterly summary return, '+qs)}
+    }
+    if(c.sch==='comp'&&qEnd)push(nm(18),'CMP-08','Composition tax for '+qs);
+    if(isA('GSTR-7'))push(nm(10),'GSTR-7','TDS deducted in '+per);
+    if(isA('GSTR-8'))push(nm(10),'GSTR-8','TCS collected in '+per);
+    if(isA('GSTR-5'))push(nm(13),'GSTR-5','Non-resident return for '+per);
+    if(isA('GSTR-6'))push(nm(13),'GSTR-6','ISD return for '+per);
+    if(isA('GSTR-5A'))push(nm(20),'GSTR-5A','OIDAR return for '+per);
+  }
+  for(var y=from.getFullYear()-1;y<=to.getFullYear()+1;y++){
+    var fy=(y-1)+'-'+String(y).slice(2),nfy=y+'-'+String(y+1).slice(2);
+    if(c.regular){push(new Date(y,10,30),'ITC deadline','Last date to claim ITC and issue credit notes for FY '+fy);
+      if(isA('GSTR-9'))push(new Date(y,11,31),isA('GSTR-9C')?'GSTR-9 + 9C':'GSTR-9','Annual return for FY '+fy+(c.hi<=2e7?' (optional)':''))}
+    if(c.sch==='comp'){push(new Date(y,5,30),'GSTR-4','Composition annual return for FY '+fy)}
+    if(isA('CMP-02')&&c.sch!=='special')push(new Date(y,2,31),'CMP-02','Opt into composition for FY '+nfy+(c.sch==='comp'?' (renewal is automatic)':''));
+    if(c.qrmpOK&&c.regular){push(new Date(y,3,30),'QRMP option','Last day to change QRMP option for Apr–Jun '+y);push(new Date(y,6,31),'QRMP option','Last day to change QRMP option for Jul–Sep '+y);push(new Date(y,9,31),'QRMP option','Last day to change QRMP option for Oct–Dec '+y);push(new Date(y,0,31),'QRMP option','Last day to change QRMP option for Jan–Mar '+y)}
+    if(isA('RFD-11'))push(new Date(y,2,31),'RFD-11','File LUT for FY '+nfy);
+    if(isA('ITC-04')){push(new Date(y,3,25),'ITC-04',c.lo>=5e7?'Job work, Oct–Mar':'Job work, FY '+fy);if(c.lo>=5e7)push(new Date(y,9,25),'ITC-04','Job work, Apr–Sep')}
+  }
+  ev.sort(function(a,b){return a.d-b.d});return ev;
+}
+function nextDues(c,n){var to=new Date(TODAY);to.setMonth(to.getMonth()+8);return genDues(c,TODAY,to).slice(0,n||99)}
+function timelineSvg(c){
+  var marks=[];
+  var add=function(day,lab,col,q){marks.push([day,lab,col,q])};
+  if(c.sch==='monthly'){add(11,'GSTR-1','#3B259E');add(14,'2B','#0B7F7A');add(20,'GSTR-3B','#E39A0B')}
+  if(c.sch==='qrmp'){add(13,'IFF / GSTR-1','#3B259E');add(14,'2B','#0B7F7A');add(c.st.q,'3B (quarter)','#E39A0B',1);add(25,'PMT-06','#C9282F')}
+  if(c.sch==='comp')add(18,'CMP-08 (quarter)','#E39A0B',1);
+  if(FBY['GSTR-7'].app(c))add(10,'GSTR-7','#575B78');
+  if(FBY['GSTR-8'].app(c))add(10,'GSTR-8','#575B78');
+  if(FBY['GSTR-6'].app(c)||FBY['GSTR-5'].app(c))add(13,FBY['GSTR-6'].app(c)?'GSTR-6':'GSTR-5','#575B78');
+  if(FBY['GSTR-5A'].app(c))add(20,'GSTR-5A','#575B78');
+  var X=function(d){return 30+(d-1)*(660/30)};
+  var s='<svg viewBox="0 0 720 220" role="img" aria-label="Day-of-month timeline of your due dates"><text x="30" y="24" font-family="Bricolage Grotesque,sans-serif" font-size="16" font-weight="700" fill="#15162B">Your month at a glance (days of the following month)</text>';
+  s+='<line x1="30" y1="160" x2="690" y2="160" stroke="#C6C9E2" stroke-width="6" stroke-linecap="round"/>';
+  for(var d=1;d<=31;d+=5){s+='<text x="'+X(d)+'" y="184" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#575B78">'+d+'</text>'}
+  marks.sort(function(a,b){return a[0]-b[0]});var lastAt=[];
+  marks.forEach(function(mk,i){var x=X(mk[0]),lvl=0;while(lastAt[lvl]!==undefined&&x-lastAt[lvl]<100)lvl++;lastAt[lvl]=x;var y=128-lvl*32;
+    s+='<g class="pop" style="animation-delay:'+(i*.12)+'s"><line x1="'+x+'" y1="'+(y+10)+'" x2="'+x+'" y2="154" stroke="'+mk[2]+'" stroke-width="2"/><circle cx="'+x+'" cy="160" r="7" fill="'+mk[2]+'"/><rect x="'+(x-46)+'" y="'+(y-12)+'" width="92" height="22" rx="11" fill="'+mk[2]+'"/><text x="'+x+'" y="'+(y+3)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10.5" fill="#fff">'+mk[1]+'</text>'+
+    '<text x="'+x+'" y="204" text-anchor="middle" font-family="Figtree,sans-serif" font-size="10.5" font-weight="700" fill="'+mk[2]+'">'+mk[0]+'</text></g>'});
+  if(!marks.length)s+='<text x="360" y="80" text-anchor="middle" font-family="Figtree,sans-serif" font-size="13" fill="#575B78">No monthly due dates for this profile.</text>';
+  return s+'</svg>';
+}
+function rCal(){
+  var c=ctx(),to=new Date(TODAY);to.setMonth(to.getMonth()+6);
+  var ev=genDues(c,TODAY,to);
+  var h='<div class="card"><h2>Due dates from today</h2><p class="lead">The next six months for '+esc(c.t.n.toLowerCase())+' on '+SCH_N[c.sch].toLowerCase()+'. Tap a date for the form briefing.</p>'+
+   (c.sch==='qrmp'?'<div class="note info">QRMP GSTR-3B in '+esc(P.state)+' is due on the <b>'+c.st.q+'th</b> ('+(c.st.q===22?'Category X':'Category Y')+' states).</div>':'')+'</div>';
+  h+='<div class="hero">'+timelineSvg(c)+'</div>';
+  if(!ev.length){h+='<div class="note info">No due dates for this profile.</div>'}
+  else{
+    h+='<div class="card" style="padding:0;overflow:hidden">';var lastM=-1;
+    ev.forEach(function(e){var mk=e.d.getFullYear()*12+e.d.getMonth();if(mk!==lastM){h+='<div class="mhead">'+MF[e.d.getMonth()]+' '+e.d.getFullYear()+'</div>';lastM=mk}
+      var n=Math.round((e.d-TODAY)/864e5),pc=n<=3?'p-bad':n<=10?'p-warn':'p-m',fid=FBY[e.f]?e.f:(e.f.indexOf('GSTR-9')===0?'GSTR-9':e.f==='QRMP option'?'GSTR-3B':e.f==='ITC deadline'?'GSTR-2B':null);
+      h+='<button class="due"'+(fid?' data-form="'+fid+'"':'')+'><span class="d"><b>'+e.d.getDate()+'</b>'+MN[e.d.getMonth()]+' · '+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][e.d.getDay()]+'</span><span class="t"><b>'+e.f+'</b><span>'+e.w+'</span></span><span class="pill '+pc+'">'+daysTxt(e.d)+'</span></button>'});
+    h+='</div>';
+  }
+  h+='<div class="note warn">A due date falling on a holiday is not automatically extended under GST; file a day early. The government extends dates only by notification.</div>';
+  $('p-calendar').innerHTML=h;
+}
+
+/* ================= RETURN CYCLE ANIMATION ================= */
+var AN={i:0,t:0,playing:false,speed:1,dwell:0,mode:'play',started:false,last:0,single:false,drag:false};
+var AN_DUR=2600,AN_DWELL=1600;
+var rAF=window.requestAnimationFrame?function(f){return requestAnimationFrame(f)}:function(f){return setTimeout(function(){f(anNow())},16)};
+function cl(x){return x<0?0:x>1?1:x}
+function ez(x){x=cl(x);return x*x*(3-2*x)}
+function sg(t,a,b){return ez((t-a)/(b-a))}
+var F='font-family="Figtree,sans-serif"',FM='font-family="JetBrains Mono,monospace"',FD='font-family="Bricolage Grotesque,sans-serif"';
+function box(x,y,w,h,col,title,sub,fill){return'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="14" fill="'+(fill||'#fff')+'" stroke="'+col+'" stroke-width="2.5"/><text x="'+(x+w/2)+'" y="'+(y+26)+'" text-anchor="middle" '+FD+' font-size="15" font-weight="700" fill="'+col+'">'+title+'</text>'+(sub?'<text x="'+(x+w/2)+'" y="'+(y+45)+'" text-anchor="middle" '+F+' font-size="11" fill="#575B78">'+sub+'</text>':'')}
+function doc(x,y,lab,col,op){return'<g transform="translate('+x+' '+y+')" opacity="'+(op===undefined?1:op)+'"><rect x="-26" y="-32" width="52" height="64" rx="6" fill="#fff" stroke="'+col+'" stroke-width="2"/><rect x="-26" y="-32" width="52" height="14" rx="6" fill="'+col+'"/><line x1="-17" y1="-6" x2="17" y2="-6" stroke="#C6C9E2" stroke-width="3"/><line x1="-17" y1="4" x2="12" y2="4" stroke="#C6C9E2" stroke-width="3"/><line x1="-17" y1="14" x2="15" y2="14" stroke="#C6C9E2" stroke-width="3"/><text y="44" text-anchor="middle" '+FM+' font-size="11" font-weight="500" fill="'+col+'">'+lab+'</text></g>'}
+function stageBase(){return box(14,250,130,90,'#5B3FD6','Supplier','A Traders')+box(256,250,130,90,'#0B7F7A','Buyer','B Retail')+box(130,22,140,74,'#3B259E','GST Portal','gst.gov.in','#F7F5FF')}
+function scenes(c){
+  var comp=c.sch==='comp',q=c.sch==='qrmp';
+  var d1=comp?'18th':q?'13th':'11th',d3=comp?'18th':q?c.st.q+'th':'20th';
+  return [
+   {t:comp?'Sale on a bill of supply':'Sale and tax invoice',p:comp?'A Traders, a composition dealer, sells goods worth ₹1,00,000 to B Retail on a bill of supply. No GST is shown or collected; A Traders pays 1% of its turnover from its own pocket. Goods above ₹50,000 still move on an e-way bill.':'A Traders sells goods worth ₹1,00,000 at 18% to B Retail. The tax invoice shows both GSTINs, HSN, place of supply and ₹18,000 GST (₹9,000 CGST + ₹9,000 SGST). Above ₹5 crore turnover, an IRN from the e-invoice portal is needed first; goods above ₹50,000 move on an e-way bill.',r:'Sec 31 · Rule 46 · Rule 48(4) · Rule 138',
+    f:function(t){var x=79+(321-79)*sg(t,.15,.8);return stageBase()+'<path d="M144 295 L256 295" stroke="#C6C9E2" stroke-width="2" stroke-dasharray="5 5"/>'+doc(x,212,comp?'BOS ₹1.00L':'INV ₹1.18L','#5B3FD6')+(t>.75?'<g opacity="'+sg(t,.75,.95)+'"><rect x="146" y="150" width="108" height="26" rx="13" fill="#12875A"/><text x="200" y="168" text-anchor="middle" '+FM+' font-size="11" fill="#fff">'+(comp?'e-way bill':'IRN + e-way bill')+'</text></g>':'')}},
+   {t:(comp?'CMP-08':'GSTR-1')+' reports the sale',p:comp?'A composition dealer reports only total turnover in CMP-08 by the 18th after the quarter. No invoice-level data reaches the buyer, so the buyer gets no ITC.':'A Traders uploads the invoice in GSTR-1 by the '+d1+'. B2B invoices go invoice-wise; this is what lets the buyer claim credit.',r:comp?'Sec 39(2) · Rule 62':'Sec 37 · Rule 59',
+    f:function(t){var a=sg(t,.1,.75),x=79+(200-79)*a,y=250-(250-100)*a;return stageBase()+'<path d="M79 250 Q 79 140 190 100" fill="none" stroke="#C6C9E2" stroke-width="2" stroke-dasharray="5 5"/>'+doc(x,y,comp?'CMP-08':'GSTR-1','#3B259E',1-sg(t,.8,1)*.6)+'<g opacity="'+sg(t,.7,.9)+'"><circle cx="270" cy="30" r="16" fill="#3B259E"/><text x="270" y="34" text-anchor="middle" '+FM+' font-size="10" fill="#fff">'+d1+'</text></g>'}},
+   {t:'Buyer reviews it in IMS',p:comp?'Nothing appears for the buyer, because a composition supplier issues a bill of supply without tax.':'The invoice appears in B Retail\'s Invoice Management System. B Retail accepts it (or rejects or keeps it pending). Accepted and deemed-accepted invoices move to GSTR-2B.',r:'Sec 38 · Rule 60',
+    f:function(t){var a=sg(t,.05,.5);var s=stageBase()+'<path d="M200 96 L321 250" stroke="#C6C9E2" stroke-width="2" stroke-dasharray="5 5"/>';
+     if(comp)return s+'<g opacity="'+sg(t,.2,.6)+'"><rect x="140" y="150" width="120" height="40" rx="12" fill="#FDE4E5"/><text x="200" y="175" text-anchor="middle" '+F+' font-size="13" font-weight="700" fill="#C9282F">No ITC</text></g>';
+     s+=doc(200+(321-200)*a,100+(200-100)*a,'IMS','#0B7F7A');
+     var b=sg(t,.55,.8);return s+'<g opacity="'+b+'"><rect x="160" y="140" width="72" height="28" rx="14" fill="#12875A"/><text x="196" y="159" text-anchor="middle" '+F+' font-size="12" font-weight="700" fill="#fff">Accept ✓</text><rect x="160" y="174" width="72" height="24" rx="12" fill="#fff" stroke="#C6C9E2"/><text x="196" y="190" text-anchor="middle" '+F+' font-size="11" fill="#575B78">Reject</text></g>'}},
+   {t:'GSTR-2B gives the ITC',p:comp?'If B Retail had bought from a regular supplier, its GSTR-2B would show the ₹18,000 credit. From a composition dealer, the tax is a cost.':'On the 14th the portal builds B Retail\'s GSTR-2B: ₹18,000 ITC available. B Retail must also have the goods, the invoice, and pay A Traders within 180 days.',r:'Sec 16(2) · Rule 60(7) · Rule 37',
+    f:function(t){var a=sg(t,.1,.7);return stageBase()+doc(200+(321-200)*a,104+(205-104)*a,'GSTR-2B','#0B7F7A')+'<g opacity="'+sg(t,.65,.9)+'"><rect x="256" y="180" width="130" height="26" rx="13" fill="'+(comp?'#C9282F':'#12875A')+'"/><text x="321" y="198" text-anchor="middle" '+FM+' font-size="11.5" fill="#fff">'+(comp?'ITC ₹0':'ITC ₹18,000')+'</text></g><g opacity="'+sg(t,.2,.4)+'"><circle cx="270" cy="30" r="16" fill="#0B7F7A"/><text x="270" y="34" text-anchor="middle" '+FM+' font-size="10" fill="#fff">14th</text></g>'}},
+   {t:(comp?'Tax on turnover':'GSTR-3B sets off ITC'),p:comp?'B Retail on composition would instead pay 1% of its turnover in CMP-08, with no credit for the ₹18,000 it paid.':'B Retail sells for ₹1,50,000 + ₹27,000 GST. In GSTR-3B it offsets the ₹18,000 ITC against the ₹27,000 output tax and pays ₹9,000 in cash. IGST credit is used first; CGST credit never pays SGST.',r:'Sec 39(1) · Sec 49, 49A · Rule 88A',
+    f:function(t){var base=box(30,30,340,300,'#E39A0B','GSTR-3B · B Retail','');var W=260,sc=W/27000;var o=sg(t,.05,.35),i=sg(t,.35,.65),cc=sg(t,.65,.95);
+     var out=comp?1500:27000,itc=comp?0:18000,cash=out-itc;
+     return base+'<text x="60" y="100" '+F+' font-size="12" font-weight="700" fill="#15162B">Output tax</text><rect x="60" y="108" width="'+(out*sc*o)+'" height="30" rx="6" fill="#E39A0B"/><text x="'+(66+out*sc*o)+'" y="128" '+FM+' font-size="12" fill="#15162B">'+(o>.9?rs(out):'')+'</text>'+
+      '<text x="60" y="170" '+F+' font-size="12" font-weight="700" fill="#15162B">ITC from GSTR-2B</text><rect x="60" y="178" width="'+(itc*sc*i)+'" height="30" rx="6" fill="#0B7F7A"/><text x="'+(66+itc*sc*i)+'" y="198" '+FM+' font-size="12" fill="#15162B">'+(i>.9?rs(itc):'')+'</text>'+
+      '<text x="60" y="240" '+F+' font-size="12" font-weight="700" fill="#15162B">Cash to pay</text><rect x="60" y="248" width="'+(cash*sc*cc)+'" height="30" rx="6" fill="#C9282F"/><text x="'+(66+cash*sc*cc)+'" y="268" '+FM+' font-size="12" fill="#15162B">'+(cc>.9?rs(cash):'')+'</text>'+(comp?'<text x="200" y="312" text-anchor="middle" '+F+' font-size="11" fill="#575B78">1% of ₹1,50,000; no ITC</text>':'')}},
+   {t:'Pay by '+(q?'PMT-06':'challan')+' and file',p:(q?'Under QRMP, tax for months 1 and 2 is paid by PMT-06 on the 25th; the quarter closes with GSTR-3B on the '+c.st.q+'th. ':'The ₹9,000 is paid by PMT-06 challan and GSTR-3B is filed by the '+d3+'. ')+'Late filing costs ₹50 a day (capped) plus 18% interest a year on the cash tax.',r:'Sec 47 · Sec 50 · Rule 87',
+    f:function(t){var s=box(256,250,130,90,'#0B7F7A','Buyer','B Retail')+box(130,22,140,74,'#C9282F','Government','Cash ledger','#FFF5F5');var h='';
+     for(var k=0;k<4;k++){var a=sg(t,.1+k*.12,.55+k*.12),x=321+(200-321)*a,y=245+(100-245)*a;h+='<g opacity="'+(a>0&&a<1?1:a>=1?0:0.0)+'"><circle cx="'+x+'" cy="'+y+'" r="13" fill="#E39A0B" stroke="#8A5A00" stroke-width="2"/><text x="'+x+'" y="'+(y+4)+'" text-anchor="middle" '+F+' font-size="12" font-weight="700" fill="#2B1B00">₹</text></g>'}
+     return s+h+'<g opacity="'+sg(t,.75,.95)+'"><rect x="125" y="150" width="150" height="30" rx="15" fill="#12875A"/><text x="200" y="170" text-anchor="middle" '+F+' font-size="12.5" font-weight="700" fill="#fff">'+(comp?'CMP-08 filed':'GSTR-3B filed ✓')+'</text></g><g opacity="'+sg(t,.2,.4)+'"><circle cx="270" cy="30" r="16" fill="#C9282F"/><text x="270" y="34" text-anchor="middle" '+FM+' font-size="10" fill="#fff">'+(q?'25th':d3)+'</text></g>'}},
+   {t:'Year end: '+(comp?'GSTR-4':'GSTR-9 and ITC cut-off'),p:comp?'The four CMP-08s roll up into GSTR-4, due 30 June after the year.':'Twelve months of GSTR-1 and GSTR-3B are reconciled in GSTR-9 by 31 December (optional up to ₹2 crore; GSTR-9C above ₹5 crore). Missed ITC for the year must be claimed by 30 November.',r:comp?'Sec 39(2) · Rule 62':'Sec 44 · Sec 16(4) · Rule 80',
+    f:function(t){var s=box(110,220,180,110,'#575B78',comp?'GSTR-4':'GSTR-9',comp?'30 June':'31 December','#F7F7FB');var n=comp?4:12;
+     for(var k=0;k<n;k++){var col=k%(comp?1:3),row=Math.floor(k/(comp?4:6));var cx=comp?60+k*92:40+(k%6)*58,cy=comp?70:50+Math.floor(k/6)*58;var a=sg(t,.05+k*(.6/n),.35+k*(.6/n));var tx=cx+(200-cx)*a,ty=cy+(270-cy)*a;
+      s+='<g opacity="'+(1-a*.85)+'"><rect x="'+(tx-24)+'" y="'+(ty-18)+'" width="48" height="36" rx="8" fill="'+(comp?'#E39A0B':(k%3===2&&c.sch==='qrmp'?'#E39A0B':'#5B3FD6'))+'"/><text x="'+tx+'" y="'+(ty+5)+'" text-anchor="middle" '+FM+' font-size="11" fill="#fff">'+(comp?'Q'+(k+1):MN[(k+3)%12])+'</text></g>'}
+     return s+'<g opacity="'+sg(t,.8,1)+'"><rect x="120" y="300" width="160" height="22" rx="11" fill="#12875A"/><text x="200" y="316" text-anchor="middle" '+F+' font-size="11.5" font-weight="700" fill="#fff">Year reconciled ✓</text></g>'}}
+  ];
+}
+var SC=null;
+function anNow(){return window.performance&&performance.now?performance.now():Date.now()}
+function rCycle(){
+  var c=ctx();SC=scenes(c);
+  var chips=SC.map(function(_,i){return'<button data-an="'+i+'" aria-label="Scene '+(i+1)+'">'+(i+1)+'</button>'}).join('');
+  $('p-cycle').innerHTML='<div class="card"><h2>Watch one invoice travel through GST</h2><p class="mut">Seven scenes, shown for '+SCH_N[c.sch].toLowerCase()+'. <b>Play</b> runs them on their own, <b>Manual</b> goes scene by scene, <b>All scenes</b> shows the whole story at once. Change the scheme in the profile bar to see how composition or QRMP changes the cycle.</p>'+
+   '<div class="seg3" id="anMode" role="group" aria-label="How to watch"><button data-m="play">Play</button><button data-m="manual">Manual</button><button data-m="all">All scenes</button></div>'+
+   '<div id="anLive"><div class="stage"><svg id="anSvg" viewBox="0 0 400 360" role="img" aria-label="Animated GST return cycle"></svg></div>'+
+   '<input type="range" class="scrub" id="anScrub" min="0" max="'+(SC.length*100)+'" value="0" aria-label="Scrub through the animation">'+
+   '<div class="anctl"><button class="btn ghost" id="anPrev">Previous</button><button class="btn" id="anPlay">Pause</button><button class="btn t" id="anOne" hidden>Animate this scene</button><button class="btn ghost" id="anNext">Next</button><button class="btn ghost" id="anRestart">Restart</button>'+
+   '<span class="spd" id="anSpd"><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></span></div>'+
+   '<div class="chips8" id="anChips">'+chips+'</div><div class="capbox" id="anCap" aria-live="polite"></div></div><div id="anAll" hidden></div></div>'+
+   '<div class="steps">'+SC.slice(0,6).map(function(s,i){return'<div class="step"><span class="no">'+(i+1)+'</span><div><b>'+s.t+'</b><div class="mut">'+s.r+'</div></div></div>'}).join('')+'</div>';
+  [].forEach.call($('anMode').querySelectorAll('button'),function(b){b.onclick=function(){anSetMode(b.getAttribute('data-m'))}});
+  [].forEach.call($('anChips').querySelectorAll('button'),function(b){b.onclick=function(){anPause();if(AN.mode==='play')anApplyMode('manual');anGo(+b.getAttribute('data-an'),1)}});
+  [].forEach.call($('anSpd').querySelectorAll('button'),function(b){b.onclick=function(){AN.speed=+b.getAttribute('data-s');[].forEach.call($('anSpd').querySelectorAll('button'),function(x){x.className=x===b?'on':''})}});
+  $('anPlay').onclick=function(){AN.playing?anPause():anPlay()};
+  $('anPrev').onclick=function(){anPause();anGo(Math.max(0,AN.i-1),1);if(AN.mode==='play')anApplyMode('manual')};
+  $('anNext').onclick=function(){anPause();anGo(Math.min(SC.length-1,AN.i+1),1);if(AN.mode==='play')anApplyMode('manual')};
+  $('anRestart').onclick=function(){anGo(0,0);anPlay()};
+  $('anOne').onclick=anAnimateOne;
+  var sc=$('anScrub');sc.oninput=function(){AN.drag=true;anPause();var v=+sc.value,i=Math.min(SC.length-1,Math.floor(v/100));anGo(i,v>=SC.length*100?1:(v-i*100)/100);AN.drag=false};
+  anApplyMode(AN.mode);AN.started=false;
+  if(AN.mode==='all')anBuildAll();else anGo(Math.min(AN.i,SC.length-1),AN.mode==='manual'?1:AN.t);
+}
+function anRender(){var s=$('anSvg');if(!s||!SC)return;s.innerHTML=SC[AN.i].f(AN.t);if(!AN.drag)$('anScrub').value=Math.round(AN.i*100+AN.t*99)}
+function anCaption(){var c=SC[AN.i];$('anCap').innerHTML='<h3>'+(AN.i+1)+'. '+c.t+'</h3><p>'+c.p+'</p><div>'+c.r.split(' · ').map(function(x){return ref(x)}).join('')+'</div>';$('anSvg').setAttribute('aria-label','Scene '+(AN.i+1)+': '+c.t);
+  [].forEach.call($('anChips').querySelectorAll('button'),function(b,i){b.className=i===AN.i?'on':i<AN.i?'done':''})}
+function anGo(i,t){if(!SC||!$('anSvg'))return;var ch=i!==AN.i||!AN.started;AN.i=i;AN.t=RMOTION?1:t;AN.dwell=0;AN.started=true;anCaption();anRender()}
+function anBtn(){if($('anPlay'))$('anPlay').textContent=AN.playing?'Pause':'Play'}
+function anTick(ts){if(!AN.playing)return;var dt=(ts-AN.last)*AN.speed;AN.last=ts;if(dt>100)dt=16;
+  if(AN.single){AN.t+=dt/AN_DUR;if(AN.t>=1){AN.t=1;AN.single=false;AN.playing=false;anBtn()}anRender();if(AN.playing)rAF(anTick);return}
+  if(AN.dwell>0){AN.dwell-=dt;if(AN.dwell<=0){if(AN.i<SC.length-1){anGo(AN.i+1,0);if(RMOTION)AN.dwell=AN_DWELL*2}else{AN.playing=false;anBtn()}}}
+  else{AN.t+=dt/AN_DUR;if(AN.t>=1){AN.t=1;AN.dwell=AN_DWELL}anRender()}
+  if(AN.playing)rAF(anTick)}
+function anPlay(){if(!$('anSvg'))return;if(AN.i===SC.length-1&&AN.t>=1)anGo(0,0);AN.single=false;AN.playing=true;AN.last=anNow();if(RMOTION){AN.t=1;AN.dwell=AN_DWELL*2;anRender()}anBtn();rAF(anTick)}
+function anPause(){AN.playing=false;AN.single=false;anBtn()}
+function anAnimateOne(){if(RMOTION){anGo(AN.i,1);return}AN.t=0;AN.dwell=0;AN.single=true;AN.playing=true;AN.last=anNow();anRender();anBtn();rAF(anTick)}
+function anApplyMode(m){AN.mode=m;[].forEach.call($('anMode').querySelectorAll('button'),function(b){b.className=b.getAttribute('data-m')===m?'on':''});
+  $('anLive').hidden=m==='all';$('anAll').hidden=m!=='all';$('anPlay').hidden=m!=='play';$('anRestart').hidden=m!=='play';$('anOne').hidden=m!=='manual'}
+function anSetMode(m){anApplyMode(m);if(m==='play'){if(AN.t>=1&&AN.i<SC.length-1)anGo(AN.i,0);anPlay()}else if(m==='manual'){anPause();anGo(AN.i,1)}else{anPause();anBuildAll()}}
+function anBuildAll(){$('anAll').innerHTML='<p class="mut">Every scene, complete. Tap one to open it in Manual mode.</p><div class="allgrid">'+SC.map(function(c,i){return'<button class="tile8" data-k="'+i+'"><svg viewBox="0 0 400 360" role="img" aria-label="Scene '+(i+1)+': '+esc(c.t)+'">'+c.f(1)+'</svg><b>'+(i+1)+'. '+c.t+'</b><span>'+c.p+'</span></button>'}).join('')+'</div>';
+  [].forEach.call($('anAll').querySelectorAll('.tile8'),function(b){b.onclick=function(){anApplyMode('manual');anGo(+b.getAttribute('data-k'),1);window.scrollTo(0,0)}})}
+function anStart(){if(AN.mode==='play'&&$('anSvg')&&!AN.playing){anPlay()}}
+
+/* ================= DECISION CHART ================= */
+function flowSvg(c){
+  // active path
+  var exempt=c.reg==='none',must=c.reg==='must'||c.reg==='near',comp=c.comp.length>0,sch=c.sch;
+  var on={};
+  on.n1=1;if(exempt){on.n1y=1}else{on.n2=1;if(comp){on.n2y=1;on.n4=1}else{on.n3=1;if(must)on.n4=1;else on.n3n=1}}
+  if(on.n4&&c.rec!=='special'){on.n5=1;if(sch==='comp')on.n5y=1;else{on.n6=1;if(sch==='qrmp')on.n6y=1;else on.n6n=1}}
+  if(on.n4&&c.rec==='special')on.nsp=1;
+  var A='#5B3FD6',T='#0B7F7A',S='#E39A0B',M='#C6C9E2';
+  function nd(id,cx,cy,w,h,lines,col,dia){var a=on[id],st=a?col:M,fl=a?(dia?'#F7F5FF':'#fff'):'#FAFAFD';var r='<g class="pop" style="animation-delay:'+(Object.keys(on).indexOf(id)*.08)+'s">';
+    r+='<rect x="'+(cx-w/2)+'" y="'+(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="'+(dia?8:16)+'" fill="'+fl+'" stroke="'+st+'" stroke-width="'+(a?3:1.5)+'"'+(dia?' stroke-dasharray="'+(a?'0':'5 4')+'"':'')+'/>';
+    lines.forEach(function(l,i){r+='<text x="'+cx+'" y="'+(cy-(lines.length-1)*8+i*16+4)+'" text-anchor="middle" '+(i===0?FD+' font-weight="700" font-size="13.5"':F+' font-size="11.5"')+' fill="'+(a?(i===0?'#15162B':'#575B78'):'#9AA0C8')+'">'+l+'</text>'});
+    return r+(a&&!dia&&(id==='n5y'||id==='n6y'||id==='n6n'||id==='n1y'||id==='n3n'||id==='nsp')?'<circle class="pulse" cx="'+(cx+w/2-10)+'" cy="'+(cy-h/2+10)+'" r="5" fill="'+col+'"/>':'')+'</g>'}
+  function ar(d,a,lab,lx,ly){var col=a?'#15162B':M;return'<path class="ln" style="--len:400" d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(a?2.5:1.5)+'" marker-end="url(#'+(a?'fa':'fm')+')"/>'+(lab?'<text x="'+lx+'" y="'+ly+'" '+F+' font-size="11.5" font-weight="700" fill="'+(a?'#15162B':'#9AA0C8')+'">'+lab+'</text>':'')}
+  var s='<svg viewBox="0 0 700 690" role="img" aria-label="Decision chart: registration and return scheme, with your path highlighted"><defs><marker id="fa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15162B"/></marker><marker id="fm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#C6C9E2"/></marker></defs><g class="draw">';
+  s+=ar('M450 50 L545 50',on.n1y,'Yes',487,42)+ar('M330 80 L330 110',on.n2,'No',338,100);
+  s+=ar('M220 140 L150 140 L150 192',on.n2y,'Yes',176,132)+ar('M330 170 L330 200',on.n3,'No',338,190);
+  s+=ar('M150 252 L150 330 L210 330',on.n2y&&on.n4,'',0,0)+ar('M450 230 L545 230',on.n3n,'No',487,222)+ar('M330 260 L330 300',on.n3&&on.n4,'Yes',338,285);
+  s+=ar('M330 360 L330 400',on.n5,'',0,0)+ar('M450 330 L545 330 L545 400',on.nsp,'Special',470,322);
+  s+=ar('M220 430 L130 430 L130 500',on.n5y,'Yes',160,422)+ar('M330 460 L330 500',on.n6,'No',338,485);
+  s+=ar('M330 560 L330 600',on.n6y,'Yes',338,585)+ar('M450 530 L545 530 L545 600',on.n6n,'No',487,522)+'</g>';
+  s+=nd('n1',330,50,240,60,['All supplies exempt or non-taxable?','(healthcare, education, fresh produce)'],A,1);
+  s+=nd('n1y',615,50,140,50,['No registration','GST on purchases = cost'],T);
+  s+=nd('n2',330,140,240,60,['Any compulsory trigger? (Sec 24)','inter-state goods · e-com · casual · RCM · TDS · ISD'],A,1);
+  s+=nd('n2y',150,222,150,60,['Compulsory','any turnover'],S);
+  s+=nd('n3',330,230,240,60,['Turnover above threshold?','₹40L goods / ₹20L services (₹20L/₹10L special)'],A,1);
+  s+=nd('n3n',615,230,140,56,['Optional','voluntary registration'],T);
+  s+=nd('n4',330,330,240,60,['Register: '+(c.t.sp==='nrtp'?'REG-09':c.t.sp==='oidar'?'REG-10':c.t.sp==='tds'?'REG-07':c.t.sp==='eco'?'REG-01 + REG-07':'REG-01'),'within 30 days · Rule 14A if B2B tax ≤ ₹2.5L/mo'],S);
+  s+=nd('nsp',545,430,170,56,['Special returns',c.t.sp==='nrtp'?'GSTR-5 (13th)':c.t.sp==='oidar'?'GSTR-5A (20th)':'GSTR-7 (10th)'],T);
+  s+=nd('n5',330,430,240,60,['Composition eligible and chosen?','≤ ₹1.5 Cr goods / ₹50L services, intra-state'],A,1);
+  s+=nd('n5y',130,546,210,80,['Composition','CMP-02 → CMP-08 (18th)','→ GSTR-4 (30 June)'],S);
+  s+=nd('n6',330,530,240,60,['Turnover up to ₹5 crore?','QRMP can be chosen'],A,1);
+  s+=nd('n6y',330,640,240,74,['QRMP','IFF 13th · PMT-06 25th','GSTR-1 13th · 3B '+c.st.q+'th after quarter'],T);
+  s+=nd('n6n',545,640,170,74,['Monthly','GSTR-1 11th · 3B 20th','E-invoice above ₹5 Cr'],T);
+  return s+'</svg>';
+}
+function rFlow(){
+  var c=ctx();
+  $('p-flow').innerHTML='<div class="card"><h2>Decision chart</h2><p class="lead">The route from "do I need GST?" to "which returns do I file?". The path for <b>'+esc(c.t.n.toLowerCase())+'</b> is highlighted; the end point pulses.</p><div class="btns"><button class="btn" data-go="apply">Open my forms</button><button class="btn t ghost" data-go="overview">Back to overview</button></div></div>'+
+   '<div class="grid2"><div class="card"><div class="pic flow">'+flowSvg(c)+'</div></div><div>'+regVerdict(c)+''+
+   '<div class="card"><h3>Registration process</h3><div class="steps" style="grid-template-columns:minmax(0,1fr)">'+
+   [['REG-01 Part A','PAN, mobile and email verified by OTP; TRN issued.'],['Part B','Business, promoters, place of business, bank, HSN/SAC; choose Rule 14A if eligible.'],['Aadhaar authentication','Primary signatory and one promoter; avoids physical verification.'],['ARN and review','Officer may ask questions in REG-03; reply in REG-04 within 7 working days.'],['REG-06 certificate','GSTIN issued. Display it at the place of business.'],['First steps','Bank details, CMP-02 or QRMP option, LUT if exporting.']].map(function(x,i){return'<div class="step"><span class="no">'+(i+1)+'</span><div><b>'+x[0]+'</b><div class="mut">'+x[1]+'</div></div></div>'}).join('')+
+   '</div><p class="mut"><b>Documents:</b> PAN, Aadhaar and photos of promoters, constitution proof, place-of-business proof (electricity bill with rent agreement or owner\'s NOC), cancelled cheque or bank statement, authorisation for the signatory.</p></div></div></div>';
+}
+
+/* ================= RATES ================= */
+var RATES=[
+ ['Fresh vegetables, fruits, milk, curd, eggs','g','0','0',''],['UHT milk, pre-packaged paneer / chena','g','5','0',''],['Pizza bread, khakhra, chapati, roti, paratha','g','5–18','0',''],
+ ['Notebooks, exercise books, pencils, sharpeners, erasers, maps','g','5–12','0',''],['33 life-saving drugs and medicines','g','12','0',''],
+ ['Butter, ghee, cheese, dairy spreads','g','12','5',''],['Packaged namkeen, bhujia, sauces, pasta, jams','g','12–18','5',''],['Hair oil, shampoo, toothpaste, toilet soap, toothbrush, shaving cream','g','18','5',''],
+ ['Most medicines, thermometers, medical oxygen, diagnostic kits, spectacles','g','12–18','5',''],['Tractors, agricultural and horticultural machinery, drip irrigation','g','12','5',''],['Tractor tyres and parts','g','18','5',''],
+ ['Bicycles and parts','g','12','5',''],['Apparel and footwear up to ₹2,500 per piece','g','5–12','5',''],['Apparel above ₹2,500 per piece','g','12','18',''],['Man-made fibre and yarn, sewing thread','g','12–18','5',''],
+ ['Solar water heaters, renewable-energy devices','g','12','5',''],['Handicrafts, marble and granite blocks, leather goods','g','12','5',''],
+ ['Cement','g','28','18',''],['Air conditioners, TVs, monitors, projectors, dishwashers','g','28','18',''],['Small cars (petrol ≤1200cc, diesel ≤1500cc, length ≤4 m)','g','28 + cess','18',''],
+ ['Motorcycles up to 350cc','g','28','18',''],['Auto parts, three-wheelers, buses, trucks, ambulances','g','28','18',''],['Coal, lignite, peat','g','5','18',''],['Paper and paperboard (other than exercise-book paper)','g','12','18',''],
+ ['Electric vehicles','g','5','5','Unchanged'],['Gold, silver, jewellery','g','3','3','Unchanged'],['Cut and polished diamonds / rough diamonds','g','1.5 / 0.25','1.5 / 0.25','Unchanged'],
+ ['Mid-size and large cars, SUVs','g','28 + cess','40','Compensation cess removed'],['Motorcycles above 350cc, yachts, personal aircraft','g','28','40',''],['Aerated, caffeinated and carbonated fruit drinks; other non-alcoholic beverages','g','18–28','40',''],
+ ['Pan masala, gutkha, cigarettes, chewing tobacco','g','28 + cess','40','Moves to 40% once compensation cess ends; until then 28% + cess applies — verify'],
+ ['Individual life and health insurance','s','18','0',''],['Hotel rooms up to ₹7,500 a night','s','12','5','No ITC'],['Hotel rooms above ₹7,500 a night','s','18','18','With ITC'],
+ ['Restaurant service (standalone, or in hotels ≤ ₹7,500)','s','5','5','No ITC'],['Beauty, salon, gym, yoga, fitness services','s','18','5','No ITC'],['Cinema tickets up to ₹100','s','12','5',''],
+ ['Air travel — economy / business class','s','5 / 12','5 / 18',''],['Goods transport agency (GTA)','s','5 / 12','5 / 18','5% RCM no ITC, or 18% forward charge with ITC'],
+ ['Passenger transport by road (bus, cab)','s','5','5','No ITC; 18% option with ITC'],['Multimodal transport (without air)','s','12','5','Restricted ITC'],
+ ['Works contract for government (specified)','s','12','18',''],['Residential real estate — affordable / other','s','1 / 5','1 / 5','No ITC'],
+ ['IT, SaaS, consultancy, legal, CA, advertising, telecom, banking fees','s','18','18','Unchanged'],['Renting commercial property','s','18','18','RCM if landlord unregistered'],['Renting residential property to a registered person','s','18','18','RCM'],
+ ['Betting, casinos, gambling, horse racing, lotteries','s','28','40','Online money games are prohibited under the Promotion and Regulation of Online Gaming Act, 2025 — verify']
+];
+var rq='',rt='all';
+function rRates(){
+  var c=ctx(),rel=c.t.sup;
+  var list=RATES.filter(function(r){return(rt==='all'||(rt==='mine'&&(rel==='b'||r[1]===rel))||r[1]===rt)&&(!rq||r[0].toLowerCase().indexOf(rq.toLowerCase())>=0)});
+  var col=function(v){var x=parseFloat(v);return x===0?'p-ok':x<=5?'p-r':x<=18?'p-d':x>=40?'p-bad':'p-m'};
+  var h='<div class="card"><h2>GST rates after GST 2.0</h2><p class="lead">From 22 September 2025 the main slabs are <b>5%</b> (merit), <b>18%</b> (standard) and <b>40%</b> (luxury and sin goods), plus nil. The 12% and 28% slabs are gone; compensation cess ended for most goods. The 57th Council (8 Oct 2026) made no rate changes and moved rate decisions to once a year, effective each 1 April.</p>'+
+   '<div class="kpis" style="margin:12px 0 0"><div class="kpi" style="--c:var(--ok)"><div class="k">Nil</div><div class="v">0%</div><div class="s">Essentials, insurance, notebooks</div></div><div class="kpi" style="--c:var(--r)"><div class="k">Merit</div><div class="v">5%</div><div class="s">Daily use, food, agri, medicines</div></div><div class="kpi" style="--c:var(--d)"><div class="k">Standard</div><div class="v">18%</div><div class="s">Most goods and services</div></div><div class="kpi" style="--c:var(--bad)"><div class="k">Demerit</div><div class="v">40%</div><div class="s">Tobacco, large cars, aerated drinks</div></div></div></div>'+
+   '<div class="seg3" id="rType"><button data-r="mine">Relevant to my business</button><button data-r="all">All</button><button data-r="g">Goods</button><button data-r="s">Services</button></div>'+
+   '<input class="srch" id="rSearch" type="search" placeholder="Search an item, e.g. cement, hotel, shampoo" value="'+esc(rq)+'" aria-label="Search rates">'+
+   '<div class="tw wide"><table><thead><tr><th>Item</th><th>Type</th><th class="n">Before</th><th class="n">Now</th><th>Note</th></tr></thead><tbody>'+
+   (list.length?list.map(function(r){var down=parseFloat(r[3])<parseFloat(r[2]),up=parseFloat(r[3])>parseFloat(r[2]);return'<tr><td>'+r[0]+'</td><td>'+(r[1]==='g'?'Goods':'Service')+'</td><td class="n">'+r[2]+'%</td><td class="n"><span class="pill '+col(r[3])+'">'+r[3]+'%</span> '+(down?'<span style="color:var(--ok)">▼</span>':up?'<span style="color:var(--bad)">▲</span>':'')+'</td><td class="mut">'+(r[4].indexOf('verify')>=0?r[4].replace(' — verify','')+'<span class="vfy">verify</span>':r[4])+'</td></tr>'}).join(''):'<tr><td colspan="5" class="mut">No item matches. Try a broader word.</td></tr>')+
+   '</tbody></table></div><div class="note warn">Rates depend on the exact HSN/SAC entry and conditions in Notification 9/2025-CTR and related notifications. Confirm the classification before invoicing.</div>'+
+   '<div class="card"><h3>Composition rates</h3><div class="tw"><table><thead><tr><th>Category</th><th class="n">Rate on turnover</th><th class="n">Limit</th></tr></thead><tbody><tr><td>Manufacturers and traders</td><td class="n">1%</td><td class="n">₹1.5 Cr (₹75 L special states)</td></tr><tr><td>Restaurants (no alcohol)</td><td class="n">5%</td><td class="n">₹1.5 Cr (₹75 L)</td></tr><tr><td>Service providers — Sec 10(2A)</td><td class="n">6%</td><td class="n">₹50 L</td></tr></tbody></table></div></div>';
+  $('p-rates').innerHTML=h;
+  [].forEach.call($('rType').querySelectorAll('button'),function(b){b.className=b.getAttribute('data-r')===rt?'on':'';b.onclick=function(){rt=b.getAttribute('data-r');rRates()}});
+  $('rSearch').oninput=function(){rq=this.value;var p=this.selectionStart;rRates();var s=$('rSearch');s.focus();try{s.setSelectionRange(p,p)}catch(e){}};
+}
+
+/* ================= CALCULATORS ================= */
+var CV=store('calc')||{amt:100000,rate:'18',mode:'excl',pos:'intra',lf:'GSTR-3B',days:15,tax:50000,tb:'1',nil:false,oi:0,oc:90000,os:90000,ii:20000,ic:60000,is:60000,cs:5000000,cp:3500000};
+function num(id){return Math.max(0,parseFloat($(id).value)||0)}
+function rCalc(){
+  var c=ctx();
+  var h='<div class="grid2">'+
+   '<div class="card calc" style="--c:var(--d)"><h3>Invoice GST</h3><div class="fg"><label class="fld">Amount (₹)<input id="cAmt" type="number" min="0" value="'+CV.amt+'"></label><label class="fld">GST rate<select id="cRate">'+['0','0.25','1.5','3','5','18','40'].map(function(r){return'<option'+(r===CV.rate?' selected':'')+'>'+r+'</option>'}).join('')+'</select></label></div>'+
+   '<div class="seg3" id="cMode"><button data-v="excl">Before GST</button><button data-v="incl">Including GST</button></div><div class="seg3" id="cPos"><button data-v="intra">Same state</button><button data-v="inter">Other state / SEZ</button></div><div id="cOut"></div></div>'+
+   '<div class="card calc" style="--c:var(--bad)"><h3>Late fee and interest</h3><div class="fg"><label class="fld">Return<select id="lF">'+['GSTR-3B','GSTR-1','GSTR-4','GSTR-7','GSTR-9','GSTR-10/5/6/8'].map(function(r){return'<option'+(r===CV.lf?' selected':'')+'>'+r+'</option>'}).join('')+'</select></label><label class="fld">Days late<input id="lD" type="number" min="0" value="'+CV.days+'"></label>'+
+   '<label class="fld">Cash tax paid late (₹)<input id="lT" type="number" min="0" value="'+CV.tax+'"></label><label class="fld">Turnover (previous FY)<select id="lB"><option value="1">Up to ₹1.5 Cr</option><option value="2">₹1.5 – 5 Cr</option><option value="3">₹5 – 20 Cr</option><option value="4">Above ₹20 Cr</option></select></label></div>'+
+   '<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" id="lN"'+(CV.nil?' checked':'')+'> Nil return</label><div id="lOut"></div></div></div>'+
+   '<div class="card calc" style="--c:var(--r)"><h3>GSTR-3B set-off planner</h3><p class="mut">Applies Sections 49 and 49A with Rule 88A: IGST credit is used in full first, directed to whichever of CGST or SGST its own credit cannot cover; CGST and SGST credits never cross.</p><div class="fg">'+
+   '<label class="fld">Output IGST (₹)<input id="oI" type="number" min="0" value="'+CV.oi+'"></label><label class="fld">ITC IGST (₹)<input id="iI" type="number" min="0" value="'+CV.ii+'"></label>'+
+   '<label class="fld">Output CGST (₹)<input id="oC" type="number" min="0" value="'+CV.oc+'"></label><label class="fld">ITC CGST (₹)<input id="iC" type="number" min="0" value="'+CV.ic+'"></label>'+
+   '<label class="fld">Output SGST (₹)<input id="oS" type="number" min="0" value="'+CV.os+'"></label><label class="fld">ITC SGST (₹)<input id="iS" type="number" min="0" value="'+CV.is+'"></label></div><div id="sOut"></div></div>'+
+   (c.compOK?'<div class="card calc" style="--c:var(--s)"><h3>Composition vs regular — same shelf price</h3><p class="mut">For '+esc(c.t.n.toLowerCase())+' at '+c.t.comp+'% composition. Customers pay the same GST-inclusive price either way; purchases assumed taxed at your selling rate.</p><div class="fg"><label class="fld">Annual sales, GST-inclusive (₹)<input id="kS" type="number" min="0" value="'+CV.cs+'"></label><label class="fld">Annual purchases, GST-inclusive (₹)<input id="kP" type="number" min="0" value="'+CV.cp+'"></label><label class="fld">GST rate on your sales<select id="kR"><option>5</option><option selected>18</option><option>40</option></select></label></div><div id="kOut"></div></div>':'<div class="note info">Composition comparison is hidden because composition is not available for this profile ('+c.compWhy.join('; ')+').</div>');
+  $('p-calc').innerHTML=h;
+  $('lB').value=CV.tb;
+  function seg(id,key){[].forEach.call($(id).querySelectorAll('button'),function(b){b.className=b.getAttribute('data-v')===CV[key]?'on':'';b.onclick=function(){CV[key]=b.getAttribute('data-v');seg(id,key);calcAll()}})}
+  seg('cMode','mode');seg('cPos','pos');
+  [].forEach.call($('p-calc').querySelectorAll('input,select'),function(e){e.oninput=calcAll});
+  calcAll();
+}
+function calcAll(){
+  CV.amt=num('cAmt');CV.rate=$('cRate').value;var r=parseFloat(CV.rate)/100;
+  var tv=CV.mode==='incl'?CV.amt/(1+r):CV.amt,tax=Math.round(tv*r*100)/100,half=Math.round(tax*50)/100;tv=Math.round(tv*100)/100;
+  $('cOut').innerHTML='<div class="tw"><table><tbody><tr><td>Taxable value</td><td class="n">'+rs(tv,2)+'</td></tr>'+(CV.pos==='inter'?'<tr><td>IGST @ '+CV.rate+'%</td><td class="n">'+rs(tax,2)+'</td></tr>':'<tr><td>CGST @ '+(parseFloat(CV.rate)/2)+'%</td><td class="n">'+rs(half,2)+'</td></tr><tr><td>SGST @ '+(parseFloat(CV.rate)/2)+'%</td><td class="n">'+rs(tax-half,2)+'</td></tr>')+'<tr class="tot"><td>Invoice value</td><td class="n">'+rs(tv+tax,2)+'</td></tr></tbody></table></div><p class="mut">From a GST-inclusive price: taxable value = price × 100 ÷ (100 + rate).</p>';
+  // late fee
+  CV.lf=$('lF').value;CV.days=num('lD');CV.tax=num('lT');CV.tb=$('lB').value;CV.nil=$('lN').checked;
+  var d=CV.days,f=0,note='';
+  if(CV.lf==='GSTR-3B'||CV.lf==='GSTR-1'){var cap=CV.nil?500:{1:2000,2:5000,3:10000,4:10000}[CV.tb];f=Math.min(d*(CV.nil?20:50),cap);note='₹'+(CV.nil?20:50)+'/day, capped at '+rs(cap)+' (Notification 19/2021, 20/2021)'}
+  else if(CV.lf==='GSTR-4'){var cp=CV.nil?500:2000;f=Math.min(d*(CV.nil?20:50),cp);note='₹'+(CV.nil?20:50)+'/day, capped at '+rs(cp)}
+  else if(CV.lf==='GSTR-7'){f=Math.min(d*50,2000);note='₹50/day, capped at ₹2,000'}
+  else if(CV.lf==='GSTR-9'){var to={1:1.5e7,2:5e7,3:2e8,4:5e8}[CV.tb];var pd=CV.tb==='4'?200:CV.tb==='3'?100:50,pc=CV.tb==='4'?.005:.0004;f=Math.min(d*pd,to*pc);note='₹'+pd+'/day, capped at '+(pc*100)+'% of turnover (assumed turnover '+rs(to)+' for the band)'}
+  else{f=Math.min(d*200,10000);note='₹200/day (₹100 CGST + ₹100 SGST), capped at ₹10,000 (Sec 47)'}
+  var it=CV.tax*.18*d/365;
+  $('lOut').innerHTML='<div class="kpis" style="margin:10px 0 0"><div class="kpi" style="--c:var(--bad)"><div class="k">Late fee</div><div class="v">'+rs(f)+'</div></div><div class="kpi" style="--c:var(--s)"><div class="k">Interest 18% p.a.</div><div class="v">'+rs(it)+'</div></div><div class="kpi" style="--c:var(--ink)"><div class="k">Total cost</div><div class="v">'+rs(f+it)+'</div></div></div><p class="mut">'+note+'. Interest under Sec 50(1) on the net cash liability; ITC wrongly availed and utilised also carries 18% under Sec 50(3) (Notification 9/2022-CT). 57th Council recommends waiving GSTR-3B late fee for turnover up to ₹5 Cr if filed within the same month (not yet notified).</p>';
+  // set-off
+  CV.oi=num('oI');CV.oc=num('oC');CV.os=num('oS');CV.ii=num('iI');CV.ic=num('iC');CV.is=num('iS');
+  var lI=CV.oi,lC=CV.oc,lS=CV.os,CI=CV.ii,CC=CV.ic,CS=CV.is,u=[];
+  var a=Math.min(CI,lI);lI-=a;CI-=a;u.push(['IGST credit','IGST',a]);
+  var gC=Math.max(0,lC-CC),gS=Math.max(0,lS-CS),b=Math.min(CI,gC);lC-=b;CI-=b;var e=Math.min(CI,gS);lS-=e;CI-=e;var b2=Math.min(CI,lC);lC-=b2;CI-=b2;var e2=Math.min(CI,lS);lS-=e2;CI-=e2;
+  u.push(['IGST credit','CGST',b+b2]);u.push(['IGST credit','SGST',e+e2]);
+  var g=Math.min(CC,lC);lC-=g;CC-=g;u.push(['CGST credit','CGST',g]);var k=Math.min(CC,lI);lI-=k;CC-=k;u.push(['CGST credit','IGST',k]);
+  var m=Math.min(CS,lS);lS-=m;CS-=m;u.push(['SGST credit','SGST',m]);var n=Math.min(CS,lI);lI-=n;CS-=n;u.push(['SGST credit','IGST',n]);
+  $('sOut').innerHTML='<div class="grid2"><div class="tw" style="margin:0"><table><thead><tr><th>Credit</th><th>Used against</th><th class="n">₹</th></tr></thead><tbody>'+(u.filter(function(x){return x[2]>0}).map(function(x){return'<tr><td>'+x[0]+'</td><td>'+x[1]+'</td><td class="n">'+fmtIN(x[2])+'</td></tr>'}).join('')||'<tr><td colspan="3" class="mut">No credit used</td></tr>')+'</tbody></table></div>'+
+   '<div class="tw" style="margin:0"><table><thead><tr><th>Head</th><th class="n">Cash (PMT-06)</th><th class="n">Credit left</th></tr></thead><tbody><tr><td>IGST</td><td class="n">'+fmtIN(lI)+'</td><td class="n">'+fmtIN(CI)+'</td></tr><tr><td>CGST</td><td class="n">'+fmtIN(lC)+'</td><td class="n">'+fmtIN(CC)+'</td></tr><tr><td>SGST</td><td class="n">'+fmtIN(lS)+'</td><td class="n">'+fmtIN(CS)+'</td></tr><tr class="tot"><td>Total</td><td class="n">'+rs(lI+lC+lS)+'</td><td class="n">'+rs(CI+CC+CS)+'</td></tr></tbody></table></div></div>';
+  // composition
+  if($('kS')){CV.cs=num('kS');CV.cp=num('kP');var c=ctx(),R=parseFloat($('kR').value)/100,cr=c.t.comp/100,T=CV.cs,Pp=CV.cp;
+    var reg=T/(1+R)-Pp/(1+R),cmp=T-T*cr-Pp,regTax=T-T/(1+R)-(Pp-Pp/(1+R));
+    $('kOut').innerHTML='<div class="tw"><table><thead><tr><th></th><th class="n">Regular</th><th class="n">Composition</th></tr></thead><tbody><tr><td>GST paid to government (net)</td><td class="n">'+rs(regTax)+'</td><td class="n">'+rs(T*cr)+'</td></tr><tr><td>Purchases cost</td><td class="n">'+rs(Pp/(1+R))+'</td><td class="n">'+rs(Pp)+'</td></tr><tr class="tot"><td>Gross margin</td><td class="n">'+rs(reg)+'</td><td class="n">'+rs(cmp)+'</td></tr></tbody></table></div>'+
+     '<div class="note '+(cmp>reg?'ok':'warn')+'">'+(cmp>reg?'Composition leaves about <b>'+rs(cmp-reg)+'</b> more a year, with lighter compliance. It suits B2C sellers; B2B buyers lose ITC.':'Regular scheme leaves about <b>'+rs(reg-cmp)+'</b> more a year.')+'</div>'}
+  store('calc',CV);
+}
+
+/* ================= CHECKLIST ================= */
+var CKD=store('ck')||{};
+function ckItems(c){
+  var L=[];var add=function(g,t,s,cond){if(cond)L.push([g,t,s])};
+  var R=c.regular;
+  add('Every invoice','Tax invoice with GSTIN, HSN/SAC, place of supply, rate and tax split','Rule 46',R||c.t.sp==='casual');
+  add('Every invoice','Bill of supply (no GST) and "composition taxable person" on signboard','Sec 31(3)(c) · Rule 49 · Rule 5(1)(g)',c.sch==='comp');
+  add('Every invoice','IRN generated before issuing B2B / export invoice','Rule 48(4)',FBY['E-INVOICE'].app(c));
+  add('Every invoice','E-way bill for goods above ₹50,000','Rule 138',FBY['EWB-01'].app(c));
+  add('Every month','Review supplier invoices in IMS before the 14th','Rule 60',R);
+  add('Every month','Reconcile purchase register with GSTR-2B','Sec 16(2)(aa)',R);
+  add('Every month','Reverse ITC for suppliers unpaid beyond 180 days','Rule 37',R);
+  add('Every month','File GSTR-1 '+(c.sch==='qrmp'?'(or IFF for B2B) by the 13th':'by the 11th'),'Sec 37',R);
+  add('Every month','Correct errors in GSTR-1A before GSTR-3B','Rule 59(4A)',R);
+  add('Every month','Pay reverse-charge tax in cash','Sec 9(3)/(4)',R&&c.f.rcm);
+  add('Every month',c.sch==='qrmp'?'Pay PMT-06 by the 25th (months 1 and 2)':'File GSTR-3B and pay by the 20th','Sec 39',R);
+  add('Every month','Deduct 2% TDS and file GSTR-7 by the 10th','Sec 51',FBY['GSTR-7'].app(c));
+  add('Every month','Collect 0.5% TCS and file GSTR-8 by the 10th','Sec 52',FBY['GSTR-8'].app(c));
+  add('Every month','Match platform TCS credit with your sales and claim it','Sec 52(7)',c.f.ecom||P.type==='ecoms');
+  add('Every month','Distribute ISD credit in GSTR-6 by the 13th','Sec 20',FBY['GSTR-6'].app(c));
+  add('Every month','File GSTR-5 by the 13th','Sec 39(5)',c.t.sp==='nrtp');
+  add('Every month','File GSTR-5A by the 20th','Rule 64',c.t.sp==='oidar');
+  add('Every quarter','File GSTR-1 (13th) and GSTR-3B ('+c.st.q+'th) for the quarter','Rule 59, 61',c.sch==='qrmp');
+  add('Every quarter','Pay composition tax in CMP-08 by the 18th','Rule 62',c.sch==='comp');
+  add('Every quarter','Check turnover against the composition limit; file CMP-04 within 7 days if crossed','Rule 6',c.sch==='comp');
+  add('Every year','File LUT (RFD-11) before the first export','Rule 96A',FBY['RFD-11'].app(c));
+  add('Every year','Claim pending ITC of last year by 30 November','Sec 16(4)',R);
+  add('Every year','File GSTR-9'+(FBY['GSTR-9C'].app(c)?' and GSTR-9C':'')+' by 31 December','Sec 44',FBY['GSTR-9'].app(c)==='yes');
+  add('Every year','Decide whether to file the optional GSTR-9 (turnover up to ₹2 Cr)','Sec 44',FBY['GSTR-9'].app(c)==='opt');
+  add('Every year','File GSTR-4 by 30 June','Sec 39(2)',c.sch==='comp');
+  add('Every year','Review QRMP / composition choice before the year starts','Rule 61A · Rule 3',R||c.sch==='comp');
+  add('Every year','Report job work in ITC-04 by 25 April','Rule 45',!!FBY['ITC-04'].app(c));
+  add('Always','Bank account linked on the portal (returns are blocked without it)','Rule 10A · Rule 21A',c.registered);
+  add('Always','No return older than three years left unfiled (time-barred)','Sec 37(5), 39(11), 44(2)',c.registered);
+  return L;
+}
+function rList(){
+  var c=ctx(),L=ckItems(c),done=L.filter(function(x){return CKD[x[1]]}).length,pct=L.length?Math.round(done*100/L.length):0;
+  var h='<div class="card"><h2>Compliance checklist</h2><p class="lead">'+L.length+' items for '+esc(c.t.n.toLowerCase())+' on '+SCH_N[c.sch].toLowerCase()+'. Ticks stay in this browser.</p><div class="prog"><i style="width:'+pct+'%"></i></div><p class="mut"><b>'+done+' of '+L.length+'</b> done · '+pct+'%</p><div class="btns"><button class="btn ghost" id="ckClear">Clear ticks</button><button class="btn t ghost" data-go="calendar">See due dates</button></div></div>';
+  var last='';L.forEach(function(x){if(x[0]!==last){h+='<h3 class="sec-h">'+x[0]+'</h3>';last=x[0]}h+='<button class="ck'+(CKD[x[1]]?' on':'')+'" data-ck="'+esc(x[1])+'" aria-pressed="'+!!CKD[x[1]]+'"><span class="bx"></span><span>'+x[1]+'<small>'+x[2]+'</small></span></button>'});
+  $('p-list').innerHTML=h;
+  [].forEach.call($('p-list').querySelectorAll('.ck'),function(b){b.onclick=function(){var k=b.getAttribute('data-ck');CKD[k]=!CKD[k];store('ck',CKD);rList()}});
+  $('ckClear').onclick=function(){CKD={};store('ck',CKD);rList()};
+}
+
+/* ================= UPDATES ================= */
+function rUpdates(){
+  var inforce=[['22 Sep 2025','GST 2.0 rates','Slabs reduced to 5%, 18% and 40% plus nil; 12% and 28% removed; compensation cess ended for most goods.'],
+   ['1 Nov 2025','Rule 14A simplified registration','Auto-approval within 3 working days if B2B output tax ≤ ₹2.5 lakh a month; Rule 9A risk-based approval for others.'],
+   ['Dec 2025','Three-year bar on returns','GSTR-1, 3B, 4, 5, 5A, 6, 7, 8 and 9 cannot be filed more than three years after their due date.'],
+   ['2025–26','GSTR-3B locking and IMS','Liability auto-filled from GSTR-1/1A is locked; supplier invoices are accepted, rejected or kept pending in IMS.'],
+   ['1 Apr 2025','ISD compulsory','Common input services billed to the head office must be distributed through ISD registration.']];
+  var rec=[['Late fee','Waiver of GSTR-3B late fee for turnover up to ₹5 Cr if the delayed return is filed within the same month.'],['Blocked credit','Section 17(5) to allow ITC on outdoor catering, life and health insurance, free samples, telecom towers and pipelines outside the factory.'],
+   ['ARQP scheme','Optional annual return with quarterly payment for B2C-only businesses up to ₹5 Cr (approved in principle).'],['Registration','Auto-acceptance of most amendments; system-based cancellation; Rule 14B for small e-commerce sellers using the platform warehouse as place of business.'],
+   ['Returns','New mechanism to correct liability and ITC mismatches, proposed from the April 2027 return.'],['Refunds','Automatic refund of excess cash ledger balance; 90% provisional refund by system for exports and inverted duty; refund of ITC on input services (inverted duty) availed from 1 Nov 2026.'],
+   ['Enforcement','Arrest powers removed; prosecution threshold ₹5 Cr; no show-cause notice below ₹10,000 tax; general penalty max ₹10,000; 5% penalty if paid within 30/60 days in non-fraud cases.'],
+   ['E-way bill','Interception only on specific intelligence, not in transit states.'],['Rates','No rate changes; future rate decisions once a year from 1 April. EV passenger transport option at 5%; delivery via e-commerce at 5% without ITC.']];
+  $('p-updates').innerHTML='<div class="card"><h2>What changed and what is coming</h2><p class="lead">Rules already in force are applied throughout this reckoner. Recommendations of the 57th GST Council (8 October 2026) need amendments to the Act or rules and are shown here only.</p></div>'+
+   '<h3 class="sec-h">In force '+pill('Applied in this tool','p-ok')+'</h3><div class="tw wide"><table><thead><tr><th>From</th><th>Change</th><th>Effect</th></tr></thead><tbody>'+inforce.map(function(r){return'<tr><td class="n" style="text-align:left">'+r[0]+'</td><td><b>'+r[1]+'</b></td><td>'+r[2]+'</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<h3 class="sec-h">57th GST Council recommendations '+pill('Awaiting notification','p-warn')+'</h3><div class="grid">'+rec.map(function(r){return'<div class="tile" style="--c:var(--s);cursor:default"><b>'+r[0]+'</b><span class="mut" style="font-size:13px">'+r[1]+'</span></div>'}).join('')+'</div>'+
+   '<div class="card" style="margin-top:14px"><h3>Sources</h3><ul class="mut"><li>PIB release on the 57th GST Council meeting, 8 Oct 2026 (via taxheal.com)</li><li>GST 2.0 rate schedule, Notification 9/2025-CTR (summaries: cleartax.in, vyaparapp.in)</li><li>GSTN advisory on the Simplified GST Registration Scheme, 1 Nov 2025</li><li>CGST Act 2017 and CGST Rules 2017 as amended</li></ul></div>';
+}
+
+/* ================= boot ================= */
+buildTabs();buildProfile();updateCount();
+$('todayBadge').textContent='Position as of '+dstr(TODAY);
+route();
+})();
+</script>
+<div class="semi-credit" style="text-align:center;padding:16px 12px 26px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b><div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div><style>@media print{.semi-credit{display:none!important}}</style>

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<script>
+/* TaxSphere app shim: native save bridge + replacements for dialogs/print/downloads the Android WebView can't do */
+(function(){
+  var BR=null;try{BR=window.AndroidBridge||(parent!==window&&parent.AndroidBridge)||null;}catch(e){BR=window.AndroidBridge||null;}
+  var APP=!!BR||/; wv\)/.test(navigator.userAgent);window.SEMI_APP=APP;window.SEMI_BR=BR;
+  function toast(m,ms){var t=document.getElementById('semiToast');if(!t){t=document.createElement('div');t.id='semiToast';
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:90%;background:#1f1a33;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:11px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:2147483647;text-align:center;transition:opacity .25s;opacity:0;pointer-events:none';
+    (document.body||document.documentElement).appendChild(t);}t.textContent=m;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},ms||2800);}
+  window.semiToast=toast;
+  if(!APP)return;
+  var ask={m:null,t:0};
+  window.confirm=function(m){var n=Date.now();if(ask.m===m&&n-ask.t<4000){ask.m=null;return true;}ask={m:m,t:n};toast(String(m).slice(0,110)+'  — tap again to confirm',3800);return false;};
+  window.alert=function(m){toast(String(m),3600);};
+  window.prompt=function(m,d){toast(String(m),3000);return d||null;};
+  function fname(s){return String(s||'document').replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)||'document';}
+  function saveText(name,mime,text){try{BR.saveFile(name,mime||'text/plain',text);toast('Saved to Downloads/Tax Sphere: '+name,3800);}catch(e){toast('Could not save the file');}}
+  var blobs={},oc=URL.createObjectURL;
+  URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o&&typeof o.text==='function')blobs[u]=o;return u;};
+  function saveBlob(name,b){var t=b.type||'';if(/zip|officedocument|octet-stream|pdf|image\//.test(t)||/\.(docx|xlsx|pptx|pdf|zip|png|jpe?g)$/i.test(name)){toast('This file type can\'t be saved inside the app. Use the Word (.doc) or Print option instead.',4200);return;}
+    b.text().then(function(s){saveText(name,t||'text/html',s);});}
+  function handle(a){if(!a||!a.download)return false;var h=a.href||'';
+    if(blobs[h]){saveBlob(a.download,blobs[h]);return true;}
+    if(/^data:/.test(h)){var i=h.indexOf(','),meta=h.slice(5,i),body=h.slice(i+1);var txt=/;base64/.test(meta)?decodeURIComponent(escape(atob(body))):decodeURIComponent(body);saveText(a.download,meta.split(';')[0],txt);return true;}
+    return false;}
+  var ac=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){if(handle(this))return;return ac.apply(this,arguments);};
+  document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');if(a&&handle(a))e.preventDefault();},true);
+  window.print=function(){var d=document.documentElement.cloneNode(true);[].forEach.call(d.querySelectorAll('script,#semiToast'),function(s){s.remove();});
+    saveText(fname(document.title)+'.html','text/html','<!DOCTYPE html>'+d.outerHTML);
+    setTimeout(function(){toast('Saved as HTML in Downloads/Tax Sphere. Open it in Chrome, then Share → Print → Save as PDF.',5200);},3900);};
+  var wo=window.open;window.open=function(u){if(u&&/^https?:/.test(u)){location.href=u;return null;}return null;};
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Income from Other Sources | IT Act 2025 Reckoner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --navy:#0B1D3A;
+  --gold:#C8A44E;
+  --cream:#FDF8EF;
+  --white:#FFFFFF;
+  --border:#E2D9C8;
+  --text-primary:#0B1D3A;
+  --text-secondary:#5C6B7A;
+  --maroon:#8A3B34;
+  --forest:#2C6146;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--cream);
+  color:var(--text-primary);
+  font-family:'DM Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 60px;}
+
+/* Header */
+.header{
+  background:var(--navy);
+  color:var(--cream);
+  padding:22px 16px 0;
+}
+.header-inner{max-width:1100px;margin:0 auto;}
+.wordmark{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  letter-spacing:3px;
+  color:var(--gold);
+  margin-bottom:10px;
+}
+.title{
+  font-family:'DM Serif Display',serif;
+  font-size:30px;
+  margin:0 0 6px;
+}
+.subtitle{
+  font-size:14px;
+  color:#C9D2E0;
+  margin:0 0 14px;
+  max-width:640px;
+  line-height:1.5;
+}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.badge{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  background:rgba(200,164,78,0.15);
+  border:1px solid var(--gold);
+  color:var(--gold);
+  padding:4px 10px;
+  border-radius:20px;
+}
+
+/* Tabs */
+.tabbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--navy);
+  border-top:1px solid rgba(255,255,255,0.08);
+  overflow-x:auto;
+  white-space:nowrap;
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+}
+.tabbar::-webkit-scrollbar{display:none;}
+.tabbar-inner{max-width:1100px;margin:0 auto;display:flex;padding:0 16px;}
+.tab-btn{
+  font-family:'DM Sans',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  color:#C9D2E0;
+  background:none;
+  border:none;
+  padding:14px 14px;
+  cursor:pointer;
+  border-bottom:3px solid transparent;
+  white-space:nowrap;
+  min-height:44px;
+}
+.tab-btn.active{color:var(--white);border-bottom-color:var(--gold);}
+
+/* Cards */
+.section{display:none;padding-top:22px;}
+.section.active{display:block;}
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+  margin-bottom:14px;
+}
+.card.accent{border-left:4px solid var(--gold);}
+.card h3{
+  font-family:'DM Serif Display',serif;
+  font-size:19px;
+  margin:0 0 8px;
+  color:var(--navy);
+}
+.card h4{
+  font-family:'DM Sans',sans-serif;
+  font-weight:700;
+  font-size:14px;
+  margin:14px 0 6px;
+  color:var(--navy);
+}
+.card p{font-size:14px;line-height:1.65;margin:0 0 8px;color:var(--text-primary);}
+.card p:last-child{margin-bottom:0;}
+.card ul{margin:6px 0 6px 18px;padding:0;font-size:14px;line-height:1.65;}
+.card li{margin-bottom:4px;}
+.muted{color:var(--text-secondary);font-size:13px;}
+
+.grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;}
+@media(min-width:640px){.grid.cols-2{grid-template-columns:1fr 1fr;}}
+@media(min-width:900px){.grid.cols-3{grid-template-columns:1fr 1fr 1fr;}.grid.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}}
+
+.tile{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-left:4px solid var(--gold);
+  border-radius:10px;
+  padding:13px 14px;
+}
+.tile .num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--gold);
+  font-weight:600;
+  display:block;
+  margin-bottom:4px;
+}
+.tile h5{margin:0 0 5px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:700;color:var(--navy);}
+.tile p{margin:0;font-size:13px;line-height:1.55;color:var(--text-secondary);}
+.tile.allow{border-left-color:var(--forest);}
+
+/* Section ref chip */
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  background:var(--navy);
+  color:var(--gold);
+  padding:5px 10px;
+  border-radius:6px;
+  margin:2px 6px 2px 0;
+}
+.chip .arrow{color:#C9D2E0;}
+.chip-row{margin:8px 0 4px;}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;margin:8px 0;}
+table.reckoner{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  min-width:480px;
+}
+table.reckoner th{
+  background:var(--navy);
+  color:var(--cream);
+  text-align:left;
+  padding:9px 10px;
+  font-family:'DM Sans',sans-serif;
+  font-weight:600;
+  font-size:12.5px;
+}
+table.reckoner td{
+  padding:9px 10px;
+  border-bottom:1px solid var(--border);
+  vertical-align:top;
+  line-height:1.5;
+}
+table.reckoner tr:nth-child(even) td{background:#FBF6EC;}
+table.reckoner td.mono{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--navy);white-space:nowrap;}
+table.reckoner td.num,table.reckoner th.num{text-align:right;white-space:nowrap;}
+
+/* Search */
+.search-wrap{position:sticky;top:44px;z-index:40;background:var(--cream);padding:10px 0;}
+.search-input{
+  width:100%;
+  padding:11px 14px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  background:var(--white);
+  min-height:44px;
+}
+.search-input:focus{outline:2px solid var(--gold);}
+
+/* Footer */
+.footer{
+  text-align:center;
+  padding:26px 16px 40px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  color:var(--text-secondary);
+  border-top:1px solid var(--border);
+  margin-top:20px;
+}
+.footer a{color:var(--navy);text-decoration:none;}
+
+.example-box{
+  background:#FBF6EC;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 12px;
+  margin:8px 0;
+  font-size:13px;
+  line-height:1.6;
+}
+.example-box b{color:var(--navy);}
+
+.watchpoint{
+  background:#FFF9EC;
+  border:1px solid var(--gold);
+  border-left:4px solid var(--gold);
+  border-radius:8px;
+  padding:10px 12px;
+  margin:10px 0;
+  font-size:13px;
+  line-height:1.6;
+}
+.watchpoint .label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  letter-spacing:1.5px;
+  color:#8A6D1F;
+  font-weight:600;
+  display:block;
+  margin-bottom:4px;
+}
+.card-heading-row{display:flex;align-items:center;margin-bottom:8px;}
+.card-heading-row h3{margin:0;}
+.icon-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;height:36px;
+  border-radius:50%;
+  background:var(--navy);
+  margin-right:10px;
+  flex-shrink:0;
+  vertical-align:middle;
+}
+
+/* Pills */
+.pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 9px;border-radius:20px;}
+.pill.allow{background:#E7F0EA;color:var(--forest);border:1px solid #BEDAC4;}
+.pill.flat{background:rgba(200,164,78,0.15);color:#8A6D1F;border:1px solid var(--gold);}
+
+/* Calculator */
+.field{margin-bottom:14px;}
+.field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:6px;}
+.field input{
+  width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:14px;background:var(--cream);min-height:44px;
+}
+.field input:focus{outline:2px solid var(--gold);}
+.calc-grid{display:grid;grid-template-columns:1fr;gap:0 16px;}
+@media(min-width:640px){.calc-grid{grid-template-columns:1fr 1fr;}}
+.calc-btn{
+  background:var(--navy);color:var(--cream);border:none;padding:12px 22px;border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;letter-spacing:.02em;cursor:pointer;min-height:44px;
+}
+.calc-btn:hover{background:#132a52;}
+.result{margin-top:16px;padding:14px 16px;background:#FBF6EC;border:1px solid var(--border);border-radius:10px;display:none;}
+.result.show{display:block;}
+.result .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+.result .row:last-child{border-bottom:none;font-weight:700;font-size:15px;padding-top:10px;color:var(--navy);}
+.result .row span:last-child{font-family:'IBM Plex Mono',monospace;}
+</style>
+<style>/* TaxSphere app: phone layout */
+@media (max-width:700px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.role-grid,.def-grid,.risk-grid,.rate-grid,.it-grid,.state-cols{grid-template-columns:minmax(0,1fr)!important}
+header{flex-wrap:wrap}.reg-no{display:none}}</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="wordmark">INCOME-TAX ACT, 2025 &middot; RECKONER</div>
+    <h1 class="title">Income from Other Sources</h1>
+    <p class="subtitle">The residuary head of income under Chapter IV of the Income-tax Act, 2025 &mdash; successor to Sec 56&ndash;65 of the 1961 Act. Covers what's taxable, exemptions, deductions, clubbing of income, and applicable tax rates.</p>
+    <div class="badge-row">
+      <span class="badge">Tax Year 2026-27</span>
+      <span class="badge">Sec 92&ndash;95 &amp; 96&ndash;100 (2025) / Sec 56&ndash;65 (1961)</span>
+    </div>
+  </div>
+  <div class="tabbar">
+    <div class="tabbar-inner" id="tabbarInner">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="taxable">What's Taxable</button>
+      <button class="tab-btn" data-tab="gifts">Gifts &amp; Property</button>
+      <button class="tab-btn" data-tab="deductions">Deductions</button>
+      <button class="tab-btn" data-tab="clubbing">Clubbing of Income</button>
+      <button class="tab-btn" data-tab="rates">Tax Rates</button>
+      <button class="tab-btn" data-tab="tds">TDS</button>
+      <button class="tab-btn" data-tab="tools">Calculator</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="search-wrap">
+  <input type="text" class="search-input" id="reckonerSearch" placeholder="Search clauses, sections, rates within this tab&hellip;" oninput="filterReckoner(this.value)">
+</div>
+
+<!-- OVERVIEW -->
+<div class="section active" id="overview">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="0.9" fill="var(--cream)" stroke="none"/></svg></span><h3>What is "Income from Other Sources"</h3></div>
+    <p>It's the residuary, catch-all head of income. Any income that isn't excluded from total income under the Act, and isn't chargeable under Salaries, House Property, Business/Profession, or Capital Gains, falls here by default.</p>
+    <p>Under the 1961 Act this lived in <b>Section 56</b>. The Income-tax Act, 2025 restates the same principle in <b>Section 92</b>, within Chapter IV (Computation of Total Income).</p>
+    <div class="chip-row">
+      <span class="chip">Charge <span class="arrow">&rarr;</span> Sec 92</span>
+      <span class="chip">Deductions <span class="arrow">&rarr;</span> Sec 93</span>
+      <span class="chip">Disallowed <span class="arrow">&rarr;</span> Sec 94</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>1961 Act &rarr; 2025 Act concordance</h3>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th>1961 Act</th><th>2025 Act</th><th>Subject</th></tr>
+        <tr><td class="mono">Sec 56</td><td class="mono">Sec 92</td><td>Charge of income from other sources</td></tr>
+        <tr><td class="mono">Sec 57</td><td class="mono">Sec 93</td><td>Deductions allowed</td></tr>
+        <tr><td class="mono">Sec 58</td><td class="mono">Sec 94</td><td>Amounts not deductible</td></tr>
+        <tr><td class="mono">Sec 59</td><td class="mono">Sec 95</td><td>Profits chargeable to tax (recovery of prior deductions)</td></tr>
+        <tr><td class="mono">Sec 60</td><td class="mono">Sec 96</td><td>Transfer of income without transfer of the asset</td></tr>
+        <tr><td class="mono">Sec 61</td><td class="mono">Sec 97</td><td>Chargeability on revocable transfer of assets</td></tr>
+        <tr><td class="mono">Sec 62</td><td class="mono">Sec 98</td><td>"Transfer" &amp; "revocable transfer" defined</td></tr>
+        <tr><td class="mono">Sec 64</td><td class="mono">Sec 99</td><td>Income of individual to include spouse/minor child's income</td></tr>
+        <tr><td class="mono">Sec 65</td><td class="mono">Sec 100</td><td>Liability of person whose income is clubbed elsewhere</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="tile">
+      <span class="num">EFFECTIVE</span>
+      <h5>1 April 2026</h5>
+      <p>The Income-tax Act, 2025 governs computation from Tax Year 2026-27 onward.</p>
+    </div>
+    <div class="tile">
+      <span class="num">RESIDUARY HEAD</span>
+      <h5>Catch-all by design</h5>
+      <p>If income doesn't fit Salaries, House Property, Business/Profession or Capital Gains, it defaults here.</p>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT'S TAXABLE -->
+<div class="section" id="taxable">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg></span><h3>Sec 92(2) &mdash; incomes specifically taxed here</h3></div>
+    <p>Section 92(2) lists items chargeable under this head whenever they aren't already taxed under another head. Clause letters mirror the Act's own lettering (a)&ndash;(m).</p>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="tile"><span class="num">92(2)(a)</span><h5>Dividend</h5><p>Any dividend received, taxed at slab rate.</p></div>
+    <div class="tile"><span class="num">92(2)(b)</span><h5>Lottery, gambling &amp; game winnings</h5><p>Winnings from lotteries, crossword puzzles, races (incl. horse races), card games and games of any sort, or gambling/betting &mdash; taxed flat at 30%, no deductions.</p></div>
+    <div class="tile"><span class="num">92(2)(c)</span><h5>Employees' fund contributions</h5><p>Employees' PF/superannuation/ESI/welfare fund contributions received by the employer, if not taxed as business income.</p></div>
+    <div class="tile"><span class="num">92(2)(d)</span><h5>Keyman insurance policy</h5><p>Sums received (incl. bonus) under a Keyman insurance policy, if not taxed as business income or salary.</p></div>
+    <div class="tile"><span class="num">92(2)(e)</span><h5>Interest on securities</h5><p>If not taxed as business income.</p></div>
+    <div class="tile"><span class="num">92(2)(f)</span><h5>Letting of machinery/plant/furniture</h5><p>Hire income, if not taxed as business income.</p></div>
+    <div class="tile"><span class="num">92(2)(g)</span><h5>Composite letting</h5><p>Buildings let together with machinery/plant/furniture where inseparable, if not business income.</p></div>
+    <div class="tile"><span class="num">92(2)(h)</span><h5>Forfeited advance money</h5><p>Advance forfeited during negotiations for transfer of a capital asset, where the deal falls through.</p></div>
+    <div class="tile"><span class="num">92(2)(i)</span><h5>Interest on enhanced compensation</h5><p>50% standard deduction applies; no other deduction (see Sec 93(1)(f)).</p></div>
+    <div class="tile"><span class="num">92(2)(j)</span><h5>Termination of employment</h5><p>Compensation on termination of employment or modification of its terms.</p></div>
+    <div class="tile"><span class="num">92(2)(k)</span><h5>Business trust distributions</h5><p>Specified sums received by a unit holder, computed by the A&minus;B&minus;C formula in the Act.</p></div>
+    <div class="tile"><span class="num">92(2)(l)</span><h5>Life insurance policy sums</h5><p>Sums (incl. bonus) not otherwise exempt, to the extent exceeding premiums paid; excludes ULIPs.</p></div>
+  </div>
+
+  <div class="card">
+    <h3>Sec 92(2)(m) &mdash; gifts, money &amp; property without consideration</h3>
+    <p>The modern "gift tax" mechanism, formerly Sec 56(2)(x). See the dedicated <b>Gifts &amp; Property</b> tab for the full breakdown of money, immovable and movable property rules.</p>
+    <div class="chip-row"><span class="chip">Full detail <span class="arrow">&rarr;</span> Gifts &amp; Property tab</span></div>
+  </div>
+</div>
+
+<!-- GIFTS & PROPERTY -->
+<div class="section" id="gifts">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 9V7a2 2 0 0 1 2-2h1.5a2 2 0 0 1 0 4"/><path d="M20 9V7a2 2 0 0 0-2-2h-1.5a2 2 0 0 0 0 4"/><line x1="12" y1="9" x2="12" y2="20"/></svg></span><h3>Sec 92(2)(m) &mdash; three limbs, each with a &#8377;50,000 threshold</h3></div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="tile">
+      <span class="num">MONEY</span>
+      <h5>Sum received without consideration</h5>
+      <p>If the <b>total for the year exceeds &#8377;50,000</b>, the entire sum is taxable &mdash; not just the excess.</p>
+    </div>
+    <div class="tile">
+      <span class="num">IMMOVABLE PROPERTY</span>
+      <h5>Without / for inadequate consideration</h5>
+      <p><b>Without consideration:</b> taxable if stamp duty value &gt; &#8377;50,000 (full value taxed). <b>Inadequate consideration:</b> taxable if (stamp duty value &minus; consideration) exceeds the higher of &#8377;50,000 or 10% of consideration.</p>
+    </div>
+    <div class="tile">
+      <span class="num">MOVABLE PROPERTY</span>
+      <h5>Shares, jewellery, art, crypto, bullion</h5>
+      <p>Covers shares/securities, jewellery, archaeological collections, drawings, paintings, sculptures, art, bullion, and virtual digital assets. Taxable if aggregate FMV received without consideration &gt; &#8377;50,000, or FMV exceeds payment by &gt; &#8377;50,000.</p>
+    </div>
+    <div class="tile">
+      <span class="num">VALUATION TIMING</span>
+      <h5>Agreement vs. registration date</h5>
+      <p>Where dates differ, the stamp duty value on the <b>agreement date</b> applies &mdash; but only if part/full consideration was paid via banking/online channels on or before that date.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Sec 92(3) &mdash; exemptions from the gift provision</h3>
+    <p>Sec 92(2)(m) does not apply to sums or property received in these situations:</p>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th style="width:8%">Cl.</th><th>Exempt situation</th></tr>
+        <tr><td class="mono">(a)</td><td>From any <b>relative</b> &mdash; spouse, siblings, siblings of spouse/parents, lineal ascendants/descendants and their spouses; for an HUF, any member.</td></tr>
+        <tr><td class="mono">(b)</td><td>On the occasion of the individual's <b>marriage</b>.</td></tr>
+        <tr><td class="mono">(c)</td><td>Under a <b>will</b> or by way of <b>inheritance</b>.</td></tr>
+        <tr><td class="mono">(d)</td><td>In <b>contemplation of death</b> of the payer/donor.</td></tr>
+        <tr><td class="mono">(e)</td><td>From any <b>local authority</b>.</td></tr>
+        <tr><td class="mono">(f)</td><td>From/by a <b>registered non-profit organisation</b> (with limited exceptions).</td></tr>
+        <tr><td class="mono">(g)</td><td>Via transactions <b>not regarded as "transfer"</b> under Sec 70(1).</td></tr>
+        <tr><td class="mono">(h)</td><td>From an individual, via a <b>trust for the sole benefit of that individual's relative</b>.</td></tr>
+        <tr><td class="mono">(i)</td><td>Any other <b>prescribed class</b> of persons/conditions notified under the Rules.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DEDUCTIONS -->
+<div class="section" id="deductions">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span><h3>Sec 93 &mdash; deductions allowed</h3></div>
+    <p>The golden rule: an expense is deductible only if incurred <b>wholly and exclusively</b> to earn that specific income &mdash; direct nexus required, no partial-personal-purpose expenses.</p>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th>Income type</th><th>Deduction allowed</th><th class="num">Status</th></tr>
+        <tr><td>Dividend / interest realisation</td><td>Reasonable commission or remuneration paid for realising it</td><td class="num"><span class="pill allow">Allowed</span></td></tr>
+        <tr><td>Letting of machinery/plant/furniture</td><td>Repairs, insurance premium, depreciation &mdash; as applicable to business income</td><td class="num"><span class="pill allow">Allowed</span></td></tr>
+        <tr><td>Family pension</td><td>Lower of &#8377;15,000 or 1/3rd of the pension amount</td><td class="num"><span class="pill flat">Capped</span></td></tr>
+        <tr><td>Interest on enhanced compensation</td><td>Flat 50% of such income; no other deduction permitted</td><td class="num"><span class="pill flat">50% flat</span></td></tr>
+        <tr><td>Commuted pension from a specified fund</td><td>Entire amount deductible</td><td class="num"><span class="pill allow">Full</span></td></tr>
+        <tr><td>Gratuity received on death of employee</td><td>Entire amount deductible</td><td class="num"><span class="pill allow">Full</span></td></tr>
+        <tr><td>Other dividend / mutual fund income</td><td>Only interest expense, capped at 20% of such income</td><td class="num"><span class="pill flat">20% cap</span></td></tr>
+        <tr><td>Any other income under this head</td><td>Expenditure wholly &amp; exclusively for earning it (not capital in nature)</td><td class="num"><span class="pill allow">Allowed</span></td></tr>
+      </table>
+    </div>
+    <div class="watchpoint"><span class="label">CROSS-APPLIED PROVISIONS</span>Sections 29, 35(b)(i) and 36 (repairs, insurance and depreciation rules from the business-income chapter) apply here too, along with Sec 59 for foreign companies.</div>
+  </div>
+
+  <div class="card">
+    <h3>Sec 94 &mdash; amounts you cannot deduct</h3>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th style="width:8%">Cl.</th><th>Disallowed item</th></tr>
+        <tr><td class="mono">(a)</td><td>Any <b>personal expenses</b> of the assessee.</td></tr>
+        <tr><td class="mono">(b)</td><td>Interest payable <b>outside India</b> on which tax hasn't been paid/deducted under Chapter XIX-B.</td></tr>
+        <tr><td class="mono">(c)</td><td>Salary payments <b>payable outside India</b> without TDS compliance.</td></tr>
+      </table>
+    </div>
+    <div class="watchpoint"><span class="label">SEC 94(4) &mdash; SPECIAL RULE</span>For winnings from lotteries, crossword puzzles, races, card games, other games, gambling or betting of any form &mdash; <b>no deduction for any expenditure or allowance</b> is allowed at all. Tax is on the gross winnings.</div>
+  </div>
+</div>
+
+<!-- CLUBBING -->
+<div class="section" id="clubbing">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M4 20c0-3 2-5 4-5s4 2 4 5"/><path d="M12 20c0-3 2-5 4-5s4 2 4 5"/></svg></span><h3>Sec 96&ndash;100 &mdash; clubbing of income</h3></div>
+    <p>Anti-avoidance rules that stop you from lowering your tax bill by diverting income or assets to family members. Clubbed income keeps the character of its original head &mdash; so clubbed interest, dividends or rent typically still lands under Income from Other Sources, just in someone else's return.</p>
+    <div class="chip-row">
+      <span class="chip">Income diversion <span class="arrow">&rarr;</span> Sec 96</span>
+      <span class="chip">Revocable transfer <span class="arrow">&rarr;</span> Sec 97/98</span>
+      <span class="chip">Spouse/minor <span class="arrow">&rarr;</span> Sec 99</span>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="tile">
+      <span class="num">SEC 96</span>
+      <h5>Transfer of income, asset retained</h5>
+      <p>If you transfer just the income from an asset while keeping ownership yourself, that income is still taxed in <b>your</b> hands as transferor &mdash; regardless of who receives it.</p>
+    </div>
+    <div class="tile">
+      <span class="num">SEC 97 &amp; 98</span>
+      <h5>Revocable transfers</h5>
+      <p>Where the transferor retains a power to reclaim the asset or its income (a "revocable transfer"), the income is clubbed back. Irrevocable transfers &mdash; e.g. a trust solely for a spouse's benefit that cannot be revoked during their lifetime &mdash; are excluded.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Sec 99 &mdash; situations where another's income is added to yours</h3>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th style="width:8%">Cl.</th><th>Clubbing situation</th></tr>
+        <tr><td class="mono">(a)</td><td><b>Spouse's remuneration</b> from a concern in which you hold a substantial interest &mdash; clubbed, unless the spouse holds a technical/professional qualification and the income is solely attributable to applying that expertise.</td></tr>
+        <tr><td class="mono">(b)</td><td>Income from assets transferred to your <b>spouse</b> without adequate consideration (except transfers under an agreement to live apart).</td></tr>
+        <tr><td class="mono">(c)</td><td>Income from assets transferred to your <b>son's wife</b> without adequate consideration.</td></tr>
+        <tr><td class="mono">(d)</td><td>Income from assets transferred to any <b>third person</b> for the immediate/deferred benefit of your spouse.</td></tr>
+        <tr><td class="mono">(e)</td><td>Income from assets transferred to any third person for the benefit of your <b>son's wife</b>.</td></tr>
+        <tr><td class="mono">(f)</td><td>All income of a <b>minor child</b> (under 18) &mdash; clubbed with whichever parent has the higher total income; stays with that parent in later years unless the AO is satisfied a change is warranted.</td></tr>
+      </table>
+    </div>
+    <div class="watchpoint"><span class="label">SUBSTANTIAL INTEREST</span>Beneficial ownership of <b>20% or more</b> of the voting power in a company, or a 20%-or-more share of profits in a firm/AOP.</div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="tile allow">
+      <span class="num">NOT CLUBBED</span>
+      <h5>Minor's own skill or talent income</h5>
+      <p>Earnings from a minor's own manual work, skill, talent, specialised knowledge or experience (e.g. a child actor's or athlete's earnings).</p>
+    </div>
+    <div class="tile allow">
+      <span class="num">NOT CLUBBED</span>
+      <h5>Disabled minor's income</h5>
+      <p>Income of a minor child with a disability of 40% or more (Sec 80U-equivalent) &mdash; assessed independently in the child's own hands.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <p><b>Relief:</b> the parent in whose hands a minor's income is clubbed can claim an exemption of <b>&#8377;1,500 per minor child per year</b> (or the actual clubbed income, if lower) &mdash; carried forward from the old Sec 10(32) exemption.</p>
+    <div class="watchpoint"><span class="label">SEC 100</span>The person whose income is actually clubbed into someone else's total income remains entitled to any TDS credit on that income, and remains jointly accountable for supplying information needed to assess it correctly.</div>
+  </div>
+</div>
+
+<!-- TAX RATES -->
+<div class="section" id="rates">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span><h3>Slab rates &mdash; Tax Year 2026-27</h3></div>
+    <p>Income from other sources (other than items taxed at special/flat rates below) is added to total income and taxed at the applicable slab rate.</p>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th>New regime slab (default)</th><th class="num">Rate</th></tr>
+        <tr><td>&#8377;0 &ndash; &#8377;4,00,000</td><td class="num">Nil</td></tr>
+        <tr><td>&#8377;4,00,001 &ndash; &#8377;8,00,000</td><td class="num">5%</td></tr>
+        <tr><td>&#8377;8,00,001 &ndash; &#8377;12,00,000</td><td class="num">10%</td></tr>
+        <tr><td>&#8377;12,00,001 &ndash; &#8377;16,00,000</td><td class="num">15%</td></tr>
+        <tr><td>&#8377;16,00,001 &ndash; &#8377;20,00,000</td><td class="num">20%</td></tr>
+        <tr><td>&#8377;20,00,001 &ndash; &#8377;24,00,000</td><td class="num">25%</td></tr>
+        <tr><td>Above &#8377;24,00,000</td><td class="num">30%</td></tr>
+      </table>
+    </div>
+    <div class="watchpoint"><span class="label">REBATE</span>Sec 157 rebate (successor to Sec 87A) effectively makes income up to ~&#8377;12 lakh tax-free for residents. Standard deduction of &#8377;75,000 applies to salary/pension. Rebate applies only to slab-rate income, not flat-rate special incomes like lottery winnings.</div>
+  </div>
+
+  <div class="card">
+    <h3>Old regime (optional, if opted)</h3>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th>Income slab</th><th class="num">Rate</th></tr>
+        <tr><td>&#8377;0 &ndash; &#8377;2,50,000</td><td class="num">Nil</td></tr>
+        <tr><td>&#8377;2,50,001 &ndash; &#8377;5,00,000</td><td class="num">5%</td></tr>
+        <tr><td>&#8377;5,00,001 &ndash; &#8377;10,00,000</td><td class="num">20%</td></tr>
+        <tr><td>Above &#8377;10,00,000</td><td class="num">30%</td></tr>
+      </table>
+    </div>
+    <p class="muted">Senior citizens (60+): exemption starts at &#8377;3,00,000. Super senior citizens (80+): exemption starts at &#8377;5,00,000. Sec 123 deductions and interest deductions are available only under this regime.</p>
+  </div>
+
+  <div class="card">
+    <h3>Flat / special rates within this head</h3>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th>Income type</th><th>Section</th><th class="num">Rate</th></tr>
+        <tr><td>Lottery, crossword, card games, races, gambling/betting winnings</td><td class="mono">92(2)(b)</td><td class="num"><span class="pill flat">30% flat</span></td></tr>
+        <tr><td>Online games winnings</td><td class="mono">92(2)(b) + TDS 393</td><td class="num"><span class="pill flat">30% flat</span></td></tr>
+        <tr><td>Casual income &mdash; no exemption, no deductions, no rebate</td><td class="mono">94(4)</td><td class="num"><span class="pill flat">30% flat</span></td></tr>
+        <tr><td>Cash gifts / property without consideration &gt; &#8377;50,000 (not exempt)</td><td class="mono">92(2)(m)</td><td class="num">Slab rate</td></tr>
+        <tr><td>Dividend income (residents)</td><td class="mono">92(2)(a)</td><td class="num">Slab rate</td></tr>
+        <tr><td>Interest on enhanced compensation (after 50% deduction)</td><td class="mono">92(2)(i)</td><td class="num">Slab rate</td></tr>
+      </table>
+    </div>
+    <p class="muted">Surcharge (where applicable, above &#8377;50 lakh/&#8377;1 crore etc.) and Health &amp; Education Cess of 4% apply on top of tax computed at slab or flat rates.</p>
+  </div>
+</div>
+
+<!-- TDS -->
+<div class="section" id="tds">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16v4H4z"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><h3>Sec 393 &mdash; TDS at a glance</h3></div>
+    <p>TDS on "other sources" payments is now consolidated under Section 393 of the 2025 Act (replacing the scattered 194-series of the 1961 Act).</p>
+    <div class="tbl-wrap">
+      <table class="reckoner">
+        <tr><th>Payment</th><th>Old section</th><th class="num">Threshold</th><th class="num">TDS rate</th></tr>
+        <tr><td>FD / RD / bank interest</td><td class="mono">194A</td><td class="num">&#8377;40,000 (&#8377;50,000 seniors)</td><td class="num">10%</td></tr>
+        <tr><td>Lottery, card game, crossword winnings</td><td class="mono">194B</td><td class="num">&#8377;10,000 aggregate/yr</td><td class="num">30%</td></tr>
+        <tr><td>Online game winnings</td><td class="mono">194BA</td><td class="num">No threshold</td><td class="num">30%</td></tr>
+        <tr><td>Horse race winnings</td><td class="mono">194BB</td><td class="num">&#8377;10,000</td><td class="num">30%</td></tr>
+        <tr><td>Insurance commission</td><td class="mono">194D</td><td class="num">&#8377;20,000</td><td class="num">2%</td></tr>
+        <tr><td>Life insurance policy payout (taxable portion)</td><td class="mono">194DA</td><td class="num">&#8377;1,00,000</td><td class="num">2%</td></tr>
+        <tr><td>Commission / brokerage</td><td class="mono">194H</td><td class="num">&mdash;</td><td class="num">2%</td></tr>
+        <tr><td>Partner's salary/remuneration/interest from firm</td><td class="mono">194T (new)</td><td class="num">&#8377;20,000/yr</td><td class="num">10%</td></tr>
+      </table>
+    </div>
+    <div class="watchpoint"><span class="label">CHECK BEFORE FILING</span>TDS rates were broadly rationalised downward in the 2025 Act (e.g. several 5% rates cut to 2%). Confirm the in-force rate on the Income Tax Department portal, since Finance Act amendments can revise these annually.</div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="section" id="tools">
+  <div class="card accent">
+    <div class="card-heading-row"><span class="icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cream)" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="10" y2="11"/><line x1="13" y1="11" x2="15" y2="11"/><line x1="8" y1="15" x2="10" y2="15"/><line x1="13" y1="15" x2="15" y2="15"/></svg></span><h3>Quick estimate calculator</h3></div>
+    <p class="muted">A rough illustration only &mdash; separates slab-rate "other sources" income from flat-rate casual income (lottery/gambling), and applies the new-regime slabs above. Not a substitute for professional advice or the official ITR utility.</p>
+
+    <div class="calc-grid">
+      <div class="field">
+        <label for="otherIncome">Other slab-rate income (salary, business, etc.) &#8377;</label>
+        <input type="number" id="otherIncome" min="0" step="1000" value="0">
+      </div>
+      <div class="field">
+        <label for="ifosSlab">IFOS &mdash; slab-rate (interest, dividend, gifts) &#8377;</label>
+        <input type="number" id="ifosSlab" min="0" step="1000" value="0">
+      </div>
+      <div class="field">
+        <label for="casual">Casual income &mdash; lottery / gambling / betting &#8377;</label>
+        <input type="number" id="casual" min="0" step="1000" value="0">
+      </div>
+      <div class="field">
+        <label for="stdDed">Standard deduction (salaried/pensioner) &#8377;</label>
+        <input type="number" id="stdDed" min="0" step="1000" value="75000">
+      </div>
+    </div>
+    <button class="calc-btn" onclick="calcTax()">Estimate tax</button>
+
+    <div class="result" id="result">
+      <div class="row"><span>Gross total income</span><span id="r-gross"></span></div>
+      <div class="row"><span>Taxable slab-rate income (after std. deduction)</span><span id="r-slabincome"></span></div>
+      <div class="row"><span>Tax on slab-rate income</span><span id="r-slabtax"></span></div>
+      <div class="row"><span>Sec 157 rebate (if slab income &le; &#8377;12,00,000)</span><span id="r-rebate"></span></div>
+      <div class="row"><span>Tax on casual income (flat 30%, no deductions)</span><span id="r-casualtax"></span></div>
+      <div class="row"><span>Health &amp; Education Cess (4%)</span><span id="r-cess"></span></div>
+      <div class="row"><span>Estimated total tax payable</span><span id="r-total"></span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">Income-tax Act, 2025 &middot; Sections 92&ndash;100 &middot; Reference tool, not legal or tax advice &nbsp;|&nbsp; Verify against incometaxindia.gov.in before filing</div>
+
+<script>
+var buttons = document.getElementsByClassName('tab-btn');
+for (var i = 0; i < buttons.length; i++) {
+  buttons[i].onclick = function(){
+    var target = this.getAttribute('data-tab');
+    var allBtns = document.getElementsByClassName('tab-btn');
+    for (var j = 0; j < allBtns.length; j++) { allBtns[j].className = 'tab-btn'; }
+    this.className = 'tab-btn active';
+    var allSections = document.getElementsByClassName('section');
+    for (var k = 0; k < allSections.length; k++) { allSections[k].className = 'section'; }
+    document.getElementById(target).className = 'section active';
+    var sBox = document.getElementById('reckonerSearch');
+    if (sBox) { sBox.value = ''; filterReckoner(''); }
+    window.scrollTo(0,0);
+  };
+}
+
+function filterReckoner(q) {
+  q = (q || '').toLowerCase();
+  var active = document.getElementsByClassName('section active')[0];
+  if (!active) { return; }
+  var tiles = active.getElementsByClassName('tile');
+  for (var a = 0; a < tiles.length; a++) {
+    var t = tiles[a];
+    var txt = t.textContent || t.innerText || '';
+    t.style.display = (q === '' || txt.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+  }
+  var rows = active.querySelectorAll('table.reckoner tr');
+  for (var b = 0; b < rows.length; b++) {
+    var r = rows[b];
+    if (r.getElementsByTagName('th').length > 0) { continue; }
+    var rtxt = r.textContent || r.innerText || '';
+    r.style.display = (q === '' || rtxt.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+  }
+}
+
+function fmt(n){
+  return '\u20B9' + Math.round(n).toLocaleString('en-IN');
+}
+
+function slabTax(income){
+  var slabs = [
+    [400000, 0],
+    [800000, 0.05],
+    [1200000, 0.10],
+    [1600000, 0.15],
+    [2000000, 0.20],
+    [2400000, 0.25],
+    [Infinity, 0.30]
+  ];
+  var tax = 0, lower = 0;
+  for (var i = 0; i < slabs.length; i++) {
+    var upper = slabs[i][0], rate = slabs[i][1];
+    if (income > lower) {
+      var taxableInBand = Math.min(income, upper) - lower;
+      tax += taxableInBand * rate;
+      lower = upper;
+    } else { break; }
+  }
+  return tax;
+}
+
+function calcTax(){
+  var other = parseFloat(document.getElementById('otherIncome').value) || 0;
+  var ifos = parseFloat(document.getElementById('ifosSlab').value) || 0;
+  var casual = parseFloat(document.getElementById('casual').value) || 0;
+  var stdDed = parseFloat(document.getElementById('stdDed').value) || 0;
+
+  var gross = other + ifos + casual;
+  var slabIncome = Math.max(0, other + ifos - stdDed);
+
+  var tax = slabTax(slabIncome);
+  var rebate = 0;
+  if (slabIncome <= 1200000) {
+    rebate = Math.min(tax, 60000);
+  }
+  var slabTaxAfterRebate = Math.max(0, tax - rebate);
+
+  var casualTax = casual * 0.30;
+
+  var cess = (slabTaxAfterRebate + casualTax) * 0.04;
+  var total = slabTaxAfterRebate + casualTax + cess;
+
+  document.getElementById('r-gross').textContent = fmt(gross);
+  document.getElementById('r-slabincome').textContent = fmt(slabIncome);
+  document.getElementById('r-slabtax').textContent = fmt(tax);
+  document.getElementById('r-rebate').textContent = '\u2212' + fmt(rebate);
+  document.getElementById('r-casualtax').textContent = fmt(casualTax);
+  document.getElementById('r-cess').textContent = fmt(cess);
+  document.getElementById('r-total').textContent = fmt(total);
+
+  document.getElementById('result').classList.add('show');
+}
+</script>
+
+<div class="semi-credit" style="text-align:center;padding:18px 12px 22px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">
+Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b>
+<div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div>
+<style>@media print{.semi-credit{display:none!important}}</style>
+</body>
+</html>
