@@ -563,7 +563,7 @@ function clearData(){const b=$("clrBtn");
   if(!b._arm){b._arm=1;b.textContent="Tap again to clear";clearTimeout(b._h);b._h=setTimeout(()=>{b._arm=0;b.textContent="Clear all data";},3000);return;}
   b._arm=0;b.textContent="Clear all data";DB.rows=[];DB.files=[];persist();renderFiles();toast("Cleared");}
 function loadSample(){
-  if(!GSTIN_RE.test(DB.setup.gstin||"")){const now=new Date(),pm=new Date(now.getFullYear(),now.getMonth()-1,1);
+  if(!GSTIN_RE.test(DB.setup.gstin||"")||DB.setup.gstin==="27AAPFU0939F1ZV"){const now=new Date(),pm=new Date(now.getFullYear(),now.getMonth()-1,1);
     DB.setup={gstin:"27AAPFU0939F1ZV",tname:"Sample Fashion Store",month:pm.getMonth()+1,year:pm.getFullYear(),freq:"M",eco:"27AAACZ1234E1ZN",tcs:0.5,aato:"upto5",uqc:"PCS"};initSetup();}
   const home=(DB.setup.gstin||"27").slice(0,2),sts=[home,"07","09","29","33","19","24","08"],h=["6204","6211","6109","7117"];
   const fid="sample";DB.rows=DB.rows.filter(r=>r.f!==fid);DB.files=DB.files.filter(f=>f.id!==fid);
@@ -874,7 +874,10 @@ const XL=(()=>{
 })();
 
 /* ---------------- Boot ---------------- */
-load();initSetup();renderFiles();
+load();
+// older versions saved a sample Meesho GSTIN with a wrong check digit: correct it
+if(DB.setup&&DB.setup.eco==="27AAACZ1234E1ZK")DB.setup.eco="27AAACZ1234E1ZN";
+initSetup();renderFiles();
 showTab(DB.setup.gstin?(DB.rows.length?"g1":"import"):"setup",true);
 </script>
 <div class="semi-credit" style="text-align:center;padding:16px 12px 26px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b><div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div></div><style>@media print{.semi-credit{display:none!important}}</style>
