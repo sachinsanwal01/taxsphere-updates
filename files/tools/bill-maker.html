@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on||window.__noGate)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&!window.__noGate&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on||window.__noGate)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6d4aff">
+<title>Bill Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f5fb;--surface:#fff;--surface2:#f0eef8;--ink:#16131f;--text:#3b3650;--soft:#6f6987;--rule:#e3dff0;
+  --accent:#6d4aff;--accent-ink:#fff;--accent-wash:#ece7ff;--pink:#ff5fa2;
+  --good:#12855a;--good-wash:#e2f6ec;--bad:#c2334d;--bad-wash:#fbe6ea;--warn-wash:#fff6e6;--warn-rule:#f2dfb8;--warn-ink:#7a5200;
+  --shadow:0 1px 2px rgba(22,19,31,.05),0 8px 24px rgba(22,19,31,.06);
+  --sans:"Inter","Segoe UI",system-ui,sans-serif;--display:"Space Grotesk","Inter","Segoe UI",sans-serif;
+  /* names used by the tool's own markup */
+  --line:var(--rule);--mute:var(--soft);--brand:var(--accent);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0d16;--surface:#191624;--surface2:#221e31;--ink:#f3f0ff;--text:#d3cde6;--soft:#9b94b4;--rule:#2e2942;
+  --accent:#9b84ff;--accent-ink:#120a33;--accent-wash:#2a2250;--good:#45d39a;--good-wash:#123326;--bad:#ff7d93;--bad-wash:#3a1a22;
+  --warn-wash:#2e2410;--warn-rule:#4a3a18;--warn-ink:#f0c674;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f0d16;--surface:#191624;--surface2:#221e31;--ink:#f3f0ff;--text:#d3cde6;--soft:#9b94b4;--rule:#2e2942;
+  --accent:#9b84ff;--accent-ink:#120a33;--accent-wash:#2a2250;--good:#45d39a;--good-wash:#123326;--bad:#ff7d93;--bad-wash:#3a1a22;
+  --warn-wash:#2e2410;--warn-rule:#4a3a18;--warn-ink:#f0c674;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+html.embedded,html.embedded body{background:transparent;overflow:hidden}
+h2,h3{font-family:var(--display);color:var(--ink);letter-spacing:-.01em}
+main{padding:14px 14px 28px;max-width:760px;margin:0 auto}
+html.embedded main{padding:2px 0 8px}
+html.embedded .semi-credit{display:none!important}
+
+/* top: summary + stepper */
+.mhead{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:12px}
+.mhead .ic{width:44px;height:44px;flex:none;border-radius:13px;display:grid;place-items:center;font-size:22px;background:linear-gradient(135deg,var(--accent),#9b4dff 55%,var(--pink))}
+.mhead .tx{flex:1;min-width:0}
+.mhead b{display:block;font:700 15.5px/1.25 var(--display);color:var(--ink)}
+.mhead .period{display:block;margin-top:2px;font-size:12.5px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mhead .period.set{color:var(--good);font-weight:600}
+.mhead .mini{flex:none;border:1px solid var(--rule);background:var(--surface2);color:var(--ink);font:600 12.5px var(--sans);border-radius:10px;padding:8px 10px;cursor:pointer;min-height:36px}
+.stepper{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 14px;padding:4px;background:var(--surface2);border-radius:14px}
+.stepper::-webkit-scrollbar{display:none}
+.stepper button{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;color:var(--soft);font:600 13px var(--sans);padding:9px 11px;border-radius:10px;cursor:pointer;white-space:nowrap;min-height:40px}
+.stepper button i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--rule);color:var(--soft)}
+.stepper button.done i{background:var(--good);color:#fff}
+.stepper button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(22,19,31,.12)}
+.stepper button.on i{background:var(--accent);color:var(--accent-ink)}
+
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{font-size:16.5px;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3{font-size:12.5px;margin:14px 0 6px;color:var(--soft);text-transform:uppercase;letter-spacing:.05em}
+.tag{font:600 11px var(--sans);background:var(--accent-wash);color:var(--accent);padding:3px 9px;border-radius:20px;letter-spacing:0}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--soft);margin:12px 0 5px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--rule);border-radius:12px;font:15px var(--sans);background:var(--surface);color:var(--ink);min-height:44px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:11px 16px;font:700 14.5px var(--sans);background:var(--accent);color:var(--accent-ink);width:100%;margin-top:12px;cursor:pointer;min-height:46px}
+.btn:active{transform:scale(.99)}
+.btn.alt{background:var(--accent-wash);color:var(--accent)}
+.btn.pink{background:var(--pink);color:#fff}
+.btn.ghost{background:transparent;color:var(--bad);border:1px solid var(--bad-wash)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.next{display:flex;justify-content:flex-end;margin:4px 0 12px}
+.next .btn{width:auto;margin:0;padding:11px 20px}
+.drop{border:2px dashed var(--rule);border-radius:14px;padding:20px 12px;text-align:center;color:var(--soft);background:var(--surface2);position:relative}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;min-height:0}
+.drop b{color:var(--accent);display:block;font-size:15px;margin-bottom:2px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--surface2);border:1px solid var(--rule);border-radius:12px;padding:11px}
+.kpi small{display:block;color:var(--soft);font-size:11.5px;font-weight:600}
+.kpi strong{font:700 17px var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi.big{grid-column:1/-1;background:var(--accent-wash);border-color:transparent}
+.kpi.big strong{font-size:23px;color:var(--accent)}
+.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+th,td{padding:9px 10px;border-bottom:1px solid var(--rule);text-align:right;color:var(--text)}
+th{background:var(--surface2);color:var(--soft);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:700;background:var(--surface2);color:var(--ink)}
+.note{font-size:12.5px;color:var(--warn-ink);background:var(--warn-wash);border:1px solid var(--warn-rule);border-radius:12px;padding:9px 11px;margin-top:10px}
+.note.ok{background:var(--good-wash);border-color:transparent;color:var(--good)}
+.note.bad{background:var(--bad-wash);border-color:transparent;color:var(--bad)}
+.files{list-style:none;padding:0;margin:10px 0 0}
+.files li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--rule);border-radius:12px;margin-top:6px;font-size:13px;background:var(--surface2)}
+.files li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files li button{border:0;background:none;color:var(--bad);font-size:18px;padding:0 4px;cursor:pointer}
+.pill{font-size:11px;padding:2px 7px;border-radius:8px;font-weight:600}
+.pill.s{background:var(--good-wash);color:var(--good)}.pill.r{background:var(--bad-wash);color:var(--bad)}
+.steps{margin:0;padding-left:20px;font-size:13.5px}
+.steps li{margin:6px 0}
+.tab{display:none}.tab.on{display:block;animation:fi .18s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:22px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:90%}
+.toast.on{opacity:1}
+html.embedded .toast,html.embedded .semi-credit{display:none!important}
+.empty{text-align:center;color:var(--soft);padding:22px 8px;font-size:13.5px}
+.empty .btn{width:auto;margin:12px 4px 0;padding:10px 16px}
+@media (min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}.kpi.big{grid-column:span 2}}
+@media print{.mhead,.stepper,.next,.btn,.btns,.drop,.noprint{display:none!important}.tab{display:block!important}main{padding:0}.card{break-inside:avoid;box-shadow:none}}
+
+.check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text);font-weight:500;margin:12px 0 0}
+.check input{width:20px;height:20px;min-height:0;accent-color:var(--accent)}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+textarea{resize:vertical;font:14px/1.45 var(--sans)}
+input[type=color]{padding:4px;height:44px}
+.logobox{display:flex;gap:12px;align-items:flex-start}
+.logoprev{width:96px;height:96px;flex:none;border:1px dashed var(--rule);border-radius:14px;display:grid;place-items:center;background:#fff;overflow:hidden}
+.logoprev img{max-width:100%;max-height:100%}.logoprev span{font-size:12px;color:#8b85a1}
+.logobtns{flex:1;display:grid;gap:6px}.logobtns .btn{margin:0;min-height:40px;padding:8px 10px;font-size:13.5px}
+.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;min-height:0}
+.paste{margin-top:10px;border:1.5px dashed var(--rule);border-radius:12px;padding:12px;min-height:44px;font-size:13px;color:var(--soft);background:var(--surface2);outline:none}
+.paste:empty:before{content:attr(data-ph)}
+.sub{margin-top:10px;padding:12px;border-radius:12px;background:var(--surface2)}
+.item{border:1px solid var(--rule);border-radius:14px;padding:12px;margin-bottom:10px;background:var(--surface2)}
+.item input,.item select{background:var(--surface)}
+.ihead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.ihead b{font-size:13px;color:var(--soft)}
+.x{border:0;background:var(--bad-wash);color:var(--bad);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px}
+.iamt{font-size:12.5px;color:var(--accent);font-weight:600;margin-top:8px;min-height:1em}
+.nogst .gstcol{opacity:.35;pointer-events:none}
+.trow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--rule);font-size:14px;font-variant-numeric:tabular-nums}
+.trow.big{border:0;font:700 19px var(--display);color:var(--ink);padding-top:10px}
+.tpls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tpl{border:2px solid var(--rule);background:var(--surface2);border-radius:14px;padding:8px;cursor:pointer;text-align:center;font:inherit;color:var(--text)}
+.tpl canvas{width:100%;height:auto;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.12);display:block;background:#fff}
+.tpl b{display:block;margin-top:6px;color:var(--ink)}.tpl small{color:var(--soft);font-size:12px}
+.tpl.on{border-color:var(--accent);background:var(--accent-wash)}
+.sw{display:flex;gap:10px;flex-wrap:wrap}.sw button{width:38px;height:38px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--rule);cursor:pointer}
+.sw button.on{box-shadow:0 0 0 3px var(--accent)}
+.prevcard{padding:10px;background:var(--surface2)}#pages{display:flex;flex-direction:column;align-items:center;gap:12px}
+#pages canvas{background:#fff;border-radius:4px;box-shadow:0 4px 18px rgba(22,19,31,.18);max-width:100%}
+.bill{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;border:1px solid var(--rule);border-radius:12px;padding:10px 12px;margin-top:8px;background:var(--surface2)}
+.bl b{display:block;color:var(--ink);font-size:14px}.bl small{color:var(--soft);font-size:12.5px}
+.bill .pill{cursor:pointer;padding:4px 10px;font-size:12px}
+.bact{grid-column:1/-1;display:flex;gap:6px}.bact button{flex:1;border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px;font:600 12.5px var(--sans);cursor:pointer}
+.bact .del{color:var(--bad)}
+@media (min-width:700px){.tpls{grid-template-columns:repeat(4,1fr)}}
+</style>
+
+<script src="../vendor/qrcode.js" onerror="var s=document.createElement('script');s.src='vendor/qrcode.js';document.head.appendChild(s);"></script>
+</head><body>
+<main>
+<div class="mhead">
+  <div class="ic">🧾</div>
+  <div class="tx"><b id="hdrName">Bill Maker</b><span class="period" id="hdrSub">Professional GST bills with your logo</span></div>
+  <button class="mini" onclick="newBill()">＋ New bill</button>
+</div>
+<div class="stepper" id="stepper">
+  <button class="on" data-t="biz"><i>1</i>Business</button>
+  <button data-t="bill"><i>2</i>Bill</button>
+  <button data-t="design"><i>3</i>Design</button>
+  <button data-t="prev"><i>4</i>Preview</button>
+  <button data-t="saved"><i>5</i>Saved</button>
+</div>
+
+<!-- 1 BUSINESS -->
+<section class="tab on" id="t-biz">
+  <div class="card"><h2>Your logo</h2>
+    <div class="logobox"><div class="logoprev" id="logoPrev"></div>
+      <div class="logobtns">
+        <label class="btn alt filebtn">🖼️ Choose image<input type="file" id="logoFile" accept="image/*"></label>
+        <button class="btn alt" onclick="showLogo('text')">🔤 Make a text logo</button>
+        <button class="btn alt" onclick="showLogo('url')">🔗 From a link</button>
+        <button class="btn ghost" onclick="removeLogo()">Remove</button>
+      </div></div>
+    <div id="pasteZone" class="paste" contenteditable="true" data-ph="Or long-press here and Paste a copied logo image"></div>
+    <div id="logoText" class="sub" style="display:none">
+      <div class="row"><div><label>Letters (1–3)</label><input id="tlTxt" maxlength="3" placeholder="SS"></div>
+        <div><label>Shape</label><select id="tlShape"><option value="circle">Circle</option><option value="round">Rounded square</option><option value="square">Square</option></select></div></div>
+      <div class="row"><div><label>Background</label><input id="tlBg" type="color" value="#6d4aff"></div><div><label>Letters colour</label><input id="tlFg" type="color" value="#ffffff"></div></div>
+      <button class="btn" onclick="makeTextLogo()">Use this logo</button>
+    </div>
+    <div id="logoUrl" class="sub" style="display:none">
+      <label>Image link (https://…png / .jpg)</label><input id="luUrl" placeholder="https://example.com/logo.png">
+      <button class="btn" onclick="logoFromUrl()">Use this image</button>
+      <div class="note">The website must allow its image to be used. If it doesn't, save the image and use Choose image or Paste.</div>
+    </div>
+  </div>
+  <div class="card"><h2>Business details</h2>
+    <label>Business name *</label><input id="bName" placeholder="Sanwal Traders">
+    <label>Address</label><textarea id="bAddr" rows="2" placeholder="Shop 12, MG Road, Pune 411001"></textarea>
+    <div class="row"><div><label>GSTIN</label><input id="bGstin" maxlength="15" placeholder="27ABCDE1234F1Z5"></div>
+      <div><label>State</label><select id="bState"></select></div></div>
+    <div id="bGstMsg"></div>
+    <div class="row"><div><label>Phone</label><input id="bPhone" inputmode="tel"></div><div><label>Email</label><input id="bEmail" inputmode="email"></div></div>
+  </div>
+  <div class="card"><h2>Payment details <span class="tag">shown on bill</span></h2>
+    <div class="row"><div><label>Bank name</label><input id="bkName"></div><div><label>Account no.</label><input id="bkAcc" inputmode="numeric"></div></div>
+    <div class="row"><div><label>IFSC</label><input id="bkIfsc" maxlength="11"></div><div><label>Branch</label><input id="bkBranch"></div></div>
+    <label>UPI ID (adds a “Scan to pay” QR with the bill amount)</label><input id="bUpi" placeholder="name@okhdfcbank">
+  </div>
+  <div class="card"><h2>Bill defaults</h2>
+    <div class="row"><div><label>Number prefix</label><input id="bPrefix" placeholder="INV-"></div><div><label>Next number</label><input id="bNext" type="number" min="1"></div></div>
+    <label>Terms & conditions</label><textarea id="bTerms" rows="3"></textarea>
+    <label>Signatory name</label><input id="bSign" placeholder="Authorised signatory">
+    <button class="btn" onclick="saveBiz(true)">Save business details</button>
+  </div>
+  <div class="next"><button class="btn" onclick="showTab('bill')">Next: Bill →</button></div>
+</section>
+
+<!-- 2 BILL -->
+<section class="tab" id="t-bill">
+  <div class="card"><h2>Bill</h2>
+    <div class="row"><div><label>Type</label><select id="xType"><option>Tax Invoice</option><option>Bill of Supply</option><option>Invoice</option><option>Cash Memo</option><option>Estimate</option><option>Quotation</option><option>Proforma Invoice</option></select></div>
+      <div><label>Number</label><input id="xNo"></div></div>
+    <div class="row"><div><label>Date</label><input id="xDate" type="date"></div><div><label>Due date</label><input id="xDue" type="date"></div></div>
+    <label class="check"><input type="checkbox" id="xGst" checked> Charge GST on items</label>
+  </div>
+  <div class="card"><h2>Bill to</h2>
+    <label>Customer name *</label><input id="cName" list="custList" placeholder="Customer or company name"><datalist id="custList"></datalist>
+    <label>Address</label><textarea id="cAddr" rows="2"></textarea>
+    <div class="row"><div><label>GSTIN (if registered)</label><input id="cGstin" maxlength="15"></div><div><label>State (place of supply)</label><select id="cState"></select></div></div>
+    <div id="cGstMsg"></div>
+    <label>Phone</label><input id="cPhone" inputmode="tel">
+  </div>
+  <div class="card"><h2>Items</h2>
+    <div id="items"></div>
+    <button class="btn alt" onclick="addItem()">＋ Add item</button>
+  </div>
+  <div class="card"><h2>Charges & notes</h2>
+    <div class="row"><div><label>Shipping / other charges (₹)</label><input id="xShip" type="number" step="0.01" inputmode="decimal"></div>
+      <div><label>Round off total</label><select id="xRound"><option value="1">Yes</option><option value="0">No</option></select></div></div>
+    <label>Note for this bill</label><input id="xNote" placeholder="Thank you for your business!">
+    <label class="check"><input type="checkbox" id="xPaid"> Mark as PAID (stamps the bill)</label>
+  </div>
+  <div class="card" id="totBox"></div>
+  <div class="next"><button class="btn" onclick="showTab('design')">Next: Design →</button></div>
+</section>
+
+<!-- 3 DESIGN -->
+<section class="tab" id="t-design">
+  <div class="card"><h2>Template</h2>
+    <div class="tpls" id="tpls"></div>
+  </div>
+  <div class="card"><h2>Colour</h2>
+    <div class="sw" id="swatches"></div>
+    <label>Custom colour</label><input id="accent" type="color" value="#6d4aff">
+  </div>
+  <div class="next"><button class="btn" onclick="showTab('prev')">Next: Preview →</button></div>
+</section>
+
+<!-- 4 PREVIEW -->
+<section class="tab" id="t-prev">
+  <div class="card prevcard"><div id="pages"></div></div>
+  <div class="btns">
+    <button class="btn" onclick="downloadPDF()">⬇ Download PDF</button>
+    <button class="btn alt" onclick="saveBill()">💾 Save bill</button>
+  </div>
+  <div class="btns">
+    <button class="btn alt" onclick="shareWA()">💬 Send on WhatsApp</button>
+    <button class="btn alt" onclick="newBill()">＋ New bill</button>
+  </div>
+  <div class="note" style="margin-top:12px">The PDF is A4 and ready to print, email or share. Download it first, then attach it in WhatsApp if you want to send the file.</div>
+</section>
+
+<!-- 5 SAVED -->
+<section class="tab" id="t-saved">
+  <div class="card"><h2>Saved bills</h2>
+    <input id="sSearch" placeholder="Search number or customer" oninput="renderSaved()">
+    <div class="kpis" id="sKpi" style="margin-top:10px"></div>
+    <div id="sList"></div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<div class="semi-credit" style="text-align:center;padding:16px 12px 26px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both">Developed &amp; Managed By <b style="font-weight:800;color:#b8860b;background:linear-gradient(100deg,#a87908 0%,#d4af37 35%,#f3d36b 50%,#c9971c 65%,#a87908 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Sachin Sanwal</b><div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const EMB=(()=>{try{return window.parent!==window;}catch(e){return true;}})();
+function toast(m){if(EMB){try{parent.postMessage({semi:"toast",text:String(m)},"*");return;}catch(e){}}
+  const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),2400);}
+if(EMB){document.documentElement.classList.add("embedded");
+  const setTheme=t=>{if(t)document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");};
+  try{setTheme(parent.document.documentElement.getAttribute("data-theme"));}catch(e){}
+  addEventListener("message",e=>{if(e.source===parent&&e.data&&"semiTheme" in e.data)setTheme(e.data.semiTheme);});
+  try{parent.postMessage({semi:"hello"},"*");}catch(e){}
+  let lastH=0;const tell=()=>{const h=Math.ceil(document.querySelector("main").getBoundingClientRect().bottom+4);
+    if(h!==lastH){lastH=h;try{parent.postMessage({semi:"height",h},"*");}catch(e){}}};
+  try{new ResizeObserver(tell).observe(document.body);}catch(e){setInterval(tell,500);}
+  addEventListener("load",tell);setTimeout(tell,50);}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const r2=n=>Math.round((+n||0)*100)/100;
+const BR=window.AndroidBridge||(()=>{try{return parent.AndroidBridge;}catch(e){return null;}})();
+function dl(name,text,mime){
+  if(BR&&BR.saveFile){try{BR.saveFile(name,mime,text);return;}catch(e){}}
+  const b=new Blob([text],{type:mime}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);toast("Downloaded "+name);}
+
+const STATES=[["01","Jammu and Kashmir"],["02","Himachal Pradesh"],["03","Punjab"],["04","Chandigarh"],["05","Uttarakhand"],["06","Haryana"],["07","Delhi"],["08","Rajasthan"],["09","Uttar Pradesh"],["10","Bihar"],["11","Sikkim"],["12","Arunachal Pradesh"],["13","Nagaland"],["14","Manipur"],["15","Mizoram"],["16","Tripura"],["17","Meghalaya"],["18","Assam"],["19","West Bengal"],["20","Jharkhand"],["21","Odisha"],["22","Chhattisgarh"],["23","Madhya Pradesh"],["24","Gujarat"],["26","Dadra and Nagar Haveli and Daman and Diu"],["27","Maharashtra"],["29","Karnataka"],["30","Goa"],["31","Lakshadweep"],["32","Kerala"],["33","Tamil Nadu"],["34","Puducherry"],["35","Andaman and Nicobar Islands"],["36","Telangana"],["37","Andhra Pradesh"],["38","Ladakh"],["97","Other Territory"]];
+const stName=c=>(STATES.find(s=>s[0]===c)||["",""])[1];
+const GSTIN_RE=/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+function gstinCheck(g){g=String(g||"").toUpperCase().trim();if(!GSTIN_RE.test(g))return "format";
+  const cs="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";let sum=0;
+  for(let i=0;i<14;i++){const p=cs.indexOf(g[i])*(i%2?2:1);sum+=Math.floor(p/36)+p%36;}
+  return cs[(36-sum%36)%36]===g[14]?"ok":"checksum";}
+const UNITS=["Nos","Pcs","Kg","Gm","Ltr","Mtr","Box","Set","Pair","Dozen","Hrs","Days","Job"];
+const RATES=[0,0.25,3,5,18,40];
+
+/* ---------------- data ---------------- */
+const KEY="taxsphere.bills.v1";
+let DB=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}})();
+DB.biz=DB.biz||{prefix:"INV-",next:1,tpl:"modern",color:"#6d4aff",terms:"1. Goods once sold will not be taken back.\n2. Interest @18% p.a. on payments after the due date.\n3. Subject to local jurisdiction."};
+DB.bills=DB.bills||[];DB.custs=DB.custs||[];
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast("Storage full: remove the logo or old bills");}};
+const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+const addDays=(s,n)=>{const d=new Date(s+"T00:00");d.setDate(d.getDate()+n);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+function blankBill(){return {id:"b"+Date.now().toString(36),type:"Tax Invoice",no:(DB.biz.prefix||"")+(DB.biz.next||1),date:today(),due:addDays(today(),15),gst:true,
+  cust:{name:"",addr:"",gstin:"",state:DB.biz.state||"",phone:""},items:[{d:"",hsn:"",q:1,u:"Nos",r:"",disc:"",gst:18}],ship:"",round:true,note:"",paid:false};}
+let BILL=DB.draft||blankBill();
+const saveDraft=()=>{DB.draft=BILL;persist();};
+
+/* ---------------- maths ---------------- */
+function calc(b){const inter=!!(DB.biz.state&&b.cust.state&&DB.biz.state!==b.cust.state);
+  const lines=b.items.filter(it=>String(it.d).trim()||+it.r).map(it=>{const q=+it.q||0,r=+it.r||0,gross=q*r,dsc=gross*(+it.disc||0)/100,tx=gross-dsc,rt=b.gst?(+it.gst||0):0;
+    return {...it,q,r,gross,dsc,tx,rt,tax:tx*rt/100,amt:tx+tx*rt/100};});
+  const sub=lines.reduce((a,l)=>a+l.gross,0),disc=lines.reduce((a,l)=>a+l.dsc,0),taxable=sub-disc;
+  const byRate={};lines.forEach(l=>{if(!l.rt)return;const k=l.rt;byRate[k]=byRate[k]||{rt:k,tx:0,tax:0};byRate[k].tx+=l.tx;byRate[k].tax+=l.tax;});
+  const tax=lines.reduce((a,l)=>a+l.tax,0),ship=+b.ship||0,raw=taxable+tax+ship,total=b.round?Math.round(raw):r2(raw);
+  return {inter,lines,sub,disc,taxable,byRate:Object.values(byRate).sort((a,b)=>a.rt-b.rt),tax,igst:inter?tax:0,cgst:inter?0:tax/2,sgst:inter?0:tax/2,ship,roundOff:r2(total-raw),total};}
+const fmt=n=>(+n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+function words(n){n=Math.round(n*100)/100;const a=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"],t=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const two=x=>x<20?a[x]:t[Math.floor(x/10)]+(x%10?" "+a[x%10]:""),three=x=>(x>=100?a[Math.floor(x/100)]+" Hundred"+(x%100?" ":""):"")+(x%100?two(x%100):"");
+  const w=x=>{if(!x)return "Zero";let s="";const cr=Math.floor(x/1e7);x%=1e7;const l=Math.floor(x/1e5);x%=1e5;const th=Math.floor(x/1e3);x%=1e3;
+    if(cr)s+=w(cr)+" Crore ";if(l)s+=two(l)+" Lakh ";if(th)s+=two(th)+" Thousand ";if(x)s+=three(x);return s.trim();};
+  const r=Math.floor(n),p=Math.round((n-r)*100);return "Rupees "+w(r)+(p?" and "+two(p)+" Paise":"")+" Only";}
+
+/* ---------------- text metrics (Helvetica, same in preview and PDF) ---------------- */
+const HV=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const HB=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+const clean=s=>String(s??"").replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/₹/g,"Rs.").replace(/…/g,"...").replace(/[ ]/g," ");
+const tw=(s,sz,b)=>{let w=0;const T=b?HB:HV;for(const ch of clean(s)){const c=ch.charCodeAt(0);w+=(c>=32&&c<=126)?T[c-32]:556;}return w*sz/1000;};
+function wrap(s,sz,b,max){const out=[];for(const para of clean(s).split("\n")){let line="";
+    for(const word of para.split(/\s+/)){const t=line?line+" "+word:word;if(tw(t,sz,b)<=max||!line)line=t;else{out.push(line);line=word;}
+      while(tw(line,sz,b)>max&&line.length>1){let k=line.length;while(k>1&&tw(line.slice(0,k),sz,b)>max)k--;out.push(line.slice(0,k));line=line.slice(k);}}
+    out.push(line);}return out;}
+
+/* ---------------- layout: one list of drawing steps per page (A4 = 595 x 842 pt) ---------------- */
+const W=595,H=842;
+const hex=c=>{c=/^#[0-9a-f]{6}$/i.test(c||"")?c:"#6d4aff";return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];};
+const mix=(c,f)=>{const [r,g,b]=hex(c);return "#"+[r,g,b].map(v=>Math.round(v+(255-v)*f).toString(16).padStart(2,"0")).join("");};
+const TPLS={
+  classic:{name:"Classic",desc:"Bordered GST invoice",m:36},
+  modern:{name:"Modern",desc:"Colour header band",m:36},
+  minimal:{name:"Minimal",desc:"Clean and light",m:44},
+  bold:{name:"Bold",desc:"Dark header, side strip",m:36}};
+function layout(b){
+  const T=DB.biz.tpl in TPLS?DB.biz.tpl:"modern",A=DB.biz.color||"#6d4aff",C=calc(b),Bz=DB.biz,M=TPLS[T].m,INK="#1d1b26",MUTE="#6b6880",RULE="#d9d6e4";
+  const pages=[];let P=null,y=0;
+  const np=()=>{P=[];pages.push(P);};
+  const R=(x,y,w,h,o={})=>P.push({k:"rect",x,y,w,h,...o}),L=(x1,y1,x2,y2,c,lw=0.6)=>P.push({k:"line",x1,y1,x2,y2,c,lw});
+  const Tx=(x,y,s,sz,o={})=>{s=clean(s);if(!s)return;const w=tw(s,sz,o.b);const xx=o.a==="r"?x-w:o.a==="c"?x-w/2:x;P.push({k:"text",x:xx,y,s,sz,b:!!o.b,c:o.c||INK});};
+  const logo=Bz.logo&&Bz.logoW?{src:Bz.logo,w:Bz.logoW,h:Bz.logoH}:null;
+  const fitLogo=(mw,mh)=>{if(!logo)return null;const s=Math.min(mw/logo.w,mh/logo.h);return {w:logo.w*s,h:logo.h*s};};
+  const title=(b.type||"Invoice").toUpperCase();
+  const bizLines=[clean(Bz.addr||""),Bz.gstin?"GSTIN: "+Bz.gstin:"",[Bz.phone?"Ph: "+Bz.phone:"",Bz.email||""].filter(Boolean).join("  |  ")].filter(Boolean).join("\n");
+  np();
+  // ---------- header
+  if(T==="modern"){
+    R(0,0,W,118,{f:A});const lg=fitLogo(64,64);let tx=M;
+    if(lg){R(M-4,27-4+ (64-lg.h)/2,lg.w+8,lg.h+8,{f:"#ffffff",rad:8});P.push({k:"img",x:M,y:27+(64-lg.h)/2,w:lg.w,h:lg.h,src:logo.src});tx=M+lg.w+18;}
+    Tx(tx,46,Bz.name||"Your Business",18,{b:1,c:"#ffffff"});let yy=60;for(const l of wrap(bizLines,8.5,0,300).slice(0,4)){Tx(tx,yy,l,8.5,{c:mix(A,.82)});yy+=11;}
+    Tx(W-M,48,title,20,{b:1,c:"#ffffff",a:"r"});Tx(W-M,66,"# "+(b.no||""),10,{c:mix(A,.82),a:"r"});
+    y=140;
+  }else if(T==="bold"){
+    R(0,0,10,H,{f:A});R(10,0,W-10,108,{f:INK});const lg=fitLogo(60,60);let tx=M+6;
+    if(lg){P.push({k:"img",x:M+6,y:24+(60-lg.h)/2,w:lg.w,h:lg.h,src:logo.src});tx=M+6+lg.w+16;}
+    Tx(tx,44,Bz.name||"Your Business",17,{b:1,c:"#ffffff"});let yy=58;for(const l of wrap(bizLines,8.5,0,290).slice(0,4)){Tx(tx,yy,l,8.5,{c:"#c9c5d8"});yy+=11;}
+    Tx(W-M,46,title,19,{b:1,c:A==="#000000"?"#ffffff":mix(A,.35),a:"r"});Tx(W-M,64,"# "+(b.no||""),10,{c:"#c9c5d8",a:"r"});
+    y=132;
+  }else if(T==="minimal"){
+    const lg=fitLogo(56,56);let tx=M;if(lg){P.push({k:"img",x:M,y:M,w:lg.w,h:lg.h,src:logo.src});tx=M+lg.w+14;}
+    Tx(tx,M+16,Bz.name||"Your Business",16,{b:1});let yy=M+30;for(const l of wrap(bizLines,8.5,0,280).slice(0,4)){Tx(tx,yy,l,8.5,{c:MUTE});yy+=11;}
+    Tx(W-M,M+22,title.charAt(0)+title.slice(1).toLowerCase(),24,{c:A,a:"r"});Tx(W-M,M+38,"No. "+(b.no||""),9.5,{c:MUTE,a:"r"});
+    y=Math.max(yy,M+62)+14;L(M,y,W-M,y,RULE,.6);y+=18;
+  }else{ // classic
+    R(18,18,W-36,H-36,{s:INK,lw:1});const lg=fitLogo(70,60);let tx=M;
+    if(lg){P.push({k:"img",x:M,y:M,w:lg.w,h:lg.h,src:logo.src});tx=M+lg.w+14;}
+    Tx(tx,M+18,Bz.name||"Your Business",17,{b:1,c:A});let yy=M+32;for(const l of wrap(bizLines,8.5,0,W-tx-M).slice(0,4)){Tx(tx,yy,l,8.5,{c:INK});yy+=11;}
+    y=Math.max(yy,M+64)+6;R(18,y,W-36,22,{f:mix(A,.88)});L(18,y,W-18,y,INK,1);L(18,y+22,W-18,y+22,INK,1);
+    Tx(W/2,y+15,title,12,{b:1,c:INK,a:"c"});y+=36;
+  }
+  // ---------- bill to + meta
+  const colW=(W-2*M)/2-10;let y0=y;
+  Tx(M,y,"BILL TO",8,{b:1,c:T==="classic"?INK:A});y+=14;
+  Tx(M,y,b.cust.name||"Customer",11.5,{b:1});y+=13;
+  for(const l of wrap(b.cust.addr||"",8.8,0,colW).slice(0,4)){Tx(M,y,l,8.8,{c:MUTE});y+=11;}
+  if(b.cust.gstin){Tx(M,y,"GSTIN: "+b.cust.gstin,8.8,{c:MUTE});y+=11;}
+  if(b.cust.state){Tx(M,y,"Place of supply: "+b.cust.state+"-"+stName(b.cust.state),8.8,{c:MUTE});y+=11;}
+  if(b.cust.phone){Tx(M,y,"Ph: "+b.cust.phone,8.8,{c:MUTE});y+=11;}
+  const fd=s=>s?new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"";
+  const meta=[["Invoice No.",b.no],["Date",fd(b.date)],b.due?["Due date",fd(b.due)]:null].filter(Boolean);
+  let my=y0;const mx=W-M;
+  if(T==="modern"||T==="bold"){const bw=190,bh=meta.length*16+24;R(mx-bw,my-10,bw,bh,{f:mix(A,.92),rad:T==="modern"?8:0});my+=6;
+    for(const [k,v] of meta){Tx(mx-bw+12,my,k,8.8,{c:MUTE});Tx(mx-12,my,v,9,{b:1,a:"r"});my+=16;}
+    Tx(mx-bw+12,my+2,"Amount due",8.8,{c:MUTE});Tx(mx-12,my+2,"Rs. "+fmt(b.paid?0:C.total),9.5,{b:1,c:A==="#ffffff"?INK:A,a:"r"});my+=22;}
+  else{for(const [k,v] of meta){Tx(mx-170,my,k,8.8,{c:MUTE});Tx(mx,my,v,9,{b:1,a:"r"});my+=15;}}
+  y=Math.max(y,my)+14;
+  // ---------- items table
+  const cols=b.gst?[["#",22,"l"],["Item / description",0,"l"],["HSN",48,"l"],["Qty",44,"r"],["Rate",62,"r"],["Disc",34,"r"],["GST",34,"r"],["Amount",72,"r"]]
+                  :[["#",22,"l"],["Item / description",0,"l"],["HSN",50,"l"],["Qty",50,"r"],["Rate",70,"r"],["Disc",40,"r"],["Amount",80,"r"]];
+  const tWid=W-2*M,fixed=cols.reduce((a,c)=>a+c[1],0);cols[1][1]=tWid-fixed;
+  const xs=[];let cx=M;cols.forEach(c=>{xs.push(cx);cx+=c[1];});
+  const head=()=>{const hh=22;
+    if(T==="classic"){R(M,y,tWid,hh,{f:mix(A,.88),s:INK,lw:.8});}
+    else if(T==="minimal"){L(M,y+hh,W-M,y+hh,INK,.8);}
+    else R(M,y,tWid,hh,{f:T==="bold"?INK:A,rad:T==="modern"?6:0});
+    const hc=T==="classic"||T==="minimal"?INK:"#ffffff";
+    cols.forEach((c,i)=>Tx(c[2]==="r"?xs[i]+c[1]-6:xs[i]+6,y+14.5,c[0],8,{b:1,c:hc,a:c[2]==="r"?"r":"l"}));y+=hh;};
+  const PAGE_BOTTOM=H-60;
+  head();
+  C.lines.forEach((l,i)=>{const dl=wrap(l.d||"Item",9,0,cols[1][1]-12);const rh=Math.max(20,dl.length*11+9);
+    if(y+rh>PAGE_BOTTOM){np();y=M+10;head();}
+    if((T==="modern"||T==="bold")&&i%2===1)R(M,y,tWid,rh,{f:mix(A,.95)});
+    const vals=b.gst?[String(i+1),null,l.hsn||"",fmt(l.q).replace(/\.00$/,"")+" "+(l.u||""),fmt(l.r),l.disc?(+l.disc)+"%":"-",l.rt+"%",fmt(l.tx)]
+                    :[String(i+1),null,l.hsn||"",fmt(l.q).replace(/\.00$/,"")+" "+(l.u||""),fmt(l.r),l.disc?(+l.disc)+"%":"-",fmt(l.tx)];
+    vals.forEach((v,ci)=>{if(ci===1){dl.forEach((t,k)=>Tx(xs[1]+6,y+13+k*11,t,9,{b:k===0&&dl.length>0?0:0}));return;}
+      const c=cols[ci];Tx(c[2]==="r"?xs[ci]+c[1]-6:xs[ci]+6,y+13,v,9,{a:c[2]==="r"?"r":"l",b:ci===vals.length-1});});
+    if(T==="classic"){R(M,y,tWid,rh,{s:INK,lw:.5});xs.slice(1).forEach(x=>L(x,y,x,y+rh,INK,.5));}else L(M,y+rh,W-M,y+rh,RULE,.5);
+    y+=rh;});
+  if(!C.lines.length){Tx(M+6,y+14,"No items yet",9,{c:MUTE});y+=22;}
+  // ---------- totals + words
+  const tot=[["Sub total",fmt(C.sub)]];if(C.disc)tot.push(["Discount","- "+fmt(C.disc)]);
+  if(b.gst&&C.tax){tot.push(["Taxable value",fmt(C.taxable)]);
+    C.byRate.forEach(r=>{if(C.inter)tot.push([`IGST @${r.rt}%`,fmt(r.tax)]);else{tot.push([`CGST @${r.rt/2}%`,fmt(r.tax/2)]);tot.push([`SGST @${r.rt/2}%`,fmt(r.tax/2)]);}});}
+  if(C.ship)tot.push(["Shipping / other",fmt(C.ship)]);if(C.roundOff)tot.push(["Round off",(C.roundOff>0?"+ ":"- ")+fmt(Math.abs(C.roundOff))]);
+  const need=tot.length*15+40+60;if(y+need>PAGE_BOTTOM){np();y=M+10;}
+  y+=14;const tx0=W-M-210;let ty=y;
+  tot.forEach(([k,v])=>{Tx(tx0+8,ty+10,k,9,{c:MUTE});Tx(W-M-8,ty+10,v,9,{a:"r"});ty+=15;});
+  const gh=26;if(T==="minimal"){L(tx0,ty+2,W-M,ty+2,INK,.8);Tx(tx0+8,ty+18,"Total",11,{b:1});Tx(W-M-8,ty+18,"Rs. "+fmt(C.total),12,{b:1,c:A,a:"r"});}
+  else{R(tx0,ty+2,W-M-tx0,gh,{f:T==="classic"?mix(A,.88):T==="bold"?INK:A,rad:T==="modern"?6:0,s:T==="classic"?INK:null,lw:.8});
+    const gc=T==="classic"?INK:"#ffffff";Tx(tx0+8,ty+19,"Total",11,{b:1,c:gc});Tx(W-M-8,ty+19,"Rs. "+fmt(C.total),12,{b:1,c:gc,a:"r"});}
+  ty+=gh+10;
+  // left column next to totals: amount in words + bank + note
+  let ly=y+10;const lw=tx0-M-20;
+  Tx(M,ly,"Amount in words",8,{b:1,c:T==="classic"?INK:A});ly+=12;for(const l of wrap(words(C.total),8.8,0,lw)){Tx(M,ly,l,8.8);ly+=11;}
+  if(Bz.bkAcc||Bz.bkName){ly+=8;Tx(M,ly,"Bank details",8,{b:1,c:T==="classic"?INK:A});ly+=12;
+    [Bz.bkName?"Bank: "+Bz.bkName:"",Bz.bkAcc?"A/c No: "+Bz.bkAcc:"",Bz.bkIfsc?"IFSC: "+Bz.bkIfsc:"",Bz.bkBranch?"Branch: "+Bz.bkBranch:""].filter(Boolean).forEach(l=>{Tx(M,ly,l,8.8);ly+=11;});}
+  y=Math.max(ty,ly)+12;
+  // ---------- QR, note, terms, signature
+  const qrOk=Bz.upi&&!b.paid&&C.total>0&&typeof qrcode==="function";let qy=y;
+  if(y+130>PAGE_BOTTOM){np();y=M+10;qy=y;}
+  if(qrOk){try{const link=`upi://pay?pa=${encodeURIComponent(Bz.upi)}&pn=${encodeURIComponent(Bz.name||"")}&am=${C.total.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Bill "+(b.no||""))}`;
+      const q=qrcode(0,"M");q.addData(link);q.make();const n=q.getModuleCount(),sz=78,cell=sz/n,mods=[];
+      for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))mods.push([c,r]);
+      P.push({k:"qr",x:M,y:qy,cell,mods,n});Tx(M+sz+10,qy+14,"Scan to pay",9,{b:1});Tx(M+sz+10,qy+27,"Any UPI app",8.5,{c:MUTE});Tx(M+sz+10,qy+39,clean(Bz.upi),8.5,{c:MUTE});
+      Tx(M+sz+10,qy+51,"Rs. "+fmt(C.total),9,{b:1,c:A});qy+=sz+10;}catch(e){}}
+  // signature box (right)
+  const sx=W-M-170;Tx(W-M,y+12,"For "+clean(Bz.name||"your business"),9,{b:1,a:"r"});L(sx,y+68,W-M,y+68,RULE,.8);Tx(W-M,y+80,Bz.sign||"Authorised Signatory",8.5,{c:MUTE,a:"r"});
+  y=Math.max(qy,y+90)+6;
+  if(b.note){for(const l of wrap(b.note,9,1,W-2*M)){if(y>PAGE_BOTTOM){np();y=M+10;}Tx(M,y,l,9,{b:1,c:T==="classic"?INK:A});y+=12;}y+=4;}
+  if(Bz.terms){if(y+30>PAGE_BOTTOM){np();y=M+10;}Tx(M,y,"Terms & conditions",8,{b:1,c:MUTE});y+=11;
+    for(const l of wrap(Bz.terms,7.8,0,W-2*M)){if(y>H-40){np();y=M+10;}Tx(M,y,l,7.8,{c:MUTE});y+=10;}}
+  if(b.paid)pages[0].push({k:"stamp",x:W-M-140,y:Math.min(260,H/3),s:"PAID"});
+  // footer on every page
+  pages.forEach((pg,i)=>{P=pg;if(T==="modern")R(0,H-6,W,6,{f:A});
+    Tx(W/2,H-20,(pages.length>1?`Page ${i+1} of ${pages.length}  |  `:"")+"This is a computer-generated "+(b.type||"invoice").toLowerCase()+".",7.5,{c:MUTE,a:"c"});});
+  return pages;
+}
+
+/* ---------------- renderers ---------------- */
+const IMG={};
+function getImg(src){if(IMG[src])return IMG[src];const im=new Image();im.onload=()=>drawPreview();im.src=src;IMG[src]=im;return im;}
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function paint(ctx,cmds){ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+  for(const c of cmds){
+    if(c.k==="rect"){ctx.save();if(c.rad)rrect(ctx,c.x,c.y,c.w,c.h,c.rad);else{ctx.beginPath();ctx.rect(c.x,c.y,c.w,c.h);}
+      if(c.f){ctx.fillStyle=c.f;ctx.fill();}if(c.s){ctx.strokeStyle=c.s;ctx.lineWidth=c.lw||1;ctx.stroke();}ctx.restore();}
+    else if(c.k==="line"){ctx.beginPath();ctx.moveTo(c.x1,c.y1);ctx.lineTo(c.x2,c.y2);ctx.strokeStyle=c.c;ctx.lineWidth=c.lw;ctx.stroke();}
+    else if(c.k==="text"){ctx.font=`${c.b?"bold ":""}${c.sz}px Helvetica, Arial, sans-serif`;ctx.fillStyle=c.c;ctx.textBaseline="alphabetic";ctx.fillText(c.s,c.x,c.y);}
+    else if(c.k==="img"){const im=getImg(c.src);if(im.complete&&im.naturalWidth)ctx.drawImage(im,c.x,c.y,c.w,c.h);}
+    else if(c.k==="qr"){ctx.fillStyle="#000";for(const [mx,my] of c.mods)ctx.fillRect(c.x+mx*c.cell,c.y+my*c.cell,c.cell+.25,c.cell+.25);}
+    else if(c.k==="stamp"){ctx.save();ctx.translate(c.x+60,c.y);ctx.rotate(-0.25);ctx.strokeStyle="rgba(18,133,90,.85)";ctx.lineWidth=3;rrect(ctx,-62,-24,124,44,8);ctx.stroke();
+      ctx.font="bold 30px Helvetica, Arial, sans-serif";ctx.fillStyle="rgba(18,133,90,.85)";ctx.fillText("PAID",-ctx.measureText("PAID").width/2,9);ctx.restore();}
+  }}
+let pvT=0;
+function drawPreview(){clearTimeout(pvT);pvT=setTimeout(()=>{const box=$("pages");if(!box||!$("t-prev").classList.contains("on"))return;
+  const pages=layout(BILL),wpx=Math.min(box.clientWidth||340,640),dpr=Math.min(2.5,window.devicePixelRatio||1),s=wpx/W;
+  box.innerHTML="";pages.forEach(p=>{const cv=document.createElement("canvas");cv.width=Math.round(W*s*dpr);cv.height=Math.round(H*s*dpr);cv.style.width=wpx+"px";cv.style.height=Math.round(H*s)+"px";
+    const ctx=cv.getContext("2d");ctx.scale(s*dpr,s*dpr);paint(ctx,p);box.appendChild(cv);});},60);}
+
+/* ---- PDF (plain-ASCII file, so it also saves through the Android app) */
+function pdfStr(s){let o="";for(const ch of clean(s)){const c=ch.charCodeAt(0);if(ch==="("||ch===")"||ch==="\\")o+="\\"+ch;else if(c>=32&&c<=126)o+=ch;else if(c>=160&&c<=255)o+="\\"+c.toString(8).padStart(3,"0");else o+="?";}return o;}
+const rgb=c=>hex(c).map(v=>(v/255).toFixed(3)).join(" ");
+async function jpegHex(src){const im=getImg(src);if(!im.complete)await new Promise(r=>{im.onload=r;im.onerror=r;});
+  const cv=document.createElement("canvas");cv.width=im.naturalWidth;cv.height=im.naturalHeight;const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0);
+  const b64=cv.toDataURL("image/jpeg",0.92).split(",")[1],bin=atob(b64);let h="";for(let i=0;i<bin.length;i++)h+=bin.charCodeAt(i).toString(16).padStart(2,"0");
+  return {hex:h+">",w:cv.width,h:cv.height};}
+async function buildPDF(pages){
+  const objs=[];const add=s=>{objs.push(s);return objs.length;};
+  add("<< /Type /Catalog /Pages 2 0 R >>");add("PAGES");
+  const fR=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"),fB=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const gs=add("<< /Type /ExtGState /CA 0.85 /ca 0.85 >>");
+  const imgs={};let n=0;
+  for(const p of pages)for(const c of p)if(c.k==="img"&&!imgs[c.src]){const j=await jpegHex(c.src);
+    imgs[c.src]={name:"Im"+(++n),id:add(`<< /Type /XObject /Subtype /Image /Width ${j.w} /Height ${j.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length ${j.hex.length} >>\nstream\n${j.hex}\nendstream`)};}
+  const xo=Object.values(imgs).map(i=>`/${i.name} ${i.id} 0 R`).join(" ");
+  const kids=[];const Y=y=>(H-y).toFixed(2),f=v=>(+v).toFixed(2);
+  for(const p of pages){let s="";
+    for(const c of p){
+      if(c.k==="rect"){const path=c.rad?(()=>{const r=c.rad,k=r*0.5523,x=c.x,y=H-c.y-c.h,w=c.w,h=c.h;
+          return `${f(x+r)} ${f(y)} m ${f(x+w-r)} ${f(y)} l ${f(x+w-r+k)} ${f(y)} ${f(x+w)} ${f(y+r-k)} ${f(x+w)} ${f(y+r)} c ${f(x+w)} ${f(y+h-r)} l ${f(x+w)} ${f(y+h-r+k)} ${f(x+w-r+k)} ${f(y+h)} ${f(x+w-r)} ${f(y+h)} c ${f(x+r)} ${f(y+h)} l ${f(x+r-k)} ${f(y+h)} ${f(x)} ${f(y+h-r+k)} ${f(x)} ${f(y+h-r)} c ${f(x)} ${f(y+r)} l ${f(x)} ${f(y+r-k)} ${f(x+r-k)} ${f(y)} ${f(x+r)} ${f(y)} c h `;})()
+          :`${f(c.x)} ${f(H-c.y-c.h)} ${f(c.w)} ${f(c.h)} re `;
+        if(c.f&&c.s)s+=`q ${rgb(c.f)} rg ${rgb(c.s)} RG ${c.lw||1} w ${path}B Q\n`;else if(c.f)s+=`q ${rgb(c.f)} rg ${path}f Q\n`;else if(c.s)s+=`q ${rgb(c.s)} RG ${c.lw||1} w ${path}S Q\n`;}
+      else if(c.k==="line")s+=`q ${rgb(c.c)} RG ${c.lw} w ${f(c.x1)} ${Y(c.y1)} m ${f(c.x2)} ${Y(c.y2)} l S Q\n`;
+      else if(c.k==="text")s+=`BT /${c.b?"F2":"F1"} ${c.sz} Tf ${rgb(c.c)} rg ${f(c.x)} ${Y(c.y)} Td (${pdfStr(c.s)}) Tj ET\n`;
+      else if(c.k==="img")s+=`q ${f(c.w)} 0 0 ${f(c.h)} ${f(c.x)} ${f(H-c.y-c.h)} cm /${imgs[c.src].name} Do Q\n`;
+      else if(c.k==="qr"){s+="q 0 0 0 rg ";for(const [mx,my] of c.mods)s+=`${f(c.x+mx*c.cell)} ${f(H-c.y-(my+1)*c.cell)} ${f(c.cell+.2)} ${f(c.cell+.2)} re `;s+="f Q\n";}
+      else if(c.k==="stamp"){const cx=c.x+60,cy=H-c.y,a=0.25,co=Math.cos(a).toFixed(4),si=Math.sin(a).toFixed(4);
+        s+=`q /GS1 gs ${co} ${si} -${si} ${co} ${f(cx)} ${f(cy)} cm 0.071 0.522 0.353 RG 3 w -62 -20 124 44 re S BT /F2 30 Tf 0.071 0.522 0.353 rg ${f(-tw("PAID",30,1)/2)} -9 Td (PAID) Tj ET Q\n`;}
+    }
+    const cs=add(`<< /Length ${s.length} >>\nstream\n${s}endstream`);
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${fR} 0 R /F2 ${fB} 0 R >> /ExtGState << /GS1 ${gs} 0 R >>${xo?` /XObject << ${xo} >>`:""} >> /Contents ${cs} 0 R >>`));}
+  objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  let out="%PDF-1.4\n",off=[];objs.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`;});
+  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("");
+  out+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R /Info << /Producer (TaxSphere Bill Maker) /Title (${pdfStr(BILL.type+" "+BILL.no)}) >> >>\nstartxref\n${xr}\n%%EOF`;
+  return out;}
+async function downloadPDF(){collectBill();if(!DB.biz.name){toast("Add your business name first");showTab("biz");return;}
+  if(!calc(BILL).lines.length){toast("Add at least one item");showTab("bill");return;}
+  try{const pdf=await buildPDF(layout(BILL));const nm=(BILL.type.replace(/\s+/g,"_")+"_"+(BILL.no||"bill")).replace(/[^\w.-]+/g,"_")+".pdf";
+    autoSave();dl(nm,pdf,"application/pdf");}catch(e){toast("PDF failed: "+e.message);}}
+
+/* ---------------- logo ---------------- */
+function setLogoFromImage(im){const max=420,s=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement("canvas");
+  cv.width=Math.max(1,Math.round(im.naturalWidth*s));cv.height=Math.max(1,Math.round(im.naturalHeight*s));const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);
+  let url;try{url=cv.toDataURL("image/jpeg",0.9);}catch(e){toast("This image can't be used (the website blocks it). Save it and use Choose image.");return;}
+  DB.biz.logo=url;DB.biz.logoW=cv.width;DB.biz.logoH=cv.height;persist();paintLogo();drawPreview();toast("Logo added");}
+function loadSrc(src,cors){const im=new Image();if(cors)im.crossOrigin="anonymous";im.onload=()=>setLogoFromImage(im);im.onerror=()=>toast("Couldn't load that image");im.src=src;}
+$("logoFile").onchange=e=>{const f=e.target.files[0];e.target.value="";if(!f)return;if(!/^image\//.test(f.type)){toast("Choose an image file");return;}const r=new FileReader();r.onload=()=>loadSrc(r.result);r.readAsDataURL(f);};
+$("pasteZone").addEventListener("paste",e=>{const it=[...(e.clipboardData||{}).items||[]].find(x=>/^image\//.test(x.type));
+  if(it){e.preventDefault();const r=new FileReader();r.onload=()=>loadSrc(r.result);r.readAsDataURL(it.getAsFile());}
+  else setTimeout(()=>{const im=$("pasteZone").querySelector("img");if(im&&im.src)loadSrc(im.src,!/^data:/.test(im.src));$("pasteZone").innerHTML="";},50);});
+$("pasteZone").addEventListener("input",()=>setTimeout(()=>{const im=$("pasteZone").querySelector("img");if(im&&im.src){loadSrc(im.src,!/^data:/.test(im.src));}$("pasteZone").innerHTML="";},50));
+function showLogo(w){$("logoText").style.display=w==="text"&&$("logoText").style.display==="none"?"":"none";$("logoUrl").style.display=w==="url"&&$("logoUrl").style.display==="none"?"":"none";
+  if(w==="text"&&!$("tlTxt").value)$("tlTxt").value=(DB.biz.name||"TS").split(/\s+/).filter(Boolean).map(x=>x[0]).join("").slice(0,2).toUpperCase();}
+function makeTextLogo(){const t=($("tlTxt").value||"TS").toUpperCase().slice(0,3),sh=$("tlShape").value,cv=document.createElement("canvas");cv.width=cv.height=360;const x=cv.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,360,360);x.fillStyle=$("tlBg").value;
+  if(sh==="circle"){x.beginPath();x.arc(180,180,176,0,Math.PI*2);x.fill();}else if(sh==="round"){rrect(x,4,4,352,352,70);x.fill();}else x.fillRect(4,4,352,352);
+  x.fillStyle=$("tlFg").value;x.font=`bold ${t.length>2?120:t.length>1?150:190}px Helvetica, Arial, sans-serif`;x.textAlign="center";x.textBaseline="middle";x.fillText(t,180,190);
+  const im=new Image();im.onload=()=>setLogoFromImage(im);im.src=cv.toDataURL("image/png");$("logoText").style.display="none";}
+function logoFromUrl(){const u=$("luUrl").value.trim();if(!/^https?:\/\//.test(u)){toast("Enter a link starting with https://");return;}loadSrc(u,true);}
+function removeLogo(){delete DB.biz.logo;delete DB.biz.logoW;delete DB.biz.logoH;persist();paintLogo();drawPreview();toast("Logo removed");}
+function paintLogo(){$("logoPrev").innerHTML=DB.biz.logo?`<img src="${DB.biz.logo}" alt="Logo">`:`<span>No logo</span>`;}
+
+/* ---------------- business form ---------------- */
+const stateOpts=(sel)=>`<option value="">Select state</option>`+STATES.map(s=>`<option value="${s[0]}" ${s[0]===sel?"selected":""}>${s[0]} - ${s[1]}</option>`).join("");
+const BF=[["bName","name"],["bAddr","addr"],["bGstin","gstin"],["bState","state"],["bPhone","phone"],["bEmail","email"],["bkName","bkName"],["bkAcc","bkAcc"],["bkIfsc","bkIfsc"],["bkBranch","bkBranch"],["bUpi","upi"],["bPrefix","prefix"],["bNext","next"],["bTerms","terms"],["bSign","sign"]];
+function initBiz(){$("bState").innerHTML=stateOpts(DB.biz.state);BF.forEach(([id,k])=>{if(id!=="bState")$(id).value=DB.biz[k]??"";});paintLogo();gstMsg("bGstin","bGstMsg");
+  BF.forEach(([id])=>$(id).addEventListener("change",()=>saveBiz(false)));$("bGstin").oninput=()=>{$("bGstin").value=$("bGstin").value.toUpperCase();gstMsg("bGstin","bGstMsg");
+    const g=$("bGstin").value;if(g.length>=2&&STATES.some(s=>s[0]===g.slice(0,2))&&!$("bState").value){$("bState").value=g.slice(0,2);}};
+  $("hdrName").textContent=DB.biz.name||"Bill Maker";}
+function gstMsg(inp,out){const v=$(inp).value.trim().toUpperCase();if(!v){$(out).innerHTML="";return;}const c=gstinCheck(v);
+  $(out).innerHTML=c==="ok"?`<div class="note ok">✓ Valid GSTIN · ${esc(stName(v.slice(0,2)))}</div>`:`<div class="note bad">${c==="checksum"?"GSTIN check digit doesn't match. Check for a typing mistake.":"GSTIN should be 15 characters, like 27ABCDE1234F1Z5"}</div>`;}
+function saveBiz(loud){BF.forEach(([id,k])=>{DB.biz[k]=id==="bNext"?Math.max(1,parseInt($(id).value)||1):$(id).value.trim();});DB.biz.gstin=(DB.biz.gstin||"").toUpperCase();DB.biz.bkIfsc=(DB.biz.bkIfsc||"").toUpperCase();
+  persist();$("hdrName").textContent=DB.biz.name||"Bill Maker";if(loud)toast("Business details saved");drawPreview();}
+
+/* ---------------- bill form ---------------- */
+function itemRow(it,i){return `<div class="item" data-i="${i}">
+  <div class="ihead"><b>Item ${i+1}</b>${BILL.items.length>1?`<button class="x" onclick="delItem(${i})" aria-label="Remove item">✕</button>`:""}</div>
+  <input data-k="d" value="${esc(it.d)}" placeholder="Item name / description">
+  <div class="row3"><div><label>HSN/SAC</label><input data-k="hsn" value="${esc(it.hsn)}" inputmode="numeric"></div>
+    <div><label>Qty</label><input data-k="q" type="number" step="any" inputmode="decimal" value="${esc(it.q)}"></div>
+    <div><label>Unit</label><select data-k="u">${UNITS.map(u=>`<option ${u===it.u?"selected":""}>${u}</option>`).join("")}</select></div></div>
+  <div class="row3"><div><label>Rate (₹)</label><input data-k="r" type="number" step="any" inputmode="decimal" value="${esc(it.r)}"></div>
+    <div><label>Disc %</label><input data-k="disc" type="number" step="any" inputmode="decimal" value="${esc(it.disc)}"></div>
+    <div class="gstcol"><label>GST %</label><select data-k="gst">${RATES.map(r=>`<option value="${r}" ${+r===+it.gst?"selected":""}>${r}%</option>`).join("")}</select></div></div>
+  <div class="iamt" id="amt${i}"></div></div>`;}
+function renderItems(){$("items").innerHTML=BILL.items.map(itemRow).join("");$("items").classList.toggle("nogst",!BILL.gst);
+  $("items").querySelectorAll(".item").forEach(row=>row.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener("input",()=>{BILL.items[+row.dataset.i][inp.dataset.k]=inp.value;tots();saveDraft();})));tots();}
+function addItem(){BILL.items.push({d:"",hsn:"",q:1,u:"Nos",r:"",disc:"",gst:BILL.items.length?BILL.items[BILL.items.length-1].gst:18});renderItems();saveDraft();
+  setTimeout(()=>{const l=$("items").lastElementChild;l&&l.querySelector("input").focus();},30);}
+function delItem(i){BILL.items.splice(i,1);renderItems();saveDraft();}
+function tots(){const C=calc(BILL);C.lines.length;BILL.items.forEach((it,i)=>{const e=$("amt"+i);if(!e)return;const q=+it.q||0,r=+it.r||0,tx=q*r*(1-(+it.disc||0)/100);e.textContent=tx?"Amount ₹"+fmt(tx)+(BILL.gst&&+it.gst?` + GST ₹${fmt(tx*it.gst/100)}`:""):"";});
+  const rows=[["Sub total",C.sub],C.disc?["Discount",-C.disc]:null,BILL.gst&&C.tax?(C.inter?["IGST",C.igst]:["CGST + SGST",C.tax]):null,C.ship?["Shipping / other",C.ship]:null,C.roundOff?["Round off",C.roundOff]:null].filter(Boolean);
+  $("totBox").innerHTML=`<h2>Total</h2>${rows.map(([k,v])=>`<div class="trow"><span>${k}</span><span>₹${fmt(v)}</span></div>`).join("")}<div class="trow big"><span>Grand total</span><span>₹${fmt(C.total)}</span></div>
+    <p class="note" style="margin-top:8px">${esc(words(C.total))}${BILL.gst&&C.tax?` · ${C.inter?"Inter-state: IGST":"Same state: CGST + SGST"}`:""}</p>`;
+  hdrSub();drawPreview();}
+const BFILL=[["xType","type"],["xNo","no"],["xDate","date"],["xDue","due"],["xShip","ship"],["xNote","note"]];
+function fillBill(){BFILL.forEach(([id,k])=>$(id).value=BILL[k]??"");$("xGst").checked=!!BILL.gst;$("xRound").value=BILL.round?"1":"0";$("xPaid").checked=!!BILL.paid;
+  $("cState").innerHTML=stateOpts(BILL.cust.state);["Name","Addr","Gstin","Phone"].forEach(k=>$("c"+k).value=BILL.cust[k.toLowerCase()]||"");gstMsg("cGstin","cGstMsg");
+  $("custList").innerHTML=DB.custs.map(c=>`<option value="${esc(c.name)}">`).join("");renderItems();}
+function collectBill(){BFILL.forEach(([id,k])=>BILL[k]=$(id).value);BILL.gst=$("xGst").checked;BILL.round=$("xRound").value==="1";BILL.paid=$("xPaid").checked;
+  ["Name","Addr","Gstin","Phone"].forEach(k=>BILL.cust[k.toLowerCase()]=$("c"+k).value.trim());BILL.cust.gstin=BILL.cust.gstin.toUpperCase();BILL.cust.state=$("cState").value;saveDraft();}
+function bindBill(){
+  [...BFILL.map(x=>x[0]),"xGst","xRound","xPaid","cName","cAddr","cGstin","cPhone","cState"].forEach(id=>{$(id).addEventListener("input",()=>{collectBill();tots();});$(id).addEventListener("change",()=>{collectBill();tots();});});
+  $("xType").addEventListener("change",()=>{if(/Bill of Supply|Cash Memo/.test(BILL.type)&&BILL.type==="Bill of Supply"){$("xGst").checked=false;}else if(BILL.type==="Tax Invoice")$("xGst").checked=true;collectBill();renderItems();});
+  $("xGst").addEventListener("change",()=>renderItems());
+  $("cGstin").addEventListener("input",()=>{$("cGstin").value=$("cGstin").value.toUpperCase();gstMsg("cGstin","cGstMsg");const g=$("cGstin").value;if(g.length>=2&&STATES.some(s=>s[0]===g.slice(0,2))){$("cState").value=g.slice(0,2);collectBill();tots();}});
+  $("cName").addEventListener("change",()=>{const c=DB.custs.find(x=>x.name.toLowerCase()===$("cName").value.trim().toLowerCase());
+    if(c){$("cAddr").value=c.addr||"";$("cGstin").value=c.gstin||"";$("cPhone").value=c.phone||"";$("cState").value=c.state||"";collectBill();gstMsg("cGstin","cGstMsg");tots();toast("Customer details filled");}});}
+
+/* ---------------- design ---------------- */
+const SW=["#6d4aff","#2563eb","#0f766e","#16a34a","#c2410c","#dc2626","#db2777","#1d1b26"];
+function renderDesign(){$("tpls").innerHTML=Object.entries(TPLS).map(([k,t])=>`<button class="tpl ${DB.biz.tpl===k?"on":""}" data-k="${k}"><canvas width="150" height="212"></canvas><b>${t.name}</b><small>${t.desc}</small></button>`).join("");
+  $("tpls").querySelectorAll(".tpl").forEach(b=>{b.onclick=()=>{DB.biz.tpl=b.dataset.k;persist();renderDesign();drawPreview();};
+    const cv=b.querySelector("canvas"),x=cv.getContext("2d"),keep=DB.biz.tpl;DB.biz.tpl=b.dataset.k;const s=150/W;x.scale(s,s);
+    const demo=BILL.items.some(i=>i.d)?BILL:{...BILL,cust:{...BILL.cust,name:BILL.cust.name||"Customer name"},items:[{d:"Sample item",q:2,u:"Nos",r:500,gst:18},{d:"Second item",q:1,u:"Nos",r:1200,gst:18}]};
+    paint(x,layout(demo)[0]);DB.biz.tpl=keep;});
+  $("swatches").innerHTML=SW.map(c=>`<button style="background:${c}" class="${(DB.biz.color||"").toLowerCase()===c?"on":""}" data-c="${c}" aria-label="Colour ${c}"></button>`).join("");
+  $("swatches").querySelectorAll("button").forEach(b=>b.onclick=()=>{DB.biz.color=b.dataset.c;$("accent").value=b.dataset.c;persist();renderDesign();});
+  $("accent").value=DB.biz.color||"#6d4aff";}
+$("accent").addEventListener("change",()=>{DB.biz.color=$("accent").value;persist();renderDesign();});
+
+/* ---------------- saving ---------------- */
+function autoSave(){const i=DB.bills.findIndex(x=>x.id===BILL.id),copy=JSON.parse(JSON.stringify(BILL));copy.total=calc(BILL).total;copy.saved=Date.now();
+  if(i>=0)DB.bills[i]=copy;else{DB.bills.unshift(copy);const m=String(BILL.no).match(/(\d+)\s*$/);if(m&&+m[1]>=(+DB.biz.next||1)){DB.biz.next=+m[1]+1;$("bNext").value=DB.biz.next;}}
+  if(BILL.cust.name){const c=DB.custs.findIndex(x=>x.name.toLowerCase()===BILL.cust.name.toLowerCase());const cc={...BILL.cust};if(c>=0)DB.custs[c]=cc;else DB.custs.unshift(cc);DB.custs=DB.custs.slice(0,200);}
+  persist();}
+function saveBill(){collectBill();if(!calc(BILL).lines.length){toast("Add at least one item");return;}autoSave();toast("Bill "+BILL.no+" saved");}
+function newBill(){collectBill();if(calc(BILL).lines.length)autoSave();BILL=blankBill();saveDraft();fillBill();showTab("bill");toast("New bill "+BILL.no);}
+function openBill(id){const b=DB.bills.find(x=>x.id===id);if(!b)return;BILL=JSON.parse(JSON.stringify(b));saveDraft();fillBill();showTab("prev");}
+function dupBill(id){const b=DB.bills.find(x=>x.id===id);if(!b)return;BILL={...JSON.parse(JSON.stringify(b)),id:"b"+Date.now().toString(36),no:(DB.biz.prefix||"")+(DB.biz.next||1),date:today(),due:addDays(today(),15),paid:false};
+  saveDraft();fillBill();showTab("bill");toast("Copied as "+BILL.no);}
+function delBill(id){const b=DB.bills.find(x=>x.id===id);if(!b)return;if(b._del){DB.bills=DB.bills.filter(x=>x.id!==id);persist();renderSaved();toast("Deleted");return;}
+  b._del=1;renderSaved();toast("Tap Delete again to remove "+b.no);setTimeout(()=>{delete b._del;renderSaved();},3000);}
+function togglePaid(id){const b=DB.bills.find(x=>x.id===id);if(!b)return;b.paid=!b.paid;if(BILL.id===id){BILL.paid=b.paid;saveDraft();$("xPaid").checked=b.paid;}persist();renderSaved();}
+function renderSaved(){const q=($("sSearch").value||"").toLowerCase(),list=DB.bills.filter(b=>!q||String(b.no).toLowerCase().includes(q)||(b.cust.name||"").toLowerCase().includes(q));
+  const due=DB.bills.filter(b=>!b.paid).reduce((a,b)=>a+(+b.total||0),0),paid=DB.bills.filter(b=>b.paid).reduce((a,b)=>a+(+b.total||0),0);
+  $("sKpi").innerHTML=`<div class="kpi"><small>Bills</small><strong>${DB.bills.length}</strong></div><div class="kpi"><small>Unpaid</small><strong>₹${fmt(due)}</strong></div><div class="kpi big"><small>Received</small><strong>₹${fmt(paid)}</strong></div>`;
+  $("sList").innerHTML=list.length?list.map(b=>`<div class="bill"><div class="bl"><b>${esc(b.no)} · ${esc(b.cust.name||"No name")}</b><small>${esc(b.type)} · ${esc(b.date)} · ₹${fmt(b.total)}</small></div>
+    <span class="pill ${b.paid?"s":"r"}" onclick="togglePaid('${b.id}')">${b.paid?"Paid":"Unpaid"}</span>
+    <div class="bact"><button onclick="openBill('${b.id}')">Open</button><button onclick="dupBill('${b.id}')">Copy</button><button class="del" onclick="delBill('${b.id}')">${b._del?"Delete?":"Delete"}</button></div></div>`).join("")
+    :`<div class="empty">No saved bills yet. Bills are saved when you download the PDF or tap Save bill.</div>`;}
+
+/* ---------------- WhatsApp ---------------- */
+function shareWA(){collectBill();const C=calc(BILL);if(!C.lines.length){toast("Add at least one item");return;}autoSave();
+  const t=`*${DB.biz.name||""}*\n${BILL.type} ${BILL.no} dated ${BILL.date}\nAmount: Rs. ${fmt(C.total)}${BILL.due&&!BILL.paid?`\nDue by: ${BILL.due}`:""}${DB.biz.upi&&!BILL.paid?`\nPay by UPI: ${DB.biz.upi}`:""}${BILL.paid?"\nStatus: PAID":""}\n\nThank you!`;
+  const ph=(BILL.cust.phone||"").replace(/\D/g,"").replace(/^0/,""),num=ph.length===10?"91"+ph:ph;
+  const a=document.createElement("a");a.href=`https://wa.me/${num}?text=${encodeURIComponent(t)}`;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();}
+
+/* ---------------- tabs + boot ---------------- */
+document.querySelectorAll("#stepper button").forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+function showTab(t,quiet){if(t!=="biz")saveBiz(false);if(t!=="bill"&&$("t-bill").classList.contains("on"))collectBill();
+  document.querySelectorAll("#stepper button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.id==="t-"+t));
+  if(t==="design")renderDesign();if(t==="prev")drawPreview();if(t==="saved")renderSaved();
+  const sb=document.querySelector("#stepper .on"),sp=$("stepper");if(sb&&sp)sp.scrollLeft=sb.offsetLeft-(sp.clientWidth-sb.offsetWidth)/2;
+  if(quiet)return;if(EMB){try{parent.postMessage({semi:"top"},"*");}catch(e){}}else window.scrollTo(0,0);}
+function hdrSub(){const C=calc(BILL);$("hdrSub").textContent=C.lines.length?`${BILL.no} · ${BILL.cust.name||"No customer"} · ₹${fmt(C.total)}`:"Professional GST bills with your logo";}
+addEventListener("resize",()=>drawPreview());
+initBiz();fillBill();bindBill();showTab(DB.biz.name?"bill":"biz",true);
+
+</script>
+</body></html>
