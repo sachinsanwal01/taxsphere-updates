@@ -17,8 +17,9 @@ h1{font-size:20px;margin:0 0 4px}p{color:#6f6987;margin:6px 0;font-size:14.5px}
 <div id="done">
   <p class="ok" id="msg">✓ Logo copied</p>
   <button class="btn alt" id="copy">Copy logo again</button>
-  <a class="btn" id="back" href="intent:#Intent;package=com.semi.catools;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end">Open TaxSphere</a>
-  <ol class="steps"><li>Go back to TaxSphere → Bill Maker → Business.</li><li>Long-press the box <b>“Paste logo here”</b> and tap <b>Paste</b>.</li><li>Your logo appears. Done!</li></ol>
+  <button class="btn" id="back">Done · go back to TaxSphere</button>
+  <p id="backHint" style="display:none;font-weight:600;color:#3b3650">Press your phone's <b>Back</b> button (or swipe back) to return to TaxSphere.</p>
+  <ol class="steps"><li>Go back to TaxSphere (phone's Back button). Bill Maker → Business stays open.</li><li>Long-press the box <b>“Paste logo here”</b> and tap <b>Paste</b>.</li><li>Your logo appears. Done!</li></ol>
 </div>
 </div>
 <script>
@@ -33,5 +34,6 @@ document.getElementById("f").onchange=e=>{const file=e.target.files[0];if(!file)
     document.getElementById("prev").innerHTML='<img src="'+url+'" alt="Logo">';document.getElementById("done").style.display="block";copy();};
     im.onerror=()=>alert("That file isn't a picture this browser can open. Try a JPG or PNG.");im.src=r.result;};r.readAsDataURL(file);};
 document.getElementById("copy").onclick=copy;
-if(!/Android/i.test(navigator.userAgent))document.getElementById("back").style.display="none";
+// Closing this tab returns to TaxSphere (the tab was opened by the app). If the browser keeps it open, show how to go back.
+document.getElementById("back").onclick=()=>{try{window.close();}catch(e){}setTimeout(()=>{document.getElementById("backHint").style.display="block";},400);};
 </script></body></html>
