@@ -5,8 +5,8 @@
 <script>
 /* TaxSphere live updates: boot. If an update has been downloaded, start the app from it instead of the built-in files.
    A start that doesn't finish marks that update bad and the next start uses the built-in version. */
-window.SEMI_BUNDLED = window.SEMI_BUNDLED || 20; window.SEMI_APK = window.SEMI_APK || 17;
-window.SEMI_BUILD = 20; window.SEMI_NAME = "2.7";
+window.SEMI_BUNDLED = window.SEMI_BUNDLED || 21; window.SEMI_APK = window.SEMI_APK || 17;
+window.SEMI_BUILD = 21; window.SEMI_NAME = "2.7.1";
 window.SEMI_URL = function (p) { return (window.__PATCH && window.__PATCH[p]) || p; };
 /* iframe attribute for a tool page: an updated page goes in srcdoc so it keeps the app's storage (a blob: page can't) */
 window.SEMI_FRAME = function (p) { var h = window.__PATCH_HTML && window.__PATCH_HTML[p];
