@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TaxSphere · Add your logo</title>
+<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f6f5fb;color:#16131f;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:18px}
+.c{background:#fff;border:1px solid #e3dff0;border-radius:20px;padding:22px 18px;max-width:440px;margin:0 auto;text-align:center;box-shadow:0 8px 30px rgba(22,19,31,.08)}
+.logo{width:52px;height:52px;border-radius:15px;margin:0 auto 10px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;background:linear-gradient(135deg,#6d4aff,#9b4dff 55%,#ff5fa2)}
+h1{font-size:20px;margin:0 0 4px}p{color:#6f6987;margin:6px 0;font-size:14.5px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;border:0;border-radius:14px;padding:14px;font:700 16px system-ui,sans-serif;background:#6d4aff;color:#fff;text-decoration:none;cursor:pointer;position:relative;overflow:hidden}
+.btn.alt{background:#ece7ff;color:#6d4aff}.btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+#prev{width:140px;height:140px;margin:16px auto 4px;border:1px dashed #d9d6e4;border-radius:16px;display:grid;place-items:center;background:#fff;overflow:hidden}
+#prev img{max-width:100%;max-height:100%}#prev span{font-size:13px;color:#8b85a1}
+.ok{color:#12855a;font-weight:700}.steps{text-align:left;font-size:14px;color:#3b3650;padding-left:20px;margin:14px 0 0}.steps li{margin:6px 0}
+#done{display:none}</style></head><body><div class="c">
+<div class="logo">T</div><h1>Add your logo to TaxSphere</h1>
+<p>Choose your logo photo from the gallery or take a photo. It's shrunk and kept on your phone; nothing is uploaded.</p>
+<div id="prev"><span>No photo yet</span></div>
+<label class="btn">📷 Choose photo<input type="file" id="f" accept="image/*"></label>
+<div id="done">
+  <p class="ok" id="msg">✓ Logo copied</p>
+  <button class="btn alt" id="copy">Copy logo again</button>
+  <a class="btn" id="back" href="intent:#Intent;package=com.semi.catools;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end">Open TaxSphere</a>
+  <ol class="steps"><li>Go back to TaxSphere → Bill Maker → Business.</li><li>Long-press the box <b>“Paste logo here”</b> and tap <b>Paste</b>.</li><li>Your logo appears. Done!</li></ol>
+</div>
+</div>
+<script>
+let code="";
+const copy=async()=>{let ok=false;try{await navigator.clipboard.writeText(code);ok=true;}catch(e){}
+  if(!ok){const t=document.createElement("textarea");t.value=code;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();try{ok=document.execCommand("copy");}catch(e){}t.remove();}
+  document.getElementById("msg").textContent=ok?"✓ Logo copied. Now paste it in TaxSphere.":"Couldn't copy automatically. Tap Copy logo again.";};
+document.getElementById("f").onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const max=360,s=Math.min(1,max/Math.max(im.width,im.height)),cv=document.createElement("canvas");
+    cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);
+    const url=cv.toDataURL("image/jpeg",0.85);code="TSLOGO:"+url;
+    document.getElementById("prev").innerHTML='<img src="'+url+'" alt="Logo">';document.getElementById("done").style.display="block";copy();};
+    im.onerror=()=>alert("That file isn't a picture this browser can open. Try a JPG or PNG.");im.src=r.result;};r.readAsDataURL(file);};
+document.getElementById("copy").onclick=copy;
+if(!/Android/i.test(navigator.userAgent))document.getElementById("back").style.display="none";
+</script></body></html>
