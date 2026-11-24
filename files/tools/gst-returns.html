@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;var on=false,n=0,Q={};
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;
+var INAPP=/; wv\)/.test(navigator.userAgent),hasB=function(o){try{return !!(o&&o.AndroidBridge&&typeof o.AndroidBridge.saveFile!=="undefined");}catch(e){return false;}};
+if(INAPP&&!hasB(window)){var pb=null;try{pb=hasB(P)?P.AndroidBridge:null;}catch(e){}
+  window.AndroidBridge=pb||{saveFile:function(n,m,t){P.postMessage({semi:"save",name:String(n),mime:String(m||"text/plain"),text:String(t)},"*");}};}
+if(INAPP){var vb=function(a){var h=a.getAttribute("href")||"";if(!/^(blob|data):/.test(h))return false;var nm=a.getAttribute("download")||"download.txt";
+    fetch(h).then(function(r){return r.blob();}).then(function(b){return b.text().then(function(t){window.AndroidBridge.saveFile(nm,b.type||"text/plain",t);});}).catch(function(){});return true;};
+  document.addEventListener("click",function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest("a[href]");if(a&&vb(a)){ev.preventDefault();ev.stopPropagation();}},true);
+  var oc0=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(vb(this))return;return oc0.call(this);};}var on=false,n=0,Q={};
 function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
 addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
 if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});

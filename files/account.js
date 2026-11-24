@@ -112,7 +112,7 @@
   }
 
   // ---------------------------------------------------------------- backup
-  const skip = k => k === KEY || k.startsWith("acct.") || k.startsWith("semi.upd");
+  const skip = k => k === KEY || k.startsWith("acct.") || k.startsWith("semi.upd") || k === "semi.iid" || k === "semi.ping.day";
   function collect() { const d = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!skip(k)) d[k] = localStorage.getItem(k); } return d; }
   async function backupNow(quiet) {
     if (!signedIn()) return;
@@ -336,6 +336,17 @@
   };
   window.renderAccount = renderAccount;
   document.addEventListener("DOMContentLoaded", paintTop);
+  // Anonymous usage count for the admin page: once a day, a random install id, app version and platform. No name, email or data.
+  if (ON) setTimeout(() => {
+    try {
+      const day = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
+      if (localStorage.getItem("semi.ping.day") === day || navigator.onLine === false) return;
+      let id = localStorage.getItem("semi.iid"); if (!/^[A-Za-z0-9]{16,40}$/.test(id || "")) { id = rnd(24); localStorage.setItem("semi.iid", id); }
+      const ua = navigator.userAgent, plat = /; wv\)/.test(ua) ? "android" : /Electron/.test(ua) ? "windows" : "web";
+      fetch(BASE + "/ping", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({id, ver: String(window.SEMI_NAME || ""), plat}), cache: "no-store"})
+        .then(r => { if (r.ok) localStorage.setItem("semi.ping.day", day); }).catch(() => {});
+    } catch (e) {}
+  }, 3000);
   if (ON) {
     const snap = () => JSON.stringify([cat(), S.tools, S.reports, S.pending, S.email]), before = snap();
     refresh(true).then(() => { if (snap() !== before) rerender(); else paintTop(); });
