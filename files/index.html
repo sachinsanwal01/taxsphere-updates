@@ -5,8 +5,8 @@
 <script>
 /* TaxSphere live updates: boot. If an update has been downloaded, start the app from it instead of the built-in files.
    A start that doesn't finish marks that update bad and the next start uses the built-in version. */
-window.SEMI_BUNDLED = window.SEMI_BUNDLED || 22; window.SEMI_APK = window.SEMI_APK || 17;
-window.SEMI_BUILD = 22; window.SEMI_NAME = "2.7.2";
+window.SEMI_BUNDLED = window.SEMI_BUNDLED || 23; window.SEMI_APK = window.SEMI_APK || 17;
+window.SEMI_BUILD = 23; window.SEMI_NAME = "2.8";
 window.SEMI_URL = function (p) { return (window.__PATCH && window.__PATCH[p]) || p; };
 /* iframe attribute for a tool page: an updated page goes in srcdoc so it keeps the app's storage (a blob: page can't) */
 window.SEMI_FRAME = function (p) { var h = window.__PATCH_HTML && window.__PATCH_HTML[p];
@@ -402,6 +402,7 @@ mark{background:var(--lime);color:var(--lime-ink);border-radius:3px;padding:0 2p
 
 <header class="topbar">
   <img src="icon.svg" alt=""><b>TaxSphere</b>
+  <button onclick="window.NEWS&&NEWS.open()" aria-label="What's new" id="newsTop"></button>
   <button onclick="location.hash='#/account'" aria-label="Account" id="acctTop" style="display:none"></button>
   <button onclick="toggleTheme()" aria-label="Switch theme" id="themeIc2"></button>
 </header>
@@ -419,6 +420,7 @@ mark{background:var(--lime);color:var(--lime-ink);border-radius:3px;padding:0 2p
 <script src="concepts/concepts.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="account.js"></script>
+<script src="news.js"></script>
 <script>
 // ---------------------------------------------------------------- helpers
 const $ = (s, r = document) => r.querySelector(s);
