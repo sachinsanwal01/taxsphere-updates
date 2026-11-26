@@ -18,7 +18,18 @@
   const unseen = () => { const s = seen(); return items().filter(i => !s.has(i.id)); };
   const markAll = () => set(KEY + ".seen", [...new Set([...seen(), ...items().map(i => i.id)])].slice(-200));
 
+  // floating "Updates" button, stacked above the KINTY AI one (bottom-right)
+  function paintFab() {
+    let f = document.getElementById("nfab");
+    if (!f) { f = document.createElement("button"); f.id = "nfab"; f.type = "button"; f.setAttribute("aria-label", "Updates"); f.onclick = open; document.body.appendChild(f); }
+    const n = unseen().length;
+    f.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span>Updates</span>` + (n ? `<b class="nfb">${n > 9 ? "9+" : n}</b>` : "");
+    f.classList.toggle("has", !!n);
+    f.style.display = /^#\/kinty/.test(location.hash) ? "none" : "";
+  }
+  addEventListener("hashchange", () => paintFab());
   function paintBell() {
+    paintFab();
     const b = document.getElementById("newsTop"); if (!b) return;
     const n = unseen().length;
     b.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>` + (n ? `<span class="nbadge">${n > 9 ? "9+" : n}</span>` : "");
@@ -62,6 +73,12 @@
   const css = document.createElement("style");
   css.textContent = `
 #newsTop{position:relative}#newsTop .nbadge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5484d;color:#fff;font:700 10.5px/17px var(--sans);text-align:center}
+#nfab{position:fixed;right:16px;bottom:80px;z-index:6;display:flex;align-items:center;gap:7px;border:0;border-radius:999px;padding:11px 16px 11px 12px;cursor:pointer;
+  background:linear-gradient(135deg,#0f766e,#12855a 55%,#2bb673);color:#fff;font:700 14px var(--sans);box-shadow:0 8px 24px rgba(18,133,90,.4)}
+#nfab svg{width:19px;height:19px}#nfab .nfb{min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#fff;color:#e5484d;font:800 11px/19px var(--sans);text-align:center;margin-left:1px}
+#nfab.has{animation:nfp 2.4s ease-in-out infinite}@keyframes nfp{0%,100%{box-shadow:0 8px 24px rgba(18,133,90,.4)}50%{box-shadow:0 8px 24px rgba(18,133,90,.4),0 0 0 7px rgba(43,182,115,.22)}}
+@media (max-width:899px){#nfab{bottom:calc(132px + env(safe-area-inset-bottom));right:12px;padding:10px 14px 10px 11px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){#nfab.has{animation:none}}
 .nwrap{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-end;justify-content:center}
 .nbg{position:absolute;inset:0;background:rgba(10,8,20,.5);opacity:0;transition:.2s}
 .ncard{position:relative;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;background:var(--surface);color:var(--text);border-radius:22px 22px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(30px);opacity:0;transition:.22s;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
