@@ -2,6 +2,15 @@
  "title": "New Context",
  "items": [
   {
+   "id": "rent-noc",
+   "date": "2026-11-27",
+   "emoji": "🏠",
+   "title": "Rent Agreement & NOC",
+   "text": "Make the rent agreement, owner's NOC and consent letter for GST registration. Download as PDF or Word.",
+   "link": "#/returns/rentnoc",
+   "cta": "Open Rent Agreement & NOC"
+  },
+  {
    "id": "bill-maker",
    "date": "2026-11-23",
    "emoji": "🧾",

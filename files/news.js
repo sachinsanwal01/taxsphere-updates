@@ -3,6 +3,7 @@
 (function () {
   const SOURCES = ["https://taxsphere.sachintaxsphere.workers.dev/news", "https://raw.githubusercontent.com/sachinsanwal01/taxsphere-updates/main/news.json"];
   const BUILT_IN = {title: "New Context", items: [
+    {id: "rent-noc", date: "2026-11-27", emoji: "🏠", title: "Rent Agreement & NOC", text: "Make the rent agreement, owner's NOC and consent letter for GST registration. Download as PDF or Word.", link: "#/returns/rentnoc", cta: "Open Rent Agreement & NOC"},
     {id: "bill-maker", date: "2026-11-23", emoji: "🧾", title: "Bill Maker", text: "Make professional GST bills with your logo. 4 templates, PDF download, UPI QR with the amount, and WhatsApp sharing.", link: "#/returns/billmaker", cta: "Open Bill Maker"},
     {id: "meesho-json", date: "2026-11-22", emoji: "🛍️", title: "Meesho GSTR-1 JSON", text: "Download a GSTR-1 JSON ready to upload on the GST portal, with checks, due dates and GSTR-8 matching.", link: "#/returns/meeshogst", cta: "Open Meesho GST Filing"},
     {id: "excel-templates", date: "2026-11-22", emoji: "📊", title: "Complete Excel templates", text: "One Excel file for all your data in GST Return Studio and Meesho filing. Fill it and import every sheet at once.", link: "#/returns/gstreturn", cta: "Open GST Return Studio"},

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<script>/*semi-gate: paid reports in TaxSphere (asks the app before a download/export)*/(function(){var P=window.parent;if(!P||P===window)return;
+var INAPP=/; wv\)/.test(navigator.userAgent),hasB=function(o){try{return !!(o&&o.AndroidBridge&&typeof o.AndroidBridge.saveFile!=="undefined");}catch(e){return false;}};
+if(INAPP&&!hasB(window)){var pb=null;try{pb=hasB(P)?P.AndroidBridge:null;}catch(e){}
+  window.AndroidBridge=pb||{saveFile:function(n,m,t){P.postMessage({semi:"save",name:String(n),mime:String(m||"text/plain"),text:String(t)},"*");}};}
+if(INAPP){var vb=function(a){var h=a.getAttribute("href")||"";if(!/^(blob|data):/.test(h))return false;var nm=a.getAttribute("download")||"download.txt";
+    fetch(h).then(function(r){return r.blob();}).then(function(b){return b.text().then(function(t){window.AndroidBridge.saveFile(nm,b.type||"text/plain",t);});}).catch(function(){});return true;};
+  document.addEventListener("click",function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest("a[href]");if(a&&vb(a)){ev.preventDefault();ev.stopPropagation();}},true);
+  var oc0=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(vb(this))return;return oc0.call(this);};}var on=false,n=0,Q={};
+function ask(go){var id=++n;Q[id]=go;try{P.postMessage({semi:"export",id:id},"*");}catch(e){delete Q[id];go();}}
+addEventListener("message",function(e){var d=e.data;if(e.source!==P||!d||typeof d!=="object")return;if("semiGate" in d)on=!!d.semiGate;
+if("semiExportOk" in d){var f=Q[d.id];delete Q[d.id];if(f&&d.semiExportOk)f();}});
+try{P.postMessage({semi:"gatehello"},"*");}catch(e){}
+var B=window.AndroidBridge;if(B&&typeof B.saveFile==="function"){var o=B.saveFile,w=function(a,b,c){if(!on||window.__noGate)return o.call(B,a,b,c);ask(function(){o.call(B,a,b,c);});};
+try{B.saveFile=w;}catch(e){}if(B.saveFile!==w){var W={};try{for(var k in B){try{W[k]=typeof B[k]==="function"?B[k].bind(B):B[k];}catch(e){}}}catch(e){}W.saveFile=w;
+try{window.AndroidBridge=W;}catch(e){}if(window.AndroidBridge!==W){try{Object.defineProperty(window,"AndroidBridge",{value:W,configurable:true,writable:true});}catch(e){}}}}
+var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var a=this;if(on&&!window.__noGate&&a.hasAttribute("download")&&!a.__ok){ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});return;}return oc.call(a);};
+document.addEventListener("click",function(ev){if(!on||window.__noGate)return;var a=ev.target&&ev.target.closest&&ev.target.closest("a[download]");if(!a||a.__ok)return;ev.preventDefault();ev.stopPropagation();ask(function(){a.__ok=1;try{oc.call(a);}finally{a.__ok=0;}});},true);
+})();</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6d4aff">
+<title>Rent Agreement & NOC for GST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f5fb;--surface:#fff;--surface2:#f0eef8;--ink:#16131f;--text:#3b3650;--soft:#6f6987;--rule:#e3dff0;
+  --accent:#6d4aff;--accent-ink:#fff;--accent-wash:#ece7ff;--pink:#ff5fa2;
+  --good:#12855a;--good-wash:#e2f6ec;--bad:#c2334d;--bad-wash:#fbe6ea;--warn-wash:#fff6e6;--warn-rule:#f2dfb8;--warn-ink:#7a5200;
+  --shadow:0 1px 2px rgba(22,19,31,.05),0 8px 24px rgba(22,19,31,.06);
+  --sans:"Inter","Segoe UI",system-ui,sans-serif;--display:"Space Grotesk","Inter","Segoe UI",sans-serif;
+  /* names used by the tool's own markup */
+  --line:var(--rule);--mute:var(--soft);--brand:var(--accent);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0d16;--surface:#191624;--surface2:#221e31;--ink:#f3f0ff;--text:#d3cde6;--soft:#9b94b4;--rule:#2e2942;
+  --accent:#9b84ff;--accent-ink:#120a33;--accent-wash:#2a2250;--good:#45d39a;--good-wash:#123326;--bad:#ff7d93;--bad-wash:#3a1a22;
+  --warn-wash:#2e2410;--warn-rule:#4a3a18;--warn-ink:#f0c674;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f0d16;--surface:#191624;--surface2:#221e31;--ink:#f3f0ff;--text:#d3cde6;--soft:#9b94b4;--rule:#2e2942;
+  --accent:#9b84ff;--accent-ink:#120a33;--accent-wash:#2a2250;--good:#45d39a;--good-wash:#123326;--bad:#ff7d93;--bad-wash:#3a1a22;
+  --warn-wash:#2e2410;--warn-rule:#4a3a18;--warn-ink:#f0c674;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+html.embedded,html.embedded body{background:transparent;overflow:hidden}
+h2,h3{font-family:var(--display);color:var(--ink);letter-spacing:-.01em}
+main{padding:14px 14px 28px;max-width:760px;margin:0 auto}
+html.embedded main{padding:2px 0 8px}
+html.embedded .semi-credit{display:none!important}
+
+/* top: summary + stepper */
+.mhead{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:12px}
+.mhead .ic{width:44px;height:44px;flex:none;border-radius:13px;display:grid;place-items:center;font-size:22px;background:linear-gradient(135deg,var(--accent),#9b4dff 55%,var(--pink))}
+.mhead .tx{flex:1;min-width:0}
+.mhead b{display:block;font:700 15.5px/1.25 var(--display);color:var(--ink)}
+.mhead .period{display:block;margin-top:2px;font-size:12.5px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mhead .period.set{color:var(--good);font-weight:600}
+.mhead .mini{flex:none;border:1px solid var(--rule);background:var(--surface2);color:var(--ink);font:600 12.5px var(--sans);border-radius:10px;padding:8px 10px;cursor:pointer;min-height:36px}
+.stepper{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 14px;padding:4px;background:var(--surface2);border-radius:14px}
+.stepper::-webkit-scrollbar{display:none}
+.stepper button{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;color:var(--soft);font:600 13px var(--sans);padding:9px 11px;border-radius:10px;cursor:pointer;white-space:nowrap;min-height:40px}
+.stepper button i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--rule);color:var(--soft)}
+.stepper button.done i{background:var(--good);color:#fff}
+.stepper button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(22,19,31,.12)}
+.stepper button.on i{background:var(--accent);color:var(--accent-ink)}
+
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{font-size:16.5px;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3{font-size:12.5px;margin:14px 0 6px;color:var(--soft);text-transform:uppercase;letter-spacing:.05em}
+.tag{font:600 11px var(--sans);background:var(--accent-wash);color:var(--accent);padding:3px 9px;border-radius:20px;letter-spacing:0}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--soft);margin:12px 0 5px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--rule);border-radius:12px;font:15px var(--sans);background:var(--surface);color:var(--ink);min-height:44px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:11px 16px;font:700 14.5px var(--sans);background:var(--accent);color:var(--accent-ink);width:100%;margin-top:12px;cursor:pointer;min-height:46px}
+.btn:active{transform:scale(.99)}
+.btn.alt{background:var(--accent-wash);color:var(--accent)}
+.btn.pink{background:var(--pink);color:#fff}
+.btn.ghost{background:transparent;color:var(--bad);border:1px solid var(--bad-wash)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.next{display:flex;justify-content:flex-end;margin:4px 0 12px}
+.next .btn{width:auto;margin:0;padding:11px 20px}
+.drop{border:2px dashed var(--rule);border-radius:14px;padding:20px 12px;text-align:center;color:var(--soft);background:var(--surface2);position:relative}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;min-height:0}
+.drop b{color:var(--accent);display:block;font-size:15px;margin-bottom:2px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--surface2);border:1px solid var(--rule);border-radius:12px;padding:11px}
+.kpi small{display:block;color:var(--soft);font-size:11.5px;font-weight:600}
+.kpi strong{font:700 17px var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi.big{grid-column:1/-1;background:var(--accent-wash);border-color:transparent}
+.kpi.big strong{font-size:23px;color:var(--accent)}
+.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+th,td{padding:9px 10px;border-bottom:1px solid var(--rule);text-align:right;color:var(--text)}
+th{background:var(--surface2);color:var(--soft);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:700;background:var(--surface2);color:var(--ink)}
+.note{font-size:12.5px;color:var(--warn-ink);background:var(--warn-wash);border:1px solid var(--warn-rule);border-radius:12px;padding:9px 11px;margin-top:10px}
+.note.ok{background:var(--good-wash);border-color:transparent;color:var(--good)}
+.note.bad{background:var(--bad-wash);border-color:transparent;color:var(--bad)}
+.files{list-style:none;padding:0;margin:10px 0 0}
+.files li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--rule);border-radius:12px;margin-top:6px;font-size:13px;background:var(--surface2)}
+.files li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files li button{border:0;background:none;color:var(--bad);font-size:18px;padding:0 4px;cursor:pointer}
+.pill{font-size:11px;padding:2px 7px;border-radius:8px;font-weight:600}
+.pill.s{background:var(--good-wash);color:var(--good)}.pill.r{background:var(--bad-wash);color:var(--bad)}
+.steps{margin:0;padding-left:20px;font-size:13.5px}
+.steps li{margin:6px 0}
+.tab{display:none}.tab.on{display:block;animation:fi .18s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:22px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:90%}
+.toast.on{opacity:1}
+html.embedded .toast,html.embedded .semi-credit{display:none!important}
+.empty{text-align:center;color:var(--soft);padding:22px 8px;font-size:13.5px}
+.empty .btn{width:auto;margin:12px 4px 0;padding:10px 16px}
+@media (min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}.kpi.big{grid-column:span 2}}
+@media print{.mhead,.stepper,.next,.btn,.btns,.drop,.noprint{display:none!important}.tab{display:block!important}main{padding:0}.card{break-inside:avoid;box-shadow:none}}
+
+</style>
+<style>
+.check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text);font-weight:500;margin:12px 0 0}
+.check input{width:20px;height:20px;min-height:0;accent-color:var(--accent)}
+textarea{resize:vertical;font:14px/1.45 var(--sans)}
+.poss{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.poss button{border:2px solid var(--rule);background:var(--surface2);border-radius:14px;padding:12px 10px;text-align:left;cursor:pointer;font:inherit;color:var(--text);min-height:86px}
+.poss button b{display:block;color:var(--ink);font-size:14.5px;margin:4px 0 2px}.poss button small{font-size:12px;color:var(--soft);line-height:1.35;display:block}
+.poss button span{font-size:20px}
+.poss button.on{border-color:var(--accent);background:var(--accent-wash)}
+.need{margin:0;padding:0;list-style:none}.need li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px}
+.need li:last-child{border:0}.need li i{font-style:normal;flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--accent-wash);color:var(--accent)}
+.need li.mk i{background:var(--good-wash);color:var(--good)}
+.need b{color:var(--ink)}
+.docsw{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px;background:var(--surface2);border-radius:12px;margin-bottom:10px}
+.docsw button{flex:1 0 auto;border:0;background:none;color:var(--soft);font:600 13px var(--sans);padding:9px 12px;border-radius:9px;cursor:pointer;min-height:40px}
+.docsw button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(22,19,31,.12)}
+.prevcard{padding:10px;background:var(--surface2)}#pages{display:flex;flex-direction:column;align-items:center;gap:12px}
+#pages canvas{background:#fff;border-radius:4px;box-shadow:0 4px 18px rgba(22,19,31,.18);max-width:100%}
+.warns{margin:0 0 10px}.warns .note{margin-top:6px}
+.hint{font-size:12px;color:var(--soft);margin-top:4px}
+.hint.bad{color:var(--bad)}.hint.ok{color:var(--good)}
+.saved{display:grid;grid-template-columns:1fr;gap:6px;border:1px solid var(--rule);border-radius:12px;padding:10px 12px;margin-top:8px;background:var(--surface2)}
+.saved b{display:block;color:var(--ink);font-size:14px}.saved small{color:var(--soft);font-size:12.5px}
+.bact{display:flex;gap:6px}.bact button{flex:1;border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px;font:600 12.5px var(--sans);cursor:pointer}
+.bact .del{color:var(--bad)}
+.forrent{}
+body.norent .forrent{display:none!important}
+@media (min-width:700px){.poss{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head><body>
+<main>
+<div class="mhead">
+  <div class="ic">🏠</div>
+  <div class="tx"><b>Rent Agreement & NOC</b><span class="period" id="hdrSub">Premises documents for GST registration</span></div>
+  <button class="mini" onclick="loadSample()">Load sample</button>
+</div>
+<div class="stepper" id="stepper">
+  <button class="on" data-t="type"><i>1</i>Premises type</button>
+  <button data-t="owner"><i>2</i>Owner</button>
+  <button data-t="biz"><i>3</i>Business</button>
+  <button data-t="terms"><i>4</i>Premises & terms</button>
+  <button data-t="prev"><i>5</i>Documents</button>
+  <button data-t="saved"><i>6</i>Saved</button>
+</div>
+
+<!-- 1 TYPE -->
+<section class="tab on" id="t-type">
+  <div class="card"><h2>Nature of possession <span class="tag">as in GST REG-01</span></h2>
+    <p style="margin:0 0 10px;font-size:13.5px;color:var(--soft)">Choose how the business holds the premises. The documents you need change with it.</p>
+    <div class="poss" id="poss"></div>
+  </div>
+  <div class="card"><h2>What to upload on the GST portal</h2>
+    <ul class="need" id="need"></ul>
+    <div class="note">Upload each document as a PDF or JPEG of up to 1 MB. The address must match exactly across the agreement, NOC, electricity bill and the registration form.</div>
+  </div>
+  <div class="card"><h2>Place of business</h2>
+    <label>This address is the</label>
+    <select data-k="p.kind"><option>principal place of business</option><option>additional place of business</option></select>
+  </div>
+  <div class="next"><button class="btn" onclick="showTab('owner')">Next: Owner →</button></div>
+</section>
+
+<!-- 2 OWNER -->
+<section class="tab" id="t-owner">
+  <div class="card"><h2>Property owner</h2>
+    <label>Owner's full name *</label><input data-k="o.name" placeholder="Ramesh Kumar Sharma" autocomplete="off">
+    <div class="row"><div><label>Relation</label><select data-k="o.rel"><option>S/o</option><option>D/o</option><option>W/o</option><option>C/o</option></select></div>
+      <div><label>Father's / husband's name</label><input data-k="o.father"></div></div>
+    <div class="row"><div><label>Age (years)</label><input data-k="o.age" type="number" inputmode="numeric" min="18" max="110"></div>
+      <div><label>PAN</label><input data-k="o.pan" maxlength="10" placeholder="ABCDE1234F" autocapitalize="characters"><div class="hint" id="h-o.pan"></div></div></div>
+    <label>Residential address *</label><textarea data-k="o.addr" rows="2" placeholder="House no., street, city, PIN"></textarea>
+    <div class="row"><div><label>Mobile</label><input data-k="o.phone" inputmode="tel" maxlength="13"></div>
+      <div><label>Aadhaar (last 4 digits only)</label><input data-k="o.aad" inputmode="numeric" maxlength="4" placeholder="1234"></div></div>
+    <label>Co-owner (if any)</label><input data-k="o.co" placeholder="Name of joint owner, if the property is jointly owned">
+  </div>
+  <div class="card forcons"><h2>Relation with the applicant</h2>
+    <label>The owner is the applicant's</label>
+    <select data-k="o.relation"><option value="">Not related</option><option>father</option><option>mother</option><option>spouse</option><option>brother</option><option>sister</option><option>son</option><option>daughter</option><option>relative</option><option>friend</option></select>
+  </div>
+  <div class="next"><button class="btn" onclick="showTab('biz')">Next: Business →</button></div>
+</section>
+
+<!-- 3 BUSINESS -->
+<section class="tab" id="t-biz">
+  <div class="card"><h2>Business applying for GST</h2>
+    <label>Constitution of business</label>
+    <select data-k="t.con"><option>Proprietorship</option><option>Partnership firm</option><option>LLP</option><option>Private limited company</option><option>One person company</option><option>Public limited company</option><option>HUF</option><option>Trust</option><option>Society</option></select>
+    <label>Trade name (business name) *</label><input data-k="t.trade" placeholder="Sharma Electronics">
+    <label class="nprop">Legal name (as per PAN)</label><input class="nprop" data-k="t.legal" placeholder="Sharma Electronics LLP">
+    <label>PAN of the business</label><input data-k="t.pan" maxlength="10" autocapitalize="characters"><div class="hint" id="h-t.pan"></div>
+    <label>Nature of business</label><input data-k="t.nature" placeholder="trading of electronic goods">
+  </div>
+  <div class="card"><h2 id="sigHd">Proprietor</h2>
+    <label>Full name *</label><input data-k="t.sig" placeholder="Vikas Sharma">
+    <div class="row"><div><label>Designation</label><input data-k="t.desig" placeholder="Proprietor"></div>
+      <div><label>Age (years)</label><input data-k="t.age" type="number" inputmode="numeric"></div></div>
+    <div class="row"><div><label>Relation</label><select data-k="t.rel"><option>S/o</option><option>D/o</option><option>W/o</option><option>C/o</option></select></div>
+      <div><label>Father's / husband's name</label><input data-k="t.father"></div></div>
+    <label>Residential address</label><textarea data-k="t.addr" rows="2"></textarea>
+    <div class="row"><div><label>Mobile</label><input data-k="t.phone" inputmode="tel" maxlength="13"></div><div><label>Email</label><input data-k="t.email" inputmode="email"></div></div>
+  </div>
+  <div class="next"><button class="btn" onclick="showTab('terms')">Next: Premises →</button></div>
+</section>
+
+<!-- 4 PREMISES & TERMS -->
+<section class="tab" id="t-terms">
+  <div class="card"><h2>Premises</h2>
+    <div class="row"><div><label>Type</label><select data-k="p.type"><option>shop</option><option>office</option><option>godown</option><option>factory</option><option>showroom</option><option>commercial unit</option><option>room used as office</option><option>residential premises</option></select></div>
+      <div><label>Area (sq. ft.)</label><input data-k="p.area" type="number" inputmode="numeric"></div></div>
+    <label>Unit / floor / building</label><input data-k="p.unit" placeholder="Shop no. 4, Ground floor, Shiv Complex">
+    <label>Street, locality, city *</label><textarea data-k="p.addr" rows="2" placeholder="Station Road, Andheri East, Mumbai"></textarea>
+    <div class="row"><div><label>State *</label><select data-k="p.state" id="pState"></select></div>
+      <div><label>PIN code *</label><input data-k="p.pin" inputmode="numeric" maxlength="6"><div class="hint" id="h-p.pin"></div></div></div>
+    <div class="row"><div><label>Electricity consumer no.</label><input data-k="p.elec"></div><div><label>Property tax / khata no.</label><input data-k="p.ptax"></div></div>
+  </div>
+  <div class="card forrent"><h2>Rent terms</h2>
+    <label>Document title</label>
+    <select data-k="r.title"><option>RENT AGREEMENT</option><option>LEASE AGREEMENT</option><option>LEAVE AND LICENCE AGREEMENT</option></select>
+    <div class="row"><div><label>Start date *</label><input data-k="r.start" type="date"></div><div><label>Period (months)</label><input data-k="r.months" type="number" min="1" max="120" inputmode="numeric"></div></div>
+    <div class="hint" id="h-r.months"></div>
+    <div class="row"><div><label>Monthly rent (₹) *</label><input data-k="r.rent" type="number" inputmode="decimal"></div><div><label>Security deposit (₹)</label><input data-k="r.dep" type="number" inputmode="decimal"></div></div>
+    <div class="hint" id="h-r.rent"></div>
+    <div class="row"><div><label>Rent due by (day of month)</label><input data-k="r.day" type="number" min="1" max="28" inputmode="numeric"></div><div><label>Increase on renewal (%)</label><input data-k="r.esc" type="number" min="0" max="50" inputmode="decimal"></div></div>
+    <div class="row"><div><label>Lock-in (months)</label><input data-k="r.lock" type="number" min="0" inputmode="numeric" placeholder="0"></div><div><label>Notice period (months)</label><input data-k="r.notice" type="number" min="0" inputmode="numeric"></div></div>
+    <div class="row"><div><label>Society / maintenance charges paid by</label><select data-k="r.maint"><option>Tenant</option><option>Owner</option></select></div>
+      <div><label>Stamp duty & registration paid by</label><select data-k="r.stampBy"><option>both parties equally</option><option>Tenant</option><option>Owner</option></select></div></div>
+    <label class="check"><input type="checkbox" data-k="r.gst"> Owner charges GST on rent (commercial property)</label>
+    <label class="check"><input type="checkbox" data-k="r.stamp"> Leave space at the top of page 1 for stamp paper</label>
+  </div>
+  <div class="card"><h2>Signing</h2>
+    <div class="row"><div><label>Place of signing *</label><input data-k="r.place" placeholder="Mumbai"></div><div><label>Date of signing</label><input data-k="r.date" type="date"></div></div>
+    <div class="forrent">
+    <div class="row"><div><label>Witness 1 name</label><input data-k="r.w1"></div><div><label>Witness 1 address</label><input data-k="r.w1a"></div></div>
+    <div class="row"><div><label>Witness 2 name</label><input data-k="r.w2"></div><div><label>Witness 2 address</label><input data-k="r.w2a"></div></div></div>
+  </div>
+  <div class="next"><button class="btn" onclick="showTab('prev')">Make documents →</button></div>
+</section>
+
+<!-- 5 PREVIEW -->
+<section class="tab" id="t-prev">
+  <div class="warns" id="warns"></div>
+  <div class="docsw" id="docsw"></div>
+  <div class="card prevcard"><div id="pages"></div></div>
+  <div class="btns">
+    <button class="btn" onclick="downloadPDF()">⬇ Download PDF</button>
+    <button class="btn alt" onclick="downloadWord()">📝 Word file</button>
+  </div>
+  <div class="btns">
+    <button class="btn alt" onclick="copyText()">📋 Copy text</button>
+    <button class="btn alt" onclick="saveSet(true)">💾 Save</button>
+  </div>
+  <div class="card" style="margin-top:12px"><h2>Before you upload</h2><ol class="steps" id="after"></ol></div>
+</section>
+
+<!-- 6 SAVED -->
+<section class="tab" id="t-saved">
+  <div class="card"><h2>Saved documents</h2>
+    <div id="sList"></div>
+    <button class="btn alt" onclick="newSet()">＋ Start a new set</button>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<div class="semi-credit" style="text-align:center;padding:16px 12px 26px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#6f6987;clear:both"><div style="font-size:11.5px;margin-top:2px">TaxSphere · <a href="../index.html#/feedback" target="_top" style="color:#5b3fd6;font-weight:600;text-decoration:none">Feedback &amp; suggestions</a></div>
+<script>
+const $=id=>document.getElementById(id);
+const EMB=(()=>{try{return window.parent!==window;}catch(e){return true;}})();
+function toast(m){if(EMB){try{parent.postMessage({semi:"toast",text:String(m)},"*");return;}catch(e){}}
+  const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),2400);}
+if(EMB){document.documentElement.classList.add("embedded");
+  const setTheme=t=>{if(t)document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");};
+  try{setTheme(parent.document.documentElement.getAttribute("data-theme"));}catch(e){}
+  addEventListener("message",e=>{if(e.source===parent&&e.data&&"semiTheme" in e.data)setTheme(e.data.semiTheme);});
+  try{parent.postMessage({semi:"hello"},"*");}catch(e){}
+  let lastH=0;const tell=()=>{const h=Math.ceil(document.querySelector("main").getBoundingClientRect().bottom+4);
+    if(h!==lastH){lastH=h;try{parent.postMessage({semi:"height",h},"*");}catch(e){}}};
+  try{new ResizeObserver(tell).observe(document.body);}catch(e){setInterval(tell,500);}
+  addEventListener("load",tell);setTimeout(tell,50);}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const r2=n=>Math.round((+n||0)*100)/100;
+const BR=window.AndroidBridge||(()=>{try{return parent.AndroidBridge;}catch(e){return null;}})();
+function dl(name,text,mime){
+  if(BR&&BR.saveFile){try{BR.saveFile(name,mime,text);return;}catch(e){}}
+  const b=new Blob([text],{type:mime}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);toast("Downloaded "+name);}
+
+const STATES=[["01","Jammu and Kashmir"],["02","Himachal Pradesh"],["03","Punjab"],["04","Chandigarh"],["05","Uttarakhand"],["06","Haryana"],["07","Delhi"],["08","Rajasthan"],["09","Uttar Pradesh"],["10","Bihar"],["11","Sikkim"],["12","Arunachal Pradesh"],["13","Nagaland"],["14","Manipur"],["15","Mizoram"],["16","Tripura"],["17","Meghalaya"],["18","Assam"],["19","West Bengal"],["20","Jharkhand"],["21","Odisha"],["22","Chhattisgarh"],["23","Madhya Pradesh"],["24","Gujarat"],["26","Dadra and Nagar Haveli and Daman and Diu"],["27","Maharashtra"],["29","Karnataka"],["30","Goa"],["31","Lakshadweep"],["32","Kerala"],["33","Tamil Nadu"],["34","Puducherry"],["35","Andaman and Nicobar Islands"],["36","Telangana"],["37","Andhra Pradesh"],["38","Ladakh"],["97","Other Territory"]];
+const stName=c=>(STATES.find(s=>s[0]===c)||["",""])[1];
+const GSTIN_RE=/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+function gstinCheck(g){g=String(g||"").toUpperCase().trim();if(!GSTIN_RE.test(g))return "format";
+  const cs="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";let sum=0;
+  for(let i=0;i<14;i++){const p=cs.indexOf(g[i])*(i%2?2:1);sum+=Math.floor(p/36)+p%36;}
+  return cs[(36-sum%36)%36]===g[14]?"ok":"checksum";}
+function words(n){n=Math.round(n*100)/100;const a=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"],t=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const two=x=>x<20?a[x]:t[Math.floor(x/10)]+(x%10?" "+a[x%10]:""),three=x=>(x>=100?a[Math.floor(x/100)]+" Hundred"+(x%100?" ":""):"")+(x%100?two(x%100):"");
+  const w=x=>{if(!x)return "Zero";let s="";const cr=Math.floor(x/1e7);x%=1e7;const l=Math.floor(x/1e5);x%=1e5;const th=Math.floor(x/1e3);x%=1e3;
+    if(cr)s+=w(cr)+" Crore ";if(l)s+=two(l)+" Lakh ";if(th)s+=two(th)+" Thousand ";if(x)s+=three(x);return s.trim();};
+  const r=Math.floor(n),p=Math.round((n-r)*100);return "Rupees "+w(r)+(p?" and "+two(p)+" Paise":"")+" Only";}
+
+const HV=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const HB=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+const clean=s=>String(s??"").replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/₹/g,"Rs.").replace(/…/g,"...").replace(/[ ]/g," ");
+const tw=(s,sz,b)=>{let w=0;const T=b?HB:HV;for(const ch of clean(s)){const c=ch.charCodeAt(0);w+=(c>=32&&c<=126)?T[c-32]:556;}return w*sz/1000;};
+const STATE_OPTS=()=>`<option value="">Select state</option>`+STATES.map(s=>`<option value="${s[0]}">${s[1]}</option>`).join("");
+const PAN_RE=/^[A-Z]{5}\d{4}[A-Z]$/;
+
+/* ---------------- data ---------------- */
+const KEY="taxsphere.premises.v1";
+let DB=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}})();
+const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+function blank(){return {id:"p"+Date.now().toString(36),poss:"rent",doc:"agr",
+  o:{name:"",rel:"S/o",father:"",age:"",pan:"",addr:"",phone:"",aad:"",co:"",relation:""},
+  t:{con:"Proprietorship",trade:"",legal:"",pan:"",nature:"",sig:"",desig:"Proprietor",age:"",rel:"S/o",father:"",addr:"",phone:"",email:""},
+  p:{kind:"principal place of business",type:"shop",area:"",unit:"",addr:"",state:"",pin:"",elec:"",ptax:""},
+  r:{title:"RENT AGREEMENT",start:today(),months:11,rent:"",dep:"",day:5,esc:5,lock:"",notice:1,maint:"Tenant",stampBy:"both parties equally",gst:false,stamp:true,place:"",date:today(),w1:"",w1a:"",w2:"",w2a:""}};}
+function merge(b,x){for(const k in x){if(x[k]&&typeof x[k]==="object"&&!Array.isArray(x[k])&&b[k]&&typeof b[k]==="object")merge(b[k],x[k]);else b[k]=x[k];}return b;}
+let D=merge(blank(),DB.cur||{});DB.saved=DB.saved||[];
+const persist=()=>{DB.cur=D;try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast("Storage full");}};
+const get=p=>p.split(".").reduce((o,k)=>o==null?o:o[k],D);
+const set=(p,v)=>{const ks=p.split("."),last=ks.pop();ks.reduce((o,k)=>o[k],D)[last]=v;};
+
+const POSS={
+  rent:{ic:"🔑",name:"Rented / Leased",sub:"Business pays rent to the owner",docs:["agr","noc"]},
+  consent:{ic:"🤝",name:"Consent",sub:"Owner (often a relative) allows use free of rent",docs:["noc"]},
+  shared:{ic:"🏢",name:"Shared",sub:"Premises shared with the owner or another business",docs:["noc"]},
+  own:{ic:"🏠",name:"Own",sub:"Premises owned by the proprietor or the business",docs:[]}};
+const DOCNAME={agr:"Rent agreement",noc:"NOC / consent letter"};
+const NEED={
+  rent:[["mk","Rent agreement","made here; sign on stamp paper / e-stamp"],["mk","NOC from the owner","made here; signed by the owner"],["","Owner's proof of ownership","latest electricity bill, property tax receipt or municipal khata"]],
+  consent:[["mk","Consent letter / NOC","made here; signed by the owner"],["","Owner's proof of ownership","latest electricity bill, property tax receipt or municipal khata"],["","Owner's ID","PAN or Aadhaar of the owner (asked by many officers)"]],
+  shared:[["mk","Consent letter / NOC","made here; signed by the person sharing the premises"],["","Proof of ownership","latest electricity bill, property tax receipt or municipal khata"]],
+  own:[["","Proof of ownership","latest electricity bill, property tax receipt or municipal khata in the owner's name"],["","No agreement or NOC needed","if the bill is in another family member's name, choose Consent instead"]]};
+
+/* ---------------- helpers for text ---------------- */
+const MON=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const ord=n=>n+(n%100>10&&n%100<14?"th":["th","st","nd","rd"][n%10]||"th");
+const longDate=s=>{if(!s)return "____________";const d=new Date(s+"T00:00");return isNaN(d)?s:`${ord(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}`;};
+const endDate=(s,m)=>{const d=new Date(s+"T00:00");if(isNaN(d))return "";d.setMonth(d.getMonth()+(+m||0));d.setDate(d.getDate()-1);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+const fmt=n=>(+n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
+const B=s=>"**"+s+"**";
+const v=(x,blank="____________")=>String(x??"").trim()||blank;
+const isProp=()=>D.t.con==="Proprietorship";
+const conTxt=()=>{const c=D.t.con;return (/^(LLP|HUF)$/.test(c)?"an ":/^[AEIOU]/i.test(c)?"an ":"a ")+(/^(LLP|HUF)$/.test(c)?c:c.toLowerCase());};
+function premises(){const p=D.p;return [p.unit,p.addr].map(x=>String(x||"").trim().replace(/\n+/g,", ")).filter(Boolean).join(", ")+(stName(p.state)?", "+stName(p.state):"")+(p.pin?" - "+p.pin:"")||"____________";}
+function ownerLine(){const o=D.o;return `${B(v(o.name).toUpperCase())}, ${o.rel} ${v(o.father)}${o.age?`, aged about ${o.age} years`:""}, residing at ${v(o.addr).replace(/\n+/g,", ")}${o.pan?`, holding PAN ${o.pan.toUpperCase()}`:""}`;}
+function bizName(){const t=D.t;return "M/s "+v(t.trade);}
+function tenantLine(){const t=D.t;
+  if(isProp())return `${B(v(t.sig).toUpperCase())}, ${t.rel} ${v(t.father)}${t.age?`, aged about ${t.age} years`:""}${t.addr?`, residing at ${t.addr.replace(/\n+/g,", ")}`:""}, proprietor of ${B(bizName())}${t.pan?`, holding PAN ${t.pan.toUpperCase()}`:""}`;
+  const legal=t.legal&&t.legal.trim()&&t.legal.trim().toLowerCase()!==String(t.trade).trim().toLowerCase()?`${B("M/s "+t.legal.trim())} (trade name ${v(t.trade)})`:B(bizName());
+  return `${legal}, ${conTxt()}${t.pan?` having PAN ${t.pan.toUpperCase()}`:""}, acting through its ${v(t.desig,"authorised signatory").toLowerCase()} ${B(v(t.sig))}, who is duly authorised to sign this document`;}
+const heirs=()=>isProp()?"his/her heirs, legal representatives, executors and assigns":"its successors and permitted assigns";
+
+/* ---------------- documents (list of blocks) ---------------- */
+function docAgreement(){const r=D.r,t=D.t,o=D.o,p=D.p,rent=+r.rent||0,dep=+r.dep||0,isLL=/LEAVE/.test(r.title);
+  const OW=isLL?"LICENSOR":"OWNER",TN=isLL?"LICENSEE":"TENANT",Ow=isLL?"Licensor":"Owner",Tn=isLL?"Licensee":"Tenant",fee=isLL?"licence fee":"rent",tenancy=isLL?"licence":"tenancy";
+  const use=t.nature?`carrying on the business of ${t.nature}`:"carrying on lawful business";
+  const out=[];const P=(s,o={})=>out.push({k:"p",s,...o});let n=0;const C=s=>out.push({k:"p",num:(++n)+".",s});
+  out.push({k:"h",s:r.title,sz:15});out.push({k:"sp",h:6});
+  P(`This ${r.title.toLowerCase().replace(/\b(?!and\b)\w/g,c=>c.toUpperCase())} is made and executed at ${B(v(r.place))} on ${B(longDate(r.date))}`);
+  P("BETWEEN",{c:1,b:1});
+  P(`${ownerLine()}${o.co?`, and ${B(o.co.toUpperCase())} (joint owner)`:""}, hereinafter called the "${OW}" (which expression shall, unless repugnant to the context, include ${o.co?"their":"his/her"} heirs, legal representatives, executors and assigns) of the FIRST PART;`);
+  P("AND",{c:1,b:1});
+  P(`${tenantLine()}, hereinafter called the "${TN}" (which expression shall, unless repugnant to the context, include ${heirs()}) of the SECOND PART.`);
+  P(`WHEREAS the ${Ow} is the absolute and lawful owner of the ${p.type} situated at ${B(premises())}${p.area?`, admeasuring about ${fmt(p.area)} sq. ft.`:""}, more fully described in the Schedule below (hereinafter called the "PREMISES"); and the ${Tn} has requested the ${Ow} to let out the Premises for ${use}, and the ${Ow} has agreed to do so on the following terms and conditions.`);
+  P("NOW THIS AGREEMENT WITNESSETH AS UNDER:",{b:1});
+  const end=endDate(r.start,r.months);
+  C(`${B("Period:")} The ${tenancy} shall be for a period of ${v(r.months)} (${r.months?words(+r.months).replace(/^Rupees |\s*Only$/g,"").toLowerCase():"__"}) months, commencing from ${B(longDate(r.start))} and ending on ${B(longDate(end))}. It may be renewed for a further period by mutual written consent${+r.esc?`, with an increase of ${r.esc}% in the monthly ${fee} on each renewal`:""}.`);
+  C(`${B(isLL?"Licence fee:":"Rent:")} The ${Tn} shall pay a monthly ${fee} of ${B("Rs. "+fmt(rent)+"/-")} (${words(rent)}) to the ${Ow} on or before the ${ord(+r.day||5)} day of each English calendar month, by bank transfer, UPI or cheque. The ${Ow} shall acknowledge each payment.`);
+  if(dep)C(`${B("Security deposit:")} The ${Tn} has paid an interest-free refundable security deposit of ${B("Rs. "+fmt(dep)+"/-")} (${words(dep)}) to the ${Ow}. The ${Ow} shall refund the deposit when the ${Tn} hands over vacant possession, after adjusting any unpaid ${fee}, charges or cost of damage, excluding normal wear and tear.`);
+  C(`${B("Taxes on "+fee+":")} ${r.gst?`Goods and Services Tax on the ${fee}, as applicable, shall be payable by the ${Tn} in addition to the ${fee}, against a proper tax invoice issued by the ${Ow}. `:`If Goods and Services Tax becomes payable on the ${fee}, it shall be dealt with as required by the GST law, including the reverse charge provisions where they apply. `}Where the ${Tn} is required to deduct tax at source on the ${fee} under the Income-tax law, it shall deduct and deposit the tax on time and give the TDS certificate to the ${Ow}.`);
+  C(`${B("Use and registrations:")} The ${Tn} shall use the Premises only for ${use} and not for any illegal or immoral purpose. The ${Ow} has no objection to the ${Tn} using the address of the Premises as its ${p.kind} for registration under the Goods and Services Tax laws and for the Shops and Establishments licence, Udyam/MSME registration, trade licence, bank accounts and other registrations needed for its business. On leaving the Premises, the ${Tn} shall amend or cancel these registrations so that they no longer show this address.`);
+  C(`${B("Electricity, water and charges:")} The ${Tn} shall pay the electricity and water charges as per the actual bills${p.elec?` (electricity consumer no. ${p.elec})`:""} for the period of its occupation. Society / maintenance charges shall be paid by the ${r.maint==="Owner"?Ow:Tn}. Property tax and other taxes on the property shall be paid by the ${Ow}.`);
+  C(`${B("Repairs:")} The ${Tn} shall keep the Premises clean and in good condition and shall carry out minor day-to-day repairs at its cost. Major and structural repairs shall be done by the ${Ow}.`);
+  C(`${B("No sub-letting:")} The ${Tn} shall not sub-let, assign or part with the possession of the Premises or any part of it without the prior written consent of the ${Ow}.`);
+  C(`${B("Alterations:")} The ${Tn} shall not make any structural change to the Premises without the written consent of the ${Ow}. It may install furniture, fixtures, a signboard and equipment, which it may remove on leaving, making good any damage caused by the removal.`);
+  C(`${B("Inspection:")} The ${Ow} or an authorised person may inspect the Premises at a reasonable time after giving prior notice to the ${Tn}.`);
+  C(`${B("Termination:")} ${+r.lock?`Neither party shall end this agreement during the lock-in period of the first ${r.lock} months, except for a breach of its terms. `:""}Either party may end this agreement by giving ${+r.notice===1||!r.notice?"one month's":r.notice+" months'"} notice in writing to the other. If the ${Tn} fails to pay the ${fee} for two consecutive months or breaks any term of this agreement, the ${Ow} may end this agreement and take back possession of the Premises.`);
+  C(`${B("Handing over:")} On expiry or earlier termination of this agreement, the ${Tn} shall hand over peaceful and vacant possession of the Premises to the ${Ow} in the same condition in which it was received, subject to normal wear and tear, and shall clear all dues up to that date.`);
+  C(`${B("Laws and rules:")} The ${Tn} shall follow all applicable laws, rules of the society or local authority, and shall obtain at its own cost the licences needed for its business. The ${Tn} shall be responsible for any loss caused by its breach of law.`);
+  C(`${B("Stamp duty:")} The stamp duty and registration charges, if any, on this agreement shall be paid by the ${r.stampBy==="Tenant"?Tn:r.stampBy==="Owner"?Ow:"parties in equal shares"}.`);
+  C(`${B("Jurisdiction:")} Any dispute arising out of this agreement shall be subject to the jurisdiction of the courts at ${v(r.place)}.`);
+  out.push({k:"sp",h:4});
+  P("SCHEDULE OF THE PREMISES",{c:1,b:1});
+  P(`${p.type[0].toUpperCase()+p.type.slice(1)}: ${premises()}${p.area?`, carpet / built-up area about ${fmt(p.area)} sq. ft.`:""}${p.elec?`, electricity consumer no. ${p.elec}`:""}${p.ptax?`, property tax / khata no. ${p.ptax}`:""}.`);
+  P(`IN WITNESS WHEREOF the parties have signed this agreement at the place and on the date first written above, in the presence of the witnesses below.`);
+  out.push({k:"sig",cols:[[OW,v(o.name),o.co?"& "+o.co:""].filter(Boolean),[TN,isProp()?v(t.sig):`For ${bizName()}`,isProp()?`Proprietor, ${bizName()}`:`${v(t.sig)} (${v(t.desig,"Authorised signatory")})`]]});
+  out.push({k:"sig",gap:30,cols:[["WITNESS 1","Name: "+v(r.w1,"________________"),"Address: "+v(r.w1a,"________________")],["WITNESS 2","Name: "+v(r.w2,"________________"),"Address: "+v(r.w2a,"________________")]]});
+  return out;}
+
+function docNOC(){const o=D.o,t=D.t,p=D.p,r=D.r,poss=D.poss,st=stName(p.state);
+  const out=[];const P=(s,x={})=>out.push({k:"p",s,...x});
+  const title=poss==="rent"?"NO OBJECTION CERTIFICATE":"CONSENT LETTER / NO OBJECTION CERTIFICATE";
+  out.push({k:"h",s:title,sz:14});
+  out.push({k:"c",s:`(For use of the premises as ${/^a/.test(p.kind)?"an":"a"} ${p.kind} for GST registration)`,sz:10.5});
+  out.push({k:"sp",h:10});
+  P(`Date: ${longDate(r.date)}`,{right:1});
+  P(`To,\nThe Proper Officer,\nGoods and Services Tax Department,\n${v(st,"____________")}`,{nj:1});
+  P(`${B("Subject:")} Consent and no objection for GST registration of ${bizName()} at ${premises()}`);
+  P("Respected Sir / Madam,",{nj:1});
+  P(`I, ${ownerLine()}, am the lawful owner${o.co?` (jointly with ${o.co})`:""} of the ${p.type} situated at ${B(premises())}${p.area?`, admeasuring about ${fmt(p.area)} sq. ft.`:""} (the "Premises").`);
+  const who=isProp()?`${bizName()}, a proprietorship of ${B(v(t.sig))}`:`${B(t.legal&&t.legal.trim()?"M/s "+t.legal.trim():bizName())}${t.legal&&t.legal.trim()&&t.trade?` (trade name ${t.trade})`:""}, ${conTxt()} acting through its ${v(t.desig,"authorised signatory").toLowerCase()} ${B(v(t.sig))}`;
+  const pan=t.pan?` (PAN ${t.pan.toUpperCase()})`:"";
+  if(poss==="rent")P(`I have let out the Premises to ${who}${pan} under a ${r.title.toLowerCase()} dated ${longDate(r.date)} for a period of ${v(r.months)} months from ${longDate(r.start)}, at a monthly rent of Rs. ${fmt(r.rent)}/-.`);
+  else if(poss==="shared")P(`I have permitted ${who}${pan} to use a part of the Premises, which is shared with me, for its business.${o.relation?` The applicant is my ${o.relation}.`:""}`);
+  else P(`I have permitted ${who}${pan} to use the Premises for its business without any rent or consideration.${o.relation?` The applicant is my ${o.relation}.`:""}`);
+  P(`I give my consent and have ${B("no objection")} to ${bizName()} using the Premises as its ${B(p.kind)} and obtaining registration under the Central Goods and Services Tax Act, 2017 and the ${st&&/Delhi|Puducherry|Jammu/.test(st)?st:(st?st:"State")} Goods and Services Tax Act, 2017${/Chandigarh|Lakshadweep|Ladakh|Andaman|Dadra/.test(st)?" / Union Territory Goods and Services Tax Act, 2017":""} at this address. I also have no objection to the business using this address for its other registrations and licences.`);
+  P(`I confirm that the information given above is true and correct to the best of my knowledge and belief.`);
+  out.push({k:"sp",h:2});
+  P("Enclosures:",{b:1,nj:1});
+  P(`1. Copy of ${p.elec?"the latest electricity bill (consumer no. "+p.elec+")":"the latest electricity bill / property tax receipt"} as proof of ownership`,{ind:12,nj:1});
+  P(`2. Copy of the owner's PAN / Aadhaar`,{ind:12,nj:1});
+  out.push({k:"sig",gap:34,cols:[["(Signature of the owner)","Name: "+v(o.name),o.pan?"PAN: "+o.pan.toUpperCase():"",o.aad?"Aadhaar: XXXX XXXX "+o.aad:"",o.phone?"Mobile: "+o.phone:"","Place: "+v(r.place)].filter(Boolean),
+    o.co?["(Signature of the joint owner)","Name: "+o.co]:[]]});
+  return out;}
+
+const DOCS={agr:docAgreement,noc:docNOC};
+const curDocs=()=>POSS[D.poss].docs;
+
+/* ---------------- layout: blocks -> pages of drawing steps (A4 595 x 842 pt) ---------------- */
+const W=595,H=842,ML=62,MR=62,MB=70,FS=11,LH=15.6,INK="#111111";
+function toks(s){const out=[];let b=false,prevSpace=true;String(s).split("**").forEach((seg,i)=>{if(i)b=!b;
+  seg.split(/(\n)/).forEach(part=>{if(part==="\n"){out.push({nl:1});prevSpace=true;return;}
+    part.split(/(\s+)/).forEach(w=>{if(!w)return;if(/^\s+$/.test(w)){prevSpace=true;return;}out.push({w,b,glue:!prevSpace&&out.length&&!out[out.length-1].nl});prevSpace=false;});});});return out;}
+function lines(s,max,sz){const sp=tw(" ",sz,false),L=[];let cur=[],wd=0;
+  const push=(last)=>{L.push({ws:cur,wd,last});cur=[];wd=0;};
+  for(const t of toks(s)){if(t.nl){push(true);continue;}
+    const w=tw(t.w,sz,t.b);if(cur.length&&!t.glue&&wd+sp+w>max)push(false);
+    cur.push({...t,wid:w});wd+=(cur.length>1&&!t.glue?sp:0)+w;}
+  if(cur.length||!L.length)push(true);return L;}
+function layout(doc,opt){const pages=[];let pg=[],y;const top0=opt.stamp?300:64;
+  const newPage=()=>{pg=[];pages.push(pg);y=pages.length===1?top0:64;};newPage();
+  const room=h=>{if(y+h>H-MB)newPage();};
+  const text=(x,yy,s,sz,b)=>pg.push({k:"text",x,y:yy,s,sz,b,c:INK});
+  for(const bl of doc){
+    if(bl.k==="sp"){y+=bl.h;continue;}
+    if(bl.k==="h"){room(30);const sz=bl.sz||14;text((W-tw(bl.s,sz,1))/2,y+sz,bl.s,sz,1);y+=sz+4;pg.push({k:"line",x1:(W-tw(bl.s,sz,1))/2,y1:y,x2:(W+tw(bl.s,sz,1))/2,y2:y,c:INK,lw:.8});y+=10;continue;}
+    if(bl.k==="c"){const sz=bl.sz||FS;for(const ln of lines(bl.s,W-ML-MR,sz)){room(LH);text((W-ln.wd)/2,y+sz,ln.ws.map((w,j)=>(j&&!w.glue?" ":"")+w.w).join(""),sz,0);y+=LH;}y+=4;continue;}
+    if(bl.k==="p"){const sz=FS,numW=bl.num?22:0,x0=ML+(bl.ind||0)+numW,max=W-MR-x0;const L=lines(bl.s,max,sz);
+      // keep a short paragraph's first two lines together
+      room(Math.min(L.length,2)*LH);
+      if(bl.num)text(ML+(bl.ind||0),y+sz,bl.num,sz,1);
+      L.forEach((ln,i)=>{if(i)room(LH);const sp=tw(" ",sz,false);
+        let x=bl.c?(W-ln.wd)/2:bl.right?W-MR-ln.wd:x0;const gaps=ln.ws.filter((w,j)=>j&&!w.glue).length;
+        const extra=(!bl.c&&!bl.right&&!bl.nj&&!ln.last&&gaps>0)?(max-ln.wd)/gaps:0;
+        ln.ws.forEach((w,j)=>{if(j&&!w.glue)x+=sp+extra;text(x,y+sz,w.w,sz,w.b||!!bl.b);x+=w.wid;});y+=LH;});
+      y+=7;continue;}
+    if(bl.k==="sig"){const rows=Math.max(...bl.cols.map(c=>c.length));const gap=bl.gap||46;room(gap+rows*LH+6);y+=gap;
+      const cw=(W-ML-MR-30)/2;bl.cols.forEach((col,i)=>{if(!col.length)return;const x=ML+i*(cw+30);pg.push({k:"line",x1:x,y1:y,x2:x+Math.min(cw,190),y2:y,c:INK,lw:.7});
+        col.forEach((s,j)=>{let t=s;while(tw(t,10,!j)>cw&&t.length>4)t=t.slice(0,-2)+"…";text(x,y+13+j*LH,clean(t),10,!j);});});
+      y+=rows*LH+8;continue;}
+  }
+  const ttl=opt.title||"";
+  pages.forEach((p,i)=>{p.push({k:"line",x1:ML,y1:H-48,x2:W-MR,y2:H-48,c:"#bbbbbb",lw:.5});
+    if(opt.initials)p.push({k:"text",x:ML,y:H-34,s:"Owner: ____________        Tenant: ____________",sz:8.5,b:0,c:"#555555"});
+    else p.push({k:"text",x:ML,y:H-34,s:ttl,sz:8.5,b:0,c:"#555555"});
+    const pn=`Page ${i+1} of ${pages.length}`;p.push({k:"text",x:W-MR-tw(pn,8.5,0),y:H-34,s:pn,sz:8.5,b:0,c:"#555555"});});
+  if(opt.stamp){pages[0].unshift({k:"rect",x:ML,y:40,w:W-ML-MR,h:230,s:"#c9c9c9",lw:.8,dash:1,guide:1},{k:"text",x:(W-tw("Space for stamp paper / e-stamp certificate",10,0))/2,y:160,s:"Space for stamp paper / e-stamp certificate",sz:10,b:0,c:"#9a9a9a",guide:1});}
+  return pages;}
+function pagesFor(id){const doc=DOCS[id]();const agr=id==="agr";return layout(doc,{stamp:agr&&D.r.stamp,initials:agr,title:id==="noc"?"NOC for GST registration - "+clean(bizName()):""});}
+
+/* ---------------- preview (canvas) ---------------- */
+function paint(ctx,cmds,forPrint){ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+  for(const c of cmds){
+    if(c.k==="rect"){ctx.save();ctx.beginPath();ctx.rect(c.x,c.y,c.w,c.h);if(c.dash)ctx.setLineDash([5,4]);ctx.strokeStyle=c.s;ctx.lineWidth=c.lw||1;ctx.stroke();ctx.restore();}
+    else if(c.k==="line"){ctx.beginPath();ctx.moveTo(c.x1,c.y1);ctx.lineTo(c.x2,c.y2);ctx.strokeStyle=c.c;ctx.lineWidth=c.lw;ctx.stroke();}
+    else if(c.k==="text"){ctx.font=`${c.b?"bold ":""}${c.sz}px Helvetica, Arial, sans-serif`;ctx.fillStyle=c.c;ctx.textBaseline="alphabetic";ctx.fillText(c.s,c.x,c.y);}}}
+let pvT=0;
+function drawPreview(){clearTimeout(pvT);pvT=setTimeout(()=>{const box=$("pages");if(!box||!$("t-prev").classList.contains("on"))return;
+  const id=D.doc;if(!id){box.innerHTML=`<div class="empty">No document is needed when the premises are your own. Upload the latest electricity bill, property tax receipt or khata in the owner's name.</div>`;return;}
+  const pages=pagesFor(id),wpx=Math.min(box.clientWidth||340,640),dpr=Math.min(2.5,window.devicePixelRatio||1),s=wpx/W;
+  box.innerHTML="";pages.forEach(p=>{const cv=document.createElement("canvas");cv.width=Math.round(W*s*dpr);cv.height=Math.round(H*s*dpr);cv.style.width=wpx+"px";cv.style.height=Math.round(H*s)+"px";
+    const ctx=cv.getContext("2d");ctx.scale(s*dpr,s*dpr);paint(ctx,p);box.appendChild(cv);});},60);}
+
+/* ---------------- PDF (plain ASCII, so it also saves through the Android app) ---------------- */
+function pdfStr(s){let o="";for(const ch of clean(s)){const c=ch.charCodeAt(0);if(ch==="("||ch===")"||ch==="\\")o+="\\"+ch;else if(c>=32&&c<=126)o+=ch;else if(ch==="…")o+="\\205";else if(c>=160&&c<=255)o+="\\"+c.toString(8).padStart(3,"0");else o+="?";}return o;}
+const rgb=c=>[1,3,5].map(i=>(parseInt(c.slice(i,i+2),16)/255).toFixed(3)).join(" ");
+function buildPDF(pages,title){const objs=[];const add=s=>{objs.push(s);return objs.length;};
+  add("<< /Type /Catalog /Pages 2 0 R >>");add("PAGES");
+  const fR=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"),fB=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids=[],f=x=>(+x).toFixed(2);
+  for(const p of pages){let s="";
+    for(const c of p){if(c.guide)continue;
+      if(c.k==="rect")s+=`q ${rgb(c.s)} RG ${c.lw||1} w ${c.dash?"[5 4] 0 d ":""}${f(c.x)} ${f(H-c.y-c.h)} ${f(c.w)} ${f(c.h)} re S Q\n`;
+      else if(c.k==="line")s+=`q ${rgb(c.c)} RG ${c.lw} w ${f(c.x1)} ${f(H-c.y1)} m ${f(c.x2)} ${f(H-c.y2)} l S Q\n`;
+      else if(c.k==="text")s+=`BT /${c.b?"F2":"F1"} ${c.sz} Tf ${rgb(c.c)} rg ${f(c.x)} ${f(H-c.y)} Td (${pdfStr(c.s)}) Tj ET\n`;}
+    const cs=add(`<< /Length ${s.length} >>\nstream\n${s}endstream`);
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${fR} 0 R /F2 ${fB} 0 R >> >> /Contents ${cs} 0 R >>`));}
+  objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  let out="%PDF-1.4\n";const off=[];objs.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`;});
+  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("");
+  out+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R /Info << /Producer (TaxSphere) /Title (${pdfStr(title)}) >> >>\nstartxref\n${xr}\n%%EOF`;return out;}
+const fileBase=id=>((id==="agr"?D.r.title:"NOC GST")+" "+(D.t.trade||"")).trim().replace(/[^\w]+/g,"_").replace(/^_|_$/g,"");
+function ready(){const miss=problems().filter(p=>p[0]==="bad");if(miss.length){toast(miss[0][1]);return false;}return true;}
+function downloadPDF(){if(!D.doc){toast("No document needed for own premises");return;}if(!ready())return;
+  try{dl(fileBase(D.doc)+".pdf",buildPDF(pagesFor(D.doc),DOCNAME[D.doc]),"application/pdf");saveSet(false);}catch(e){toast("PDF failed: "+e.message);}}
+
+/* ---------------- Word + plain text ---------------- */
+const htm=s=>esc(clean(s)).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n/g,"<br>");
+function wordHTML(id){const doc=DOCS[id]();let b="";
+  if(id==="agr"&&D.r.stamp)b+=`<p style="height:200pt">&nbsp;</p>`;
+  for(const bl of doc){
+    if(bl.k==="h")b+=`<p align="center" style="font-size:${bl.sz||14}pt"><b><u>${htm(bl.s)}</u></b></p>`;
+    else if(bl.k==="c")b+=`<p align="center">${htm(bl.s)}</p>`;
+    else if(bl.k==="sp")b+=`<p style="margin:0">&nbsp;</p>`;
+    else if(bl.k==="p"){const al=bl.c?"center":bl.right?"right":bl.nj?"left":"justify";b+=`<p style="text-align:${al};${bl.num?"margin-left:22pt;text-indent:-22pt;":""}${bl.ind?"margin-left:"+bl.ind+"pt;":""}">${bl.num?`<b>${bl.num}</b>&nbsp;&nbsp;`:""}${bl.b?"<b>":""}${htm(bl.s)}${bl.b?"</b>":""}</p>`;}
+    else if(bl.k==="sig")b+=`<table width="100%" style="margin-top:${bl.gap||40}pt"><tr>${bl.cols.map(c=>`<td width="50%" valign="top">${c.length?"_________________________<br>"+c.map((s,j)=>j?esc(clean(s)):"<b>"+esc(clean(s))+"</b>").join("<br>"):""}</td>`).join("")}</tr></table>`;}
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(DOCNAME[id])}</title>
+<style>@page{size:A4;margin:2cm 2.2cm}body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.45}p{margin:0 0 7pt}td{font-size:10pt}</style></head><body>${b}</body></html>`;}
+function downloadWord(){if(!D.doc){toast("No document needed for own premises");return;}if(!ready())return;dl(fileBase(D.doc)+".doc",wordHTML(D.doc),"application/msword");saveSet(false);}
+function plain(id){return DOCS[id]().map(bl=>bl.k==="sp"?"":bl.k==="sig"?"\n\n"+bl.cols.filter(c=>c.length).map(c=>"____________________\n"+c.join("\n")).join("\n\n"):(bl.num?bl.num+" ":"")+clean(bl.s).replace(/\*\*/g,"")).join("\n\n").replace(/\n{3,}/g,"\n\n");}
+function copyText(){if(!D.doc){toast("No document needed for own premises");return;}const t=plain(D.doc);
+  const done=()=>toast("Copied. Paste it in Word or WhatsApp");
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(done,()=>fallback());else fallback();
+  function fallback(){const a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();try{document.execCommand("copy");done();}catch(e){toast("Couldn't copy");}a.remove();}}
+
+/* ---------------- checks ---------------- */
+function problems(){const o=D.o,t=D.t,p=D.p,r=D.r,out=[];const bad=s=>out.push(["bad",s]),warn=s=>out.push(["warn",s]);
+  if(D.poss==="own")return out;
+  if(!o.name.trim())bad("Add the owner's name (step 2)");
+  if(!t.trade.trim())bad("Add the business's trade name (step 3)");
+  if(!t.sig.trim())bad(`Add the ${isProp()?"proprietor's":"authorised signatory's"} name (step 3)`);
+  if(!p.addr.trim()||!p.state)bad("Add the premises address and state (step 4)");
+  if(!r.place.trim())bad("Add the place of signing (step 4)");
+  if(D.poss==="rent"&&!(+r.rent>0))bad("Add the monthly rent (step 4)");
+  if(o.pan&&!PAN_RE.test(o.pan.toUpperCase()))warn("Owner's PAN doesn't look right (format ABCDE1234F)");
+  if(t.pan&&!PAN_RE.test(t.pan.toUpperCase()))warn("Business PAN doesn't look right (format ABCDE1234F)");
+  if(isProp()&&t.pan&&PAN_RE.test(t.pan.toUpperCase())&&t.pan[3].toUpperCase()!=="P")warn("A proprietorship uses the proprietor's personal PAN (4th letter P)");
+  if(p.pin&&!/^[1-9]\d{5}$/.test(p.pin))warn("PIN code should be 6 digits");
+  if(!o.addr.trim())warn("Owner's residential address is blank");
+  if(D.poss==="rent"&&+r.months>11)warn(`A rent agreement of more than 11 months generally has to be registered at the Sub-Registrar's office`);
+  return out;}
+function hints(){const h=(id,msg,cls)=>{const e=$("h-"+id);if(e){e.textContent=msg||"";e.className="hint"+(cls?" "+cls:"");}};
+  const pan=(id,val)=>{val=(val||"").toUpperCase();h(id,!val?"":PAN_RE.test(val)?"✓ Valid format":"Format: 5 letters, 4 digits, 1 letter",!val?"":PAN_RE.test(val)?"ok":"bad");};
+  pan("o.pan",D.o.pan);pan("t.pan",D.t.pan);
+  h("p.pin",D.p.pin&&!/^[1-9]\d{5}$/.test(D.p.pin)?"Enter a 6-digit PIN":"","bad");
+  const e=endDate(D.r.start,D.r.months);h("r.months",e?`Ends on ${longDate(e)}${+D.r.months>11?" · over 11 months usually needs registration":""}`:"",+D.r.months>11?"bad":"");
+  h("r.rent",+D.r.rent?words(+D.r.rent)+(+D.r.dep?" · deposit "+words(+D.r.dep):""):"");}
+
+/* ---------------- UI ---------------- */
+function renderPoss(){$("poss").innerHTML=Object.entries(POSS).map(([k,x])=>`<button class="${D.poss===k?"on":""}" data-k="${k}"><span>${x.ic}</span><b>${x.name}</b><small>${x.sub}</small></button>`).join("");
+  $("poss").querySelectorAll("button").forEach(b=>b.onclick=()=>{D.poss=b.dataset.k;if(!curDocs().includes(D.doc))D.doc=curDocs()[0]||"";persist();renderPoss();});
+  $("need").innerHTML=NEED[D.poss].map(([c,a,b],i)=>`<li class="${c}"><i>${c?"✓":i+1}</i><div><b>${a}</b><br><span style="color:var(--soft)">${b}</span></div></li>`).join("");
+  document.body.classList.toggle("norent",D.poss!=="rent");
+  document.querySelectorAll(".forcons").forEach(e=>e.style.display=D.poss==="consent"||D.poss==="shared"?"":"none");
+  hdr();}
+function fill(){document.querySelectorAll("[data-k]").forEach(el=>{if(el.closest("#poss"))return;const val=get(el.dataset.k);if(el.type==="checkbox")el.checked=!!val;else el.value=val??"";});conUI();hints();}
+function conUI(){const p=isProp();document.querySelectorAll(".nprop").forEach(e=>e.style.display=p?"none":"");$("sigHd").textContent=p?"Proprietor":"Authorised signatory";}
+function bind(){$("pState").innerHTML=STATE_OPTS();
+  document.querySelectorAll("[data-k]").forEach(el=>{if(el.closest("#poss"))return;
+    const on=()=>{let val=el.type==="checkbox"?el.checked:el.value;
+      if(/\.pan$/.test(el.dataset.k)){val=val.toUpperCase();if(el.value!==val)el.value=val;}
+      if(el.dataset.k==="t.con"){const d=get("t.desig");const map={"Proprietorship":"Proprietor","Partnership firm":"Partner","LLP":"Designated partner","Private limited company":"Director","One person company":"Director","Public limited company":"Director","HUF":"Karta","Trust":"Trustee","Society":"Secretary"};
+        if(!d||Object.values(map).includes(d)){D.t.desig=map[val];const de=document.querySelector('[data-k="t.desig"]');if(de)de.value=D.t.desig;}}
+      set(el.dataset.k,val);persist();hints();hdr();if(el.dataset.k==="t.con")conUI();};
+    el.addEventListener("input",on);el.addEventListener("change",on);});}
+function hdr(){$("hdrSub").textContent=D.t.trade?`${POSS[D.poss].name} · ${D.t.trade}${D.o.name?" · owner "+D.o.name:""}`:"Premises documents for GST registration";}
+function renderPrev(){const docs=curDocs();if(!docs.includes(D.doc))D.doc=docs[0]||"";
+  $("docsw").style.display=docs.length>1?"":"none";
+  $("docsw").innerHTML=docs.map(d=>`<button class="${D.doc===d?"on":""}" data-d="${d}">${d==="noc"&&D.poss!=="rent"?"Consent letter / NOC":DOCNAME[d]}</button>`).join("");
+  $("docsw").querySelectorAll("button").forEach(b=>b.onclick=()=>{D.doc=b.dataset.d;persist();renderPrev();});
+  const pr=problems();$("warns").innerHTML=pr.map(([c,s])=>`<div class="note ${c==="bad"?"bad":""}">${c==="bad"?"⚠ ":""}${esc(s)}</div>`).join("");
+  const st=stName(D.p.state);
+  $("after").innerHTML=(D.poss==="rent"?[
+    `Print the agreement on non-judicial stamp paper or an e-stamp certificate of the value required in ${st||"your state"}. Stamp duty differs from state to state.`,
+    ...(/Maharashtra/.test(st)?["In Maharashtra, leave and licence agreements must be registered (online e-registration is available)."]:[]),
+    "Both parties sign every page, and two witnesses sign the last page.",
+    "The owner signs the NOC separately on plain paper.",
+    "Scan the signed agreement and NOC together with the owner's electricity bill or property tax receipt as one PDF of up to 1 MB, and upload it as proof of the principal place of business."]
+   :D.poss==="own"?["Upload the latest electricity bill, property tax receipt or municipal khata in the owner's name (PDF or JPEG, up to 1 MB)."]
+   :["The owner signs the consent letter on plain paper.","Scan it with the owner's latest electricity bill or property tax receipt and ID as one PDF of up to 1 MB.","In GST REG-01, choose nature of possession \""+POSS[D.poss].name+"\" and upload the PDF."]).map(s=>`<li>${esc(s)}</li>`).join("");
+  drawPreview();}
+
+/* ---------------- saved sets ---------------- */
+function saveSet(loud){const i=DB.saved.findIndex(x=>x.id===D.id),copy=JSON.parse(JSON.stringify(D));copy.at=Date.now();if(i>=0)DB.saved[i]=copy;else DB.saved.unshift(copy);DB.saved=DB.saved.slice(0,40);persist();if(loud)toast("Saved");}
+function renderSaved(){$("sList").innerHTML=DB.saved.length?DB.saved.map(s=>`<div class="saved"><div><b>${esc(s.t.trade||"Untitled")}</b><small>${POSS[s.poss].name} · owner ${esc(s.o.name||"-")} · ${new Date(s.at).toLocaleDateString("en-IN")}</small></div>
+  <div class="bact"><button onclick="openSet('${s.id}')">Open</button><button onclick="dupSet('${s.id}')">Copy</button><button class="del" onclick="delSet('${s.id}')">${s._del?"Delete?":"Delete"}</button></div></div>`).join("")
+  :`<div class="empty">Nothing saved yet. A set is saved when you download it or tap Save.</div>`;}
+function openSet(id){const s=DB.saved.find(x=>x.id===id);if(!s)return;D=merge(blank(),JSON.parse(JSON.stringify(s)));delete D._del;persist();fill();renderPoss();showTab("prev");}
+function dupSet(id){const s=DB.saved.find(x=>x.id===id);if(!s)return;D=merge(blank(),JSON.parse(JSON.stringify(s)));D.id="p"+Date.now().toString(36);D.r.date=today();delete D._del;persist();fill();renderPoss();showTab("owner");toast("Copied. Change what you need");}
+function delSet(id){const s=DB.saved.find(x=>x.id===id);if(!s)return;if(s._del){DB.saved=DB.saved.filter(x=>x.id!==id);persist();renderSaved();toast("Deleted");return;}s._del=1;renderSaved();setTimeout(()=>{delete s._del;renderSaved();},3000);}
+function newSet(){if(D.o.name||D.t.trade)saveSet(false);D=blank();persist();fill();renderPoss();showTab("type");toast("New set started");}
+function loadSample(){if((D.o.name||D.t.trade)&&!loadSample._ok){loadSample._ok=1;toast("Tap again to replace your entries with the sample");setTimeout(()=>loadSample._ok=0,3000);return;}
+  D=merge(blank(),{poss:"rent",doc:"agr",o:{name:"Ramesh Kumar Sharma",rel:"S/o",father:"Late Shri Mohan Lal Sharma",age:"58",pan:"ABMPS1234K",addr:"Flat 302, Sai Darshan CHS, Gokhale Road, Thane West, Thane 400602",phone:"9820012345",aad:"4821"},
+    t:{con:"Proprietorship",trade:"Sharma Electronics",pan:"BXKPS5678L",nature:"trading of electronic goods and accessories",sig:"Vikas Sharma",desig:"Proprietor",age:"31",rel:"S/o",father:"Suresh Sharma",addr:"B-14, Shanti Nagar, Mira Road East, Thane 401107",phone:"9867054321",email:"vikas@example.com"},
+    p:{type:"shop",area:"220",unit:"Shop no. 4, Ground floor, Shiv Complex",addr:"Station Road, Andheri East, Mumbai",state:"27",pin:"400069",elec:"000123456789",ptax:""},
+    r:{title:"LEAVE AND LICENCE AGREEMENT",start:today(),months:11,rent:"18000",dep:"54000",day:5,esc:5,lock:"3",notice:1,maint:"Tenant",stampBy:"both parties equally",gst:false,stamp:true,place:"Mumbai",date:today(),w1:"Anil Patil",w1a:"Andheri East, Mumbai",w2:"Sunita Rao",w2a:"Thane West"}});
+  persist();fill();renderPoss();showTab("prev");toast("Sample loaded");}
+
+/* ---------------- tabs + boot ---------------- */
+document.querySelectorAll("#stepper button").forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+function showTab(t,quiet){document.querySelectorAll("#stepper button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.id==="t-"+t));
+  if(t==="prev")renderPrev();if(t==="saved")renderSaved();if(t==="type")renderPoss();
+  const sb=document.querySelector("#stepper .on"),sp=$("stepper");if(sb&&sp)sp.scrollLeft=sb.offsetLeft-(sp.clientWidth-sb.offsetWidth)/2;
+  if(quiet)return;if(EMB){try{parent.postMessage({semi:"top"},"*");}catch(e){}}else window.scrollTo(0,0);}
+addEventListener("resize",()=>drawPreview());
+bind();fill();renderPoss();showTab(D.o.name&&D.t.trade?"prev":"type",true);
+</script>
+</body></html>

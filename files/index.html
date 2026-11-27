@@ -5,8 +5,8 @@
 <script>
 /* TaxSphere live updates: boot. If an update has been downloaded, start the app from it instead of the built-in files.
    A start that doesn't finish marks that update bad and the next start uses the built-in version. */
-window.SEMI_BUNDLED = window.SEMI_BUNDLED || 25; window.SEMI_APK = window.SEMI_APK || 17;
-window.SEMI_BUILD = 25; window.SEMI_NAME = "2.8.2";
+window.SEMI_BUNDLED = window.SEMI_BUNDLED || 26; window.SEMI_APK = window.SEMI_APK || 17;
+window.SEMI_BUILD = 26; window.SEMI_NAME = "2.9";
 window.SEMI_URL = function (p) { return (window.__PATCH && window.__PATCH[p]) || p; };
 /* iframe attribute for a tool page: an updated page goes in srcdoc so it keeps the app's storage (a blob: page can't) */
 window.SEMI_FRAME = function (p) { var h = window.__PATCH_HTML && window.__PATCH_HTML[p];
@@ -615,7 +615,7 @@ const CO_TOOLS = [
   {id: "legalnotice", name: "Legal Notice Generator", sub: "Draft legal notices under company and other laws", group: "draft", noForm: true, render: () => embedTall("tools/company/AI_Legal_Notice_Generator.html", "Legal Notice Generator")}
 ];
 const RK_GROUPS = {gst: ["GST & E-Way Bill", "tax"], it: ["Income tax", "calc"]};
-const RF_GROUPS = {file: ["Prepare & file returns", "tax"], bill: ["Billing", "calc"], ref: ["Guides & annual return", "book"]};
+const RF_GROUPS = {file: ["Prepare & file returns", "tax"], bill: ["Billing", "calc"], reg: ["GST registration documents", "book"], ref: ["Guides & annual return", "book"]};
 const rk = (id, file, name, sub, group) => ({id, name, sub, group, noForm: true, render: () => embedTall("tools/reckoners/" + file, name)});
 const RK_TOOLS = [
   rk("ewaybill", "e-way-bill-compiler.html", "E-Way Bill Compiler", "Rule 138: applicability, exemptions, state limits, validity", "gst"),
@@ -652,6 +652,8 @@ const RF_TOOLS = [
   {...T_MEESHO, group: "file"},
   {id: "billmaker", name: "Bill Maker", sub: "Professional GST bills with your logo: 4 templates, PDF, UPI QR", noForm: true, group: "bill",
     render: () => embedFlow("tools/bill-maker.html", "Bill Maker")},
+  {id: "rentnoc", name: "Rent Agreement & NOC", sub: "Rent agreement, owner's NOC and consent letter for GST registration: PDF & Word", noForm: true, group: "reg",
+    render: () => embedFlow("tools/rent-noc.html", "Rent Agreement & NOC")},
   {...rk("gstsuite", "gst-filing-suite.html", "GST Filing Suite", "Which returns, due dates, late fee, ITC, RCM, QRMP, refunds, e-invoice", "ref"), group: "ref"},
   {...rk("gstr9", "gstr-9-9c-reckoner.html", "GSTR-9 & GSTR-9C", "Annual return and reconciliation, FY 2025-26", "ref"), group: "ref"}
 ];
@@ -1017,6 +1019,9 @@ function renderHome() {
     <a class="card" href="#/returns/billmaker" style="display:flex;gap:12px;align-items:center;text-decoration:none;margin-bottom:14px;background:linear-gradient(120deg,#0f5132,#12855a 60%,#2bb673);border:0;color:#fff">
       <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.18);font-size:22px">🧾</div>
       <div style="flex:1"><h3 style="margin:0;color:#fff">Bill Maker</h3><p style="margin:2px 0 0;color:rgba(255,255,255,.88);font-size:13px">Professional GST bills with your logo. 4 templates, PDF download, UPI QR and WhatsApp.</p></div></a>
+    <a class="card" href="#/returns/rentnoc" style="display:flex;gap:12px;align-items:center;text-decoration:none;margin-bottom:14px;background:linear-gradient(120deg,#7a2e0e,#c2571a 60%,#e8893a);border:0;color:#fff">
+      <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.18);font-size:22px">🏠</div>
+      <div style="flex:1"><h3 style="margin:0;color:#fff">Rent Agreement & NOC</h3><p style="margin:2px 0 0;color:rgba(255,255,255,.88);font-size:13px">Premises documents for GST registration: rent agreement, owner's NOC and consent letter as PDF or Word.</p></div></a>
     <a class="card" href="#/company" style="display:flex;gap:12px;align-items:center;text-decoration:none;margin-bottom:14px;background:linear-gradient(120deg,#0e2c52,#1b5fa6);border:0;color:#fff">
       <div style="flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.16);color:#f3d36b">${icon("book")}</div>
       <div style="flex:1"><h3 style="margin:0;color:#fff">Company Law & ROC toolkit</h3><p style="margin:2px 0 0;color:rgba(255,255,255,.85);font-size:13px">${CO_TOOLS.length} tools: ROC fees & penalties, RPT, board resolutions, minutes, directors' report, MOA/AOA, share certificates, legal notices.</p></div><b style="font-size:20px">›</b></a>
